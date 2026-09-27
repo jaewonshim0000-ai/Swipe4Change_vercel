@@ -83,119 +83,12 @@ test('the organizer space is private to the owner and moderators', async () => {
   expect(await a.communityPosts(id)).toHaveLength(1);
 });
 
-test('a poll publishes counts but never who chose what', async () => {
-  const a = setup();
-  const id = await community(a);
-  await a.signIn(demoIds.jordan);
-  await a.execute(
-    post(id, {
-      body: 'When should we walk the route?',
-      kind: 'poll',
-      options: ['Weeknight', '', 'Weekend morning'],
-    }),
-  );
-  const poll = (await a.communityPosts(id))[0];
-  expect(poll.options).toEqual(['Weeknight', 'Weekend morning']);
-  await a.signIn(demoIds.sam);
-  await a.execute({
-    type: 'communityInteract',
-    communityId: id,
-    postId: poll.id,
-    action: 'vote',
-    option: 'Weeknight',
-  });
-  let seen = (await a.communityPosts(id))[0];
-  expect(seen.votes).toEqual({ Weeknight: 1, 'Weekend morning': 0 });
-  expect(seen.myVote).toBe('Weeknight');
-  // Changing your mind moves the count rather than adding one.
-  await a.execute({
-    type: 'communityInteract',
-    communityId: id,
-    postId: poll.id,
-    action: 'vote',
-    option: 'Weekend morning',
-  });
-  seen = (await a.communityPosts(id))[0];
-  expect(seen.votes).toEqual({ Weeknight: 0, 'Weekend morning': 1 });
-  await a.signIn(demoIds.jordan);
-  seen = (await a.communityPosts(id))[0];
-  expect(seen.votes?.['Weekend morning']).toBe(1);
-  expect(seen.myVote).toBeUndefined();
-  expect(JSON.stringify(seen)).not.toContain(demoIds.sam);
-});
-
-test('a poll needs two to six distinct choices', async () => {
-  const a = setup();
-  const id = await community(a);
-  await expect(
-    a.execute(post(id, { body: 'A poll with one choice.', kind: 'poll', options: ['Only'] })),
-  ).rejects.toThrow(/2 to 6 choices/);
-  await expect(
-    a.execute(post(id, { body: 'A poll with a repeat.', kind: 'poll', options: ['Same', 'Same'] })),
-  ).rejects.toThrow(/must differ/);
-});
-
-test('a task can be claimed, released and completed by whoever holds it', async () => {
-  const a = setup();
-  const id = await community(a);
-  await a.execute(post(id, { body: 'Photograph the unlit stretch.', kind: 'task' }));
-  const task = (await a.communityPosts(id))[0];
-  expect(task.taskStatus).toBe('open');
-  await a.execute({ type: 'communityInteract', communityId: id, postId: task.id, action: 'claim' });
-  expect((await a.communityPosts(id))[0].claimedName).toBe('Sam Rivera');
-  await expect(
-    a.execute({ type: 'communityInteract', communityId: id, postId: task.id, action: 'claim' }),
-  ).rejects.toThrow(/already on this task/);
-  await a.execute({
-    type: 'communityInteract',
-    communityId: id,
-    postId: task.id,
-    action: 'release',
-  });
-  expect((await a.communityPosts(id))[0].taskStatus).toBe('open');
-  await a.execute({ type: 'communityInteract', communityId: id, postId: task.id, action: 'claim' });
-  await a.execute({
-    type: 'communityInteract',
-    communityId: id,
-    postId: task.id,
-    action: 'complete',
-  });
-  expect((await a.communityPosts(id))[0].taskStatus).toBe('done');
-});
-
-test('a proposal tallies reversible positions', async () => {
-  const a = setup();
-  const id = await community(a);
-  await a.execute(
-    post(id, { body: 'Propose asking for a lighting assessment.', kind: 'proposal' }),
-  );
-  const proposal = (await a.communityPosts(id))[0];
-  const act = (action: 'support' | 'oppose' | 'withdraw') =>
-    a.execute({ type: 'communityInteract', communityId: id, postId: proposal.id, action });
-  await act('support');
-  expect((await a.communityPosts(id))[0].support).toBe(1);
-  await act('oppose');
-  expect((await a.communityPosts(id))[0]).toMatchObject({ support: 0, oppose: 1 });
-  await act('withdraw');
-  expect((await a.communityPosts(id))[0]).toMatchObject({ support: 0, oppose: 0 });
-  await expect(act('withdraw')).rejects.toThrow(/not taken a position/);
-});
-
-test('events need a date and documents need an https link', async () => {
+test('events need a date', async () => {
   const a = setup();
   const id = await community(a);
   await expect(
     a.execute(post(id, { body: 'An event with no date at all.', kind: 'event' })),
   ).rejects.toThrow(/date/);
-  await expect(
-    a.execute(
-      post(id, {
-        body: 'A document with an insecure link.',
-        kind: 'document',
-        url: 'http://x.org',
-      }),
-    ),
-  ).rejects.toThrow(/https/);
   await a.execute(
     post(id, {
       body: 'A fictional community walk.',

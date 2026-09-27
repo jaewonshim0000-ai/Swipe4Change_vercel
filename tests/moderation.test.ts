@@ -1,4 +1,3 @@
-import { qualificationFixture } from './qualification-fixture';
 import { LocalAdapter, Storage } from '../src/data/local';
 import { demoIds, seedPetitions } from '../src/data/seed';
 function setup() {
@@ -16,12 +15,6 @@ async function publish(a: LocalAdapter) {
   await a.signIn(demoIds.maya);
   const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: true });
   if (typeof id !== 'string') throw new Error('Missing id');
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   return id;
 }
 const find = async (a: LocalAdapter, id: string) =>

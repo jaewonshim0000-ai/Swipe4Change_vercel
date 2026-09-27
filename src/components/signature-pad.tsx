@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { GestureResponderEvent, Text, View } from 'react-native';
-import { SignaturePoint } from '../domain/signatory';
+import { SignaturePoint } from '../domain/signature-record';
 import { Button, colors, styles } from './ui';
 
 export function SignaturePad({
@@ -9,19 +9,20 @@ export function SignaturePad({
   readonly = false,
 }: {
   value: SignaturePoint[];
-  onChange: (value: SignaturePoint[]) => void;
+  /** A state setter: moves arrive faster than renders, so each point appends to the latest list. */
+  onChange: Dispatch<SetStateAction<SignaturePoint[]>>;
   readonly?: boolean;
 }) {
   const [size, setSize] = useState({ width: 300, height: 160 });
   function add(event: GestureResponderEvent, start: boolean) {
-    if (readonly || value.length >= 3000) return;
+    if (readonly) return;
     const { locationX, locationY } = event.nativeEvent;
     const next = {
       x: Math.max(0, Math.min(1, locationX / size.width)),
       y: Math.max(0, Math.min(1, locationY / size.height)),
       start,
     };
-    onChange([...value, next]);
+    onChange((points) => (points.length >= 3000 ? points : [...points, next]));
   }
   return (
     <View style={{ gap: 8 }}>
@@ -35,6 +36,8 @@ export function SignaturePad({
         onLayout={(e) => setSize(e.nativeEvent.layout)}
         onStartShouldSetResponder={() => !readonly}
         onMoveShouldSetResponder={() => !readonly}
+        // The pad sits inside the signing sheet's ScrollView; a stroke must not turn into a scroll.
+        onResponderTerminationRequest={() => false}
         onResponderGrant={(e) => add(e, true)}
         onResponderMove={(e) => add(e, false)}
         style={{

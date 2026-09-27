@@ -1,4 +1,3 @@
-import { qualificationFixture } from './qualification-fixture';
 import { prepareSubmission } from './signature-fixture';
 import { LocalAdapter, Storage } from '../src/data/local';
 import { demoIds, seedPetitions } from '../src/data/seed';
@@ -20,12 +19,6 @@ async function publish(a: LocalAdapter) {
   await a.signIn(demoIds.maya);
   const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: true });
   if (typeof id !== 'string') throw new Error('Missing id');
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   return id;
 }
 const bodies = async (a: LocalAdapter) => (await a.load()).notifications.map((n) => n.body);
@@ -72,7 +65,6 @@ test('signers and savers are told about updates, edits, responses and closure', 
   });
   await a.signIn(demoIds.jordan);
   await a.execute({ type: 'save', petitionId: id });
-  await a.execute({ type: 'follow', petitionId: id });
   await a.signIn(demoIds.maya);
   await a.execute({ type: 'update', petitionId: id, body: 'The lighting audit is scheduled.' });
   await a.execute({
@@ -96,30 +88,22 @@ test('signers and savers are told about updates, edits, responses and closure', 
     expect(got.some((b) => b.includes('unverified response'))).toBe(true);
     expect(got.some((b) => b.includes('marked successful'))).toBe(true);
   }
-  // Following is a real subscription, not just a filter chip: Jordan never signed.
+  // Saving is a real subscription: Jordan never signed.
   expect((await a.load()).signed).not.toContain(id);
-  expect((await a.load()).following).toContain(id);
 });
 
-test('saving is a private bookmark and does not subscribe you to anything', async () => {
+test('unsaving stops the updates', async () => {
   const { adapter: a } = setup();
   const id = await publish(a);
   await a.signIn(demoIds.jordan);
   await a.execute({ type: 'save', petitionId: id });
-  const saved = await a.load();
-  expect(saved.saved).toContain(id);
-  expect(saved.following).not.toContain(id);
+  await a.execute({ type: 'save', petitionId: id });
+  expect((await a.load()).saved).not.toContain(id);
   const before = (await bodies(a)).length;
   await a.signIn(demoIds.maya);
-  await a.execute({ type: 'update', petitionId: id, body: 'A new organizer update for savers.' });
+  await a.execute({ type: 'update', petitionId: id, body: 'An update nobody saved it for.' });
   await a.signIn(demoIds.jordan);
   expect((await bodies(a)).length).toBe(before);
-  // Following the same petition starts delivery from that point on.
-  await a.execute({ type: 'follow', petitionId: id });
-  await a.signIn(demoIds.maya);
-  await a.execute({ type: 'update', petitionId: id, body: 'A second update, now for followers.' });
-  await a.signIn(demoIds.jordan);
-  expect((await bodies(a)).some((b) => b.includes('New update'))).toBe(true);
 });
 
 test('an eligibility request reaches the organizer and its decision reaches the requester', async () => {
@@ -165,12 +149,6 @@ test('crossing a signature milestone notifies the organizer and everyone followi
     publish: true,
   });
   if (typeof id !== 'string') throw new Error('Missing id');
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   for (const who of [demoIds.sam, demoIds.jordan]) {
     await a.signIn(who);
     await a.execute({

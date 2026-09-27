@@ -11,7 +11,7 @@ const snapshot: Snapshot = {
   communities: [],
   signed: [],
   saved: [],
-  following: [],
+  ripple: null,
   volunteering: [],
   signatures: [],
   reports: [],
@@ -52,7 +52,4 @@ test('the signing review distinguishes missing information, manager review and r
   expect(
     signingStatus(petitions[0], { ...snapshot, signed: [petitions[0].id] }, 'anonymous').state,
   ).toBe('ineligible');
-  expect(
-    signingStatus({ ...petitions[0], qualification: undefined }, snapshot, 'anonymous').state,
-  ).toBe('additional');
 });

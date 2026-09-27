@@ -1,4 +1,3 @@
-import { qualificationFixture } from './qualification-fixture';
 import { prepareSubmission } from './signature-fixture';
 import { LocalAdapter, Storage } from '../src/data/local';
 import { demoIds, seedPetitions } from '../src/data/seed';
@@ -18,12 +17,6 @@ async function publish(a: LocalAdapter) {
   await a.signIn(demoIds.maya);
   const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: true });
   if (typeof id !== 'string') throw new Error('Missing id');
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   return id;
 }
 const find = async (a: LocalAdapter, id: string) =>
@@ -169,12 +162,6 @@ test('withdrawal never drops the count below the fictional seed baseline', async
   const { adapter: a } = setup();
   const seeded = (await a.load()).petitions.find((p) => p.verification === 'account')!;
   await a.signIn(demoIds.sam);
-  await a.execute({
-    type: 'qualification',
-    petitionId: seeded.id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   await a.signIn(demoIds.jordan);
   await a.execute({
     type: 'sign',

@@ -16,10 +16,10 @@
 12. **Transparent history signal.** At most ten of the 35 interest points come from topic frequencies among petitions actually signed. No affiliation is inferred. Opt-out restores all 35 points to explicit interests. Already-signed and expired petitions do not occupy the swipe deck.
 13. **Separate incomplete drafts.** `petition_drafts` stores bounded private drafts without relaxing published-petition validation. Draft ownership is checked in both adapters; public snapshots cannot reveal another person's draft. Publication removes the draft within the same transaction.
 14. **Recipient and legal writing support stay honest.** Local deterministic rules suggest the responsible department and supply official research starting points. Creators can override assignments. The tool does not invent officials, evidence, findings, or claims of legal validity.
-15. **Signature vault is owner-encrypted.** A random AES-256 key stays with the user; account and format are bound as GCM authenticated data. Only ciphertext is persisted. SecureStore remains limited to auth tokens. The vault is outside feed snapshots and unlocked forms clear on blur/background/time limit. A residence statement remains self-attested until a trusted external check exists.
-16. **Legal qualification is a separate workflow.** Ballot requirements vary by jurisdiction and measure type. The four requested requirements must have explicit records and review states; an encrypted drawing alone is not a qualified signature. Per-petition binding, affidavits, full-text receipts, exact statutory thresholds, and trusted review remain active work.
+15. **Signature vault is owner-encrypted.** A random AES-256 key stays with the user; account and format are bound as GCM authenticated data. Only ciphertext is persisted. SecureStore remains limited to auth tokens. The vault is outside feed snapshots and unlocked forms clear on blur/background/time limit. A residence statement remains self-attested until a trusted external check exists. _(Superseded by 43.)_
+16. **Legal qualification is a separate workflow.** Ballot requirements vary by jurisdiction and measure type. The four requested requirements must have explicit records and review states; an encrypted drawing alone is not a qualified signature. Per-petition binding, affidavits, full-text receipts, exact statutory thresholds, and trusted review remain active work. _(Superseded by 43.)_
 
-## Exact consent and qualification records (September 10)
+## Exact consent and qualification records (September 10) — superseded by 43
 
 Each new signature requires an owner-encrypted receipt and fresh consent to the entire official text and configured legal requirements. The disclosure is compared server-side under a row lock; ciphertext uses the same ordered disclosure as AES-GCM authenticated data. Old receipt formats remain readable, but old support lacking a receipt never becomes a qualified signature. Legal setup locks once any receipt exists; audit records preserve prior configurations. Signature/profile changes cannot rewrite consent.
 
@@ -54,7 +54,7 @@ The default local demo cannot award legal acceptance. Real verification and docu
     a gesture is exactly the kind of input that happens by accident. The four circular actions and the
     Follow / Volunteer / Share row give every gesture a labelled equivalent, so the deck is fully usable
     without dragging at all.
-29. **Saving and following are different asks, superseding decision 18.** Treating a save as a
+29. **Saving and following are different asks, superseding decision 18.** Treating a save as a _(Superseded by 44.)_
     subscription was tidy, but it meant a person could not keep a petition to read later without also
     opting into its notifications. Saving is now a private bookmark that notifies nobody; following is
     the subscription. Signing and volunteering both subscribe you automatically, because neither is a
@@ -71,7 +71,7 @@ The default local demo cannot award legal acceptance. Real verification and docu
     actions and was deliberately not built. Payment, donation and political fundraising are explicit
     non-goals for this project, and adding a money path would drag in compliance obligations a student
     demo cannot honestly meet.
-32. **One post record behind nine community surfaces.** Discussion channels, announcements, a
+32. **One post record behind nine community surfaces.** Discussion channels, announcements, a _(Narrowed by 45.)_
     calendar, a task board, polls, proposals, shared documents and a private organizer room are all the
     same row, distinguished by a space, a kind and a channel. Nine tables would have meant nine sets of
     row-level security policies to get right; this way the same rules cover every surface, and a channel
@@ -80,7 +80,7 @@ The default local demo cannot award legal acceptance. Real verification and docu
     discussion; only the owner and moderators can post announcements, because an announcement carries the
     community's voice rather than one member's; and the organizer space is genuinely private — members
     cannot read it, not merely cannot post to it. Promotion to moderator is what opens that door.
-34. **Counts are public; choices are not.** Poll votes and proposal positions are tallied in the
+34. **Counts are public; choices are not.** Poll votes and proposal positions are tallied in the _(Polls and proposals removed by 45.)_
     open and attributed to nobody. The ledgers live in their own tables with row-level security limiting
     each person to their own row, and the reader's own choice is the only one their snapshot carries.
     Consensus tools that publish who voted which way stop being consensus tools and start being
@@ -90,7 +90,7 @@ The default local demo cannot award legal acceptance. Real verification and docu
     moderation request into a confrontation between neighbours, and a moderator does not need it to judge
     the post. Resolving a report records the review; removing the post is still a separate, visible step
     that leaves the tombstone decision 21 established.
-36. **Documents are links, not uploads.** Shared evidence uses the same labelled https:// pattern as
+36. **Documents are links, not uploads.** Shared evidence uses the same labelled https:// pattern as _(Documents removed by 45.)_
     petition sources. File storage would need virus scanning, takedown handling and a retention policy
     before it could be responsibly offered, and none of those exist here. The UI says the links are
     member-supplied and unchecked.
@@ -142,6 +142,51 @@ Preserve hosted failure semantics: a failed remote write never falls back to a s
 
 Each seeded petition now has a distinct local problem and a fictional office in the relevant city with authority appropriate to the request. The assistant suggests only a recipient category; it does not insert a plausible but unconfirmed office into the publishable field. Organizers must choose or enter the actual recipient. This keeps deterministic writing help useful without making unsupported claims about jurisdiction. Signing eligibility presentation derives its state from the same rule that authorizes signing, while keeping location attestation distinct from approximate city personalization.
 
-## 2026-09-22 — Compare the request with the answer, not a claimed outcome
+## 2026-09-22 — Compare the request with the answer, not a claimed outcome (removed by 46)
 
 An organizer may split a requested action into one to three asks and compare each with a verified response linked to that petition. The status answers only whether the response text covers an ask. It does not assert that a promise was fulfilled or confer official verification. Every assessment includes an explanation, author, and date; revisions preserve the prior content in edit history. Changing the underlying requested action resets the comparison. The same typed command has local and server implementations; the server validates management rights and response verification before writing to the petition's public content. Existing local sample state receives only the new Eastbridge comparison where its original action and verified fictional response still match.
+
+## 2026-09-23 — Trim to the core, and add Ripple
+
+43. **Keep the drawn signature; drop the ballot machinery.** The vault (printed legal name, voter-registration
+    address, recovery key, client-side encryption), the four-part legal qualification record, circulator
+    affidavits and the trusted-review functions served a legal ballot-measure process the app does not
+    and cannot perform. They also blocked every new petition from collecting signatures until an
+    organizer filled in statutory details, and asked students for exactly the data AGENTS.md is most
+    careful about. What people valued was the act of drawing a signature, so that stays: the signing
+    sheet asks for a drawing and unchecked consent, the drawing is stored with the exact text read, and
+    only the signer can open it. The server still refuses a signature if the text changed under the
+    reader. Withdrawing deletes the drawing with the signature.
+44. **Saving is following again, superseding decision 29.** Keeping them apart needed an 80-word notice
+    to explain, a second button on every card and a second filter on the profile. One concept is
+    easier to hold: a saved, signed or volunteered-for petition sends you its updates, and unsaving stops
+    them. The `petition_follows` table and `follow` command are gone; the audience is derived from saves,
+    signatures and volunteer offers.
+45. **Communities keep discussion, announcements, events and the organizer room.** Polls, proposals,
+    task boards and a document library were each a half-built version of a tool organizers already use,
+    and together they turned a phone screen into a small Slack. Moderation reports stay: they are what
+    makes an open discussion safe.
+46. **The request-to-response comparison is removed.** It was a fourth layer on responses (record,
+    verify, deliver, grade). A verified response beside the delivery packet already tells the story.
+47. **One avatar.** The emoji avatar and accent colour duplicated the initials avatar the design system
+    uses everywhere else, so the columns and command fields were removed.
+48. **Migrations were edited in place rather than reversed forward.** Nothing has been deployed, and a
+    forward "undo" migration would have left the removed features' SQL inside the decorator chain for
+    every future reader. The chain labels are contiguous again (command v1–v6, snapshot v1–v4). **Anyone
+    who applied the old migrations to a development database must reset it before applying these.**
+49. **Ripple rewards spreading with counts, never names.** Petitions spread person to person, and nothing
+    in the app showed a supporter what their sharing achieved. After signing, your share link carries an
+    opaque code; people who sign through it — and people who sign through theirs — form your ripple.
+    Rules, identical in both backends and tested in each:
+    - Only someone who signed the petition earns credit.
+      Self-links, stale links and made-up codes are ignored and never block the signature.
+    - A signer can withdraw and re-sign through someone they brought in, so the chain can loop. Each person
+      is counted once at their shallowest depth, and the SQL walk stops at depth 50.
+    - Codes are random on the hosted backend and never a profile id. The local demo derives a stable hash
+      instead, which is guessable and acceptable only because local data never leaves the device.
+    - The referrer is told that someone signed, never who. An organizer who is also the referrer may still
+      infer identity from a same-moment signature notification when the signer chose a public name; the
+      signer picked that name knowing it is public, so this was accepted rather than delaying notifications.
+    - The code is remembered on the device per petition, so arriving through a link and signing later still
+      credits the sharer. On a shared device the next account to sign that petition inherits it; the demo
+      accepts this because the alternative is dropping most real-world attributions.

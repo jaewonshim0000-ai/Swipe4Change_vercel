@@ -110,10 +110,7 @@ export const communitySchema = z.object({
   city: z.string().trim().min(2, 'Enter a city and state.').max(100),
   topic: z.enum(topics),
 });
-/**
- * One schema for every community surface. The kind decides which extra fields are required, so a
- * poll cannot be posted without choices and a document cannot be posted without a link.
- */
+/** One schema for every community post. An event additionally needs a date. */
 export const communityPostSchema = z
   .object({
     body: postSchema,
@@ -122,26 +119,10 @@ export const communityPostSchema = z
     channel: z.string().trim().max(40),
     eventAt: z.string().trim().optional(),
     location: z.string().trim().max(120).optional(),
-    // Blank lines are the composer splitting on newlines, so they are dropped rather than
-    // rejected. An actual duplicate is a mistake worth telling the author about, below.
-    options: z
-      .array(z.string().trim().max(80))
-      .optional()
-      .transform((v) => v?.filter(Boolean)),
-    url: z.string().trim().optional(),
   })
   .superRefine((v, ctx) => {
-    if (v.kind === 'poll') {
-      const options = v.options ?? [];
-      if (options.length < 2 || options.length > 6)
-        ctx.addIssue({ code: 'custom', path: ['options'], message: 'Give a poll 2 to 6 choices.' });
-      else if (new Set(options).size !== options.length)
-        ctx.addIssue({ code: 'custom', path: ['options'], message: 'Poll choices must differ.' });
-    }
     if (v.kind === 'event' && (!v.eventAt || Number.isNaN(Date.parse(v.eventAt))))
       ctx.addIssue({ code: 'custom', path: ['eventAt'], message: 'Give the event a date.' });
-    if (v.kind === 'document' && !/^https:\/\/\S+$/.test(v.url ?? ''))
-      ctx.addIssue({ code: 'custom', path: ['url'], message: 'Share an https:// link.' });
     // An announcement carries the community's voice, so it only exists where that voice lives.
     if (v.kind === 'announcement' && v.space !== 'announcements')
       ctx.addIssue({
@@ -198,8 +179,6 @@ export function signingError(
     return 'Location verification requires an approved attestation. An approximate city alone does not establish eligibility.';
   if (s.profile && p.verification === 'custom' && !s.customApprovals.includes(p.id))
     return 'Request eligibility review below. The organizer must approve it before you sign.';
-  if (!p.qualification?.details)
-    return 'The organizer must configure all four legal requirements before signatures can be recorded.';
   return null;
 }
 /** Presentation state derived from the same rules that reject an invalid signature. */

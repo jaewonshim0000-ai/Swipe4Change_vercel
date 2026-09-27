@@ -15,10 +15,11 @@ import {
   styles,
 } from '../../src/components/ui';
 import { Avatar, Stats } from '../../src/components/design-system';
-import { SignatureVault } from '../../src/components/signature-vault';
 import { ProfilePersonalization } from '../../src/components/profile-personalization';
+import { RippleSummary } from '../../src/components/ripple';
 import { CommunityCard, SectionHeader } from '../../src/components/civic-journey';
 import { reachedMilestones } from '../../src/domain/rules';
+import { rippleTotal } from '../../src/domain/ripple';
 import { Grid } from '../../src/screens/feed';
 export default function Profile() {
   const q = useSnapshot();
@@ -49,11 +50,9 @@ export default function Profile() {
       ? x.ownerId === p.id || x.collaborators.includes(p.id)
       : filter === 'Signed'
         ? s.signed.includes(x.id)
-        : filter === 'Following'
-          ? s.following.includes(x.id)
-          : filter === 'Volunteering'
-            ? s.volunteering.some((v) => v.petitionId === x.id)
-            : s.saved.includes(x.id),
+        : filter === 'Volunteering'
+          ? s.volunteering.some((v) => v.petitionId === x.id)
+          : s.saved.includes(x.id),
   );
   async function logout() {
     try {
@@ -88,7 +87,7 @@ export default function Profile() {
               label: 'Started',
             },
             { value: s.signed.length, label: 'Signed' },
-            { value: s.following.length, label: 'Following' },
+            { value: rippleTotal(s.ripple), label: 'Ripple' },
             { value: p.joined.length, label: 'Communities' },
           ]}
         />
@@ -110,12 +109,13 @@ export default function Profile() {
           }}
         />
       </Panel>
+      <RippleSummary snapshot={s} />
       <SectionHeader
         title="Your participation"
         note={`${s.petitions.filter((x) => s.signed.includes(x.id) && reachedMilestones(x.count, x.goal).length > 0).length} supported petitions have reached a signature milestone. This does not establish a policy outcome.`}
       />
       <View style={styles.row}>
-        {['Created', 'Signed', 'Saved', 'Following', 'Volunteering'].map((x) => (
+        {['Created', 'Signed', 'Saved', 'Volunteering'].map((x) => (
           <Chip key={x} label={x} selected={filter === x} onPress={() => setFilter(x)} />
         ))}
       </View>
@@ -124,10 +124,10 @@ export default function Profile() {
       ) : (
         <Notice
           text={
-            filter === 'Following'
-              ? 'You are not following anything yet. Following a petition sends its updates here; saving is just a private bookmark.'
-              : filter === 'Volunteering'
-                ? 'You have not offered to help with a petition yet. Organizers see your name and the roles you pick.'
+            filter === 'Volunteering'
+              ? 'You have not offered to help with a petition yet. Organizers see your name and the roles you pick.'
+              : filter === 'Saved'
+                ? 'Nothing saved yet. Saving a petition sends its updates to your inbox.'
                 : `No ${filter.toLowerCase()} petitions yet. Explore a petition or start your own.`
           }
         />
@@ -194,7 +194,6 @@ export default function Profile() {
         onPress={() => setSettings(!settings)}
       />
       {settings && <ProfilePersonalization key={p.id} snapshot={s} />}
-      <SignatureVault key={`vault-${p.id}`} ownerId={p.id} />
       <Panel>
         <Text style={styles.h2}>Make this space yours</Text>
         <Text style={styles.muted}>Interests: {p.interests.join(', ') || 'Not selected'}</Text>

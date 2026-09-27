@@ -1,7 +1,5 @@
-import { Affidavit, affidavitSubmissionSchema } from '../domain/affidavit';
-import { emptyQualification, qualificationSchema } from '../domain/qualification';
 import { SignatureReceipt, validateSubmission } from '../domain/signature-record';
-import { EncryptedVault, envelopeSchema } from '../domain/signatory';
+import { Referral, rippleOf } from '../domain/ripple';
 import {
   Adapter,
   Command,
@@ -39,7 +37,6 @@ import {
   volunteerSchema,
 } from '../domain/rules';
 import { profileSchema } from '../domain/personalization';
-import { prepareResponseChecks } from '../domain/response-checks';
 import { z } from 'zod';
 import { demoIds, petitionId, seedCommunities, seedPetitions, seedProfiles } from './seed';
 export interface Storage {
@@ -54,19 +51,10 @@ interface PrivateSignature extends PublicSignature {
 interface PrivateRequest extends EligibilityRequest {
   userId: string;
 }
-/**
- * Stored form of a community post. The two ledgers stay private: a poll shows counts, and a
- * proposal shows a tally, but neither exposes who chose what to the rest of the community.
- */
-interface StoredPost extends CommunityPost {
-  voters?: Record<string, string>;
-  positions?: Record<string, 'support' | 'oppose'>;
-  claimedById?: string;
-}
 interface LocalState {
-  affidavits?: (Affidavit & { userId: string })[];
   receipts?: (SignatureReceipt & { userId: string })[];
-  vaults?: Record<string, EncryptedVault>;
+  /** Who brought whom, keyed by the signature it credits. Private: only counts leave this file. */
+  referrals?: { signatureId: string; referrerId: string }[];
   drafts?: (SavedDraft & { userId: string })[];
   version: 1;
   session: string | null;
@@ -76,16 +64,24 @@ interface LocalState {
   petitions: Petition[];
   signatures: PrivateSignature[];
   saves: Record<string, string[]>;
-  /** Optional so demo data saved before follow/volunteer existed still loads. */
-  follows?: Record<string, string[]>;
+  /** Optional so demo data saved before volunteering existed still loads. */
   volunteers?: (Volunteer & { userId: string })[];
   reports: (Report & { userId: string })[];
   requests: PrivateRequest[];
-  posts: Record<string, StoredPost[]>;
+  posts: Record<string, CommunityPost[]>;
   postReports?: (PostReport & { userId: string })[];
   notifications: Record<string, Entry[]>;
 }
 export const STORAGE_KEY = 'lookaware.demo.v1';
+/**
+ * Local stand-in for the server's random ripple code: stable per account and opaque in a link.
+ * ponytail: a hash of the profile id is guessable; the hosted backend issues random codes.
+ */
+export function localRippleCode(profileId: string) {
+  let h = 2166136261;
+  for (const ch of profileId) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return (h >>> 0).toString(36);
+}
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const initial = (): LocalState => ({
   version: 1,
@@ -95,7 +91,6 @@ const initial = (): LocalState => ({
   petitions: seedPetitions(),
   signatures: [],
   saves: { [demoIds.maya]: [petitionId(2)] },
-  follows: { [demoIds.maya]: [petitionId(1)] },
   volunteers: [],
   reports: [],
   requests: [],
@@ -121,20 +116,6 @@ export class LocalAdapter implements Adapter {
         const parsed: LocalState = JSON.parse(raw);
         if (parsed.version !== 1)
           throw new Error('Saved demo uses an unsupported version. Reset the demo.');
-        // Add only the new comparison to an untouched legacy flagship. Keep every saved petition,
-        // response, edit and signature as the participant left it.
-        const flagship = parsed.petitions.find((petition) => petition.id === petitionId(1));
-        if (
-          flagship &&
-          !flagship.responseChecks &&
-          flagship.action ===
-            'Assess the Eastbridge campus-to-bus path and publish a pedestrian-lighting installation plan before the winter evening semester.' &&
-          flagship.responses.some(
-            (response) =>
-              response.id === 'r1' && response.verification === 'verified' && !response.removed,
-          )
-        )
-          flagship.responseChecks = seedPetitions()[0].responseChecks;
         this.state = parsed;
       } else this.state = initial();
     }
@@ -155,9 +136,25 @@ export class LocalAdapter implements Adapter {
     this.queue = operation.catch(() => undefined);
     return operation;
   }
+  /** Referrals joined to the signatures they credit. Withdrawn signatures drop out here. */
+  private referrals(s: LocalState): Referral[] {
+    return (s.referrals ?? []).flatMap((r) => {
+      const signature = s.signatures.find((x) => x.id === r.signatureId);
+      return signature
+        ? [
+            {
+              petitionId: signature.petitionId,
+              signerId: signature.userId,
+              referrerId: r.referrerId,
+            },
+          ]
+        : [];
+    });
+  }
   private snapshot(s: LocalState, now = Date.now()): Snapshot {
     const profile = s.profiles.find((p) => p.id === s.session) ?? null;
     const communities = s.communities ?? seedCommunities();
+    const referrals = this.referrals(s);
     return clone({
       profile,
       drafts: (s.drafts ?? [])
@@ -167,17 +164,7 @@ export class LocalAdapter implements Adapter {
         .filter((p) => p.status !== 'archived' && (p.status !== 'draft' || canManage(p, profile)))
         .map((p) => ({
           ...p,
-          qualification: {
-            ...(p.qualification ?? emptyQualification()),
-            affidavitCount: (s.affidavits ?? []).filter((a) => a.petitionId === p.id).length,
-            acceptedAffidavits: (s.affidavits ?? []).filter(
-              (a) => a.petitionId === p.id && a.status === 'accepted',
-            ).length,
-          },
-          recordedSignatures: (s.receipts ?? []).filter((r) => r.petitionId === p.id).length,
-          acceptedSignatures: (s.receipts ?? []).filter(
-            (r) => r.petitionId === p.id && r.status === 'accepted',
-          ).length,
+          viaShares: referrals.filter((r) => r.petitionId === p.id).length,
           // Velocity is a rolling window, not a lifetime tally, so Trending cannot decay into
           // "most signed ever". Mirrors the 7-day interval used by the SQL snapshot.
           recentSignatures:
@@ -198,7 +185,9 @@ export class LocalAdapter implements Adapter {
         members: c.members + s.profiles.filter((p) => p.joined.includes(c.id)).length,
       })),
       saved: s.saves[s.session ?? ''] ?? [],
-      following: s.follows?.[s.session ?? ''] ?? [],
+      ripple: profile
+        ? { code: localRippleCode(profile.id), petitions: rippleOf(profile.id, referrals) }
+        : null,
       // Only your own offer comes back here. Everyone else's is organizer-only, via volunteers().
       volunteering: (s.volunteers ?? [])
         .filter((v) => v.userId === s.session)
@@ -218,29 +207,16 @@ export class LocalAdapter implements Adapter {
         .map((r) => r.petitionId),
     });
   }
-  async affidavits(petitionId: string): Promise<Affidavit[]> {
-    const s = await this.read();
-    if (!s.session) throw new Error('Sign in to access your affidavits.');
-    return clone(
-      (s.affidavits ?? [])
-        .filter((a) => a.petitionId === petitionId && a.userId === s.session)
-        .map(({ userId: _private, ...a }) => a),
-    );
-  }
   async receipt(petitionId: string) {
     const s = await this.read();
-    if (!s.session) throw new Error('Sign in to access your private receipt.');
+    if (!s.session) throw new Error('Sign in to see your signature.');
     const receipt = (s.receipts ?? []).find(
       (r) => r.userId === s.session && r.petitionId === petitionId,
     );
-    if (!receipt) return null;
+    // Demo data saved before drawn signatures holds an encrypted record with no drawing to show.
+    if (!receipt?.signature) return null;
     const { userId: _private, ...result } = receipt;
     return clone(result);
-  }
-  async vault() {
-    const s = await this.read();
-    if (!s.session) throw new Error('Sign in to access your private vault.');
-    return clone(s.vaults?.[s.session] ?? null);
   }
   async load() {
     return this.snapshot(await this.read());
@@ -286,14 +262,7 @@ export class LocalAdapter implements Adapter {
     return clone(
       (s.posts[id] ?? [])
         // The organizer space is a private working room, not a quiet channel.
-        .filter((post) => post.space !== 'organizers' || moderator)
-        .map(({ voters, positions, claimedById: _claimed, ...post }) => ({
-          ...post,
-          ...(post.options ? { myVote: s.session ? voters?.[s.session] : undefined } : {}),
-          ...(post.kind === 'proposal'
-            ? { myPosition: s.session ? positions?.[s.session] : undefined }
-            : {}),
-        })),
+        .filter((post) => post.space !== 'organizers' || moderator),
     );
   }
   async communityReports(id: string): Promise<PostReport[]> {
@@ -344,27 +313,20 @@ export class LocalAdapter implements Adapter {
           ].slice(0, 100);
       };
       /**
-       * Signers and explicit followers, minus the actor. Saving is a private bookmark and no
-       * longer subscribes anyone: a reading list and a notification channel are different asks.
+       * Everyone who asked to hear about a petition, minus the actor: signers, savers and
+       * volunteers. Saving is following — there is no separate bookmark that stays silent.
        */
       const followers = (p: Petition) =>
         [
           ...s.signatures.filter((x) => x.petitionId === p.id).map((x) => x.userId),
-          ...Object.entries(s.follows ?? {})
+          ...Object.entries(s.saves)
             .filter(([, ids]) => ids.includes(p.id))
             .map(([id]) => id),
+          ...(s.volunteers ?? []).filter((v) => v.petitionId === p.id).map((v) => v.userId),
         ].filter((id) => id !== user.id);
       /** Owner and collaborators, minus the actor. */
       const managers = (p: Petition) =>
         [p.ownerId, ...p.collaborators].filter((id) => id !== user.id);
-      if (c.type === 'saveVault') {
-        s.vaults = { ...s.vaults, [user.id]: envelopeSchema.parse(c.envelope) };
-        return;
-      }
-      if (c.type === 'deleteVault') {
-        if (s.vaults) delete s.vaults[user.id];
-        return;
-      }
       if (c.type === 'profile') {
         Object.assign(user, profileSchema.parse(c));
         return;
@@ -459,90 +421,14 @@ export class LocalAdapter implements Adapter {
           throw new Error(
             'Only this community owner and its moderators can post here. Try the public discussion.',
           );
-        const post: StoredPost = {
+        const post: CommunityPost = {
           ...entry(v.body, v.kind, true),
           communityId: c.communityId,
           space: v.space,
           channel: v.channel,
           ...(v.kind === 'event' ? { eventAt: v.eventAt, location: v.location ?? '' } : {}),
-          ...(v.kind === 'task' ? { taskStatus: 'open' as const } : {}),
-          ...(v.kind === 'poll'
-            ? {
-                options: v.options,
-                votes: Object.fromEntries((v.options ?? []).map((o) => [o, 0])),
-                voters: {},
-              }
-            : {}),
-          ...(v.kind === 'proposal' ? { support: 0, oppose: 0, positions: {} } : {}),
-          ...(v.kind === 'document' ? { url: v.url } : {}),
         };
         s.posts[c.communityId] = [...(s.posts[c.communityId] ?? []), post];
-        return;
-      }
-      if (c.type === 'communityInteract') {
-        if (!user.joined.includes(c.communityId))
-          throw new Error('Join the community to take part.');
-        const post = (s.posts[c.communityId] ?? []).find((x) => x.id === c.postId);
-        if (!post) throw new Error('That post is no longer here.');
-        if (post.removed) throw new Error('That post was removed.');
-        if (c.action === 'vote') {
-          if (!post.options?.length) throw new Error('That post is not a poll.');
-          if (!c.option || !post.options.includes(c.option))
-            throw new Error('Choose one of the listed options.');
-          const voters = (post.voters ??= {});
-          const previous = voters[user.id];
-          if (previous === c.option) throw new Error('You already chose that option.');
-          post.votes ??= {};
-          if (previous) post.votes[previous] = Math.max(0, (post.votes[previous] ?? 0) - 1);
-          post.votes[c.option] = (post.votes[c.option] ?? 0) + 1;
-          voters[user.id] = c.option;
-          return;
-        }
-        if (c.action === 'support' || c.action === 'oppose' || c.action === 'withdraw') {
-          if (post.kind !== 'proposal') throw new Error('That post is not a proposal.');
-          const positions = (post.positions ??= {});
-          const previous = positions[user.id];
-          const tally = (position: 'support' | 'oppose', delta: number) => {
-            if (position === 'support') post.support = Math.max(0, (post.support ?? 0) + delta);
-            else post.oppose = Math.max(0, (post.oppose ?? 0) + delta);
-          };
-          if (c.action === 'withdraw') {
-            if (!previous) throw new Error('You have not taken a position on this proposal.');
-            tally(previous, -1);
-            delete positions[user.id];
-            return;
-          }
-          if (previous === c.action) throw new Error('You already took that position.');
-          if (previous) tally(previous, -1);
-          tally(c.action, 1);
-          positions[user.id] = c.action;
-          return;
-        }
-        if (post.kind !== 'task') throw new Error('That post is not a task.');
-        if (c.action === 'claim') {
-          if (post.taskStatus !== 'open') throw new Error('Someone is already on this task.');
-          post.taskStatus = 'claimed';
-          post.claimedById = user.id;
-          post.claimedName = user.name;
-          return;
-        }
-        // Releasing and completing belong to whoever took the task on, or to a moderator who has
-        // to unblock a board when a volunteer disappears.
-        const mine = post.claimedById === user.id;
-        const moderator = communities.some(
-          (x) =>
-            x.id === c.communityId && (x.ownerId === user.id || x.moderators.includes(user.id)),
-        );
-        if (!mine && !moderator) throw new Error('Only the person who claimed this can change it.');
-        if (c.action === 'release') {
-          if (post.taskStatus !== 'claimed') throw new Error('This task is not claimed.');
-          post.taskStatus = 'open';
-          delete post.claimedById;
-          delete post.claimedName;
-          return;
-        }
-        if (post.taskStatus === 'done') throw new Error('This task is already done.');
-        post.taskStatus = 'done';
         return;
       }
       if (c.type === 'reportPost') {
@@ -669,7 +555,7 @@ export class LocalAdapter implements Adapter {
           endorsements: [],
           discussion: [],
           responses: [],
-          responseChecks: [{ ask: d.action, status: 'not_reviewed', note: '' }],
+          viaShares: 0,
         });
         if (c.draftId)
           s.drafts = (s.drafts ?? []).filter((d) => d.id !== c.draftId || d.userId !== user.id);
@@ -682,68 +568,11 @@ export class LocalAdapter implements Adapter {
       if (p.status === 'draft' && !canManage(p, user)) throw new Error('This draft is private.');
       // Archived petitions have left every view, so nothing further can be done to them.
       if (p.status === 'archived') throw new Error('This petition was archived by its organizer.');
-      if (c.type === 'affidavit') {
-        if (!canManage(p, user)) throw new Error('Organizer or collaborator permission required.');
-        if (!p.qualification?.details)
-          throw new Error('Configure the legal requirements before submitting an affidavit.');
-        const a = affidavitSubmissionSchema.parse(c.submission);
-        if (
-          a.petitionId !== p.id ||
-          a.declaration !== p.qualification.details.circulatorDeclaration
-        )
-          throw new Error('The required affidavit text changed. Reopen the form.');
-        if (p.qualification.details.notarization === 'required' && !a.notarizationProvided)
-          throw new Error('A notarized document reference is required for this petition.');
-        if (!s.vaults?.[user.id]) throw new Error('Set up your private signature vault first.');
-        if ((s.affidavits ?? []).some((item) => item.id === a.id))
-          throw new Error('This affidavit was already submitted.');
-        if (
-          a.signatureIds.some(
-            (id) => !(s.receipts ?? []).some((r) => r.id === id && r.petitionId === p.id),
-          )
-        )
-          throw new Error('Select only signatures with private records for this petition.');
-        s.affidavits = [
-          ...(s.affidavits ?? []),
-          {
-            ...a,
-            userId: user.id,
-            status: 'pending',
-            reviewNote: '',
-            submittedAt: new Date().toISOString(),
-          },
-        ];
-        return;
-      }
-      if (c.type === 'qualification') {
-        if (!canManage(p, user)) throw new Error('Organizer permission required.');
-        if ((s.receipts ?? []).some((r) => r.petitionId === p.id))
-          throw new Error(
-            'Legal requirements are locked after signatory records exist. Create a new petition for a new measure.',
-          );
-        const details = qualificationSchema.parse(c.details);
-        const reason = postSchema.parse(c.reason);
-        const previous = p.qualification?.details;
-        p.qualification = { ...emptyQualification(), details, status: 'pending' };
-        p.edits.push(
-          entry(
-            `Legal requirements submitted for review. ${reason}\nPrevious requirements: ${previous ? JSON.stringify(previous) : 'None supplied'}`,
-            'legal requirements',
-          ),
-        );
-        return;
-      }
       if (c.type === 'save') {
         const saved = s.saves[user.id] ?? [];
         const exists = saved.includes(p.id);
         s.saves[user.id] = exists ? saved.filter((id) => id !== p.id) : [...saved, p.id];
         p.saves += exists ? -1 : 1;
-        return;
-      }
-      if (c.type === 'follow') {
-        const follows = (s.follows ??= {});
-        const mine = follows[user.id] ?? [];
-        follows[user.id] = mine.includes(p.id) ? mine.filter((id) => id !== p.id) : [...mine, p.id];
         return;
       }
       if (c.type === 'volunteer') {
@@ -776,10 +605,6 @@ export class LocalAdapter implements Adapter {
             note,
             date: new Date().toISOString(),
           });
-          // Volunteering is a commitment to the petition, so it subscribes you to its updates.
-          const follows = (s.follows ??= {});
-          const mine = follows[user.id] ?? [];
-          if (!mine.includes(p.id)) follows[user.id] = [...mine, p.id];
         }
         notify(managers(p), `${user.name} offered to help with ${unique.join(', ')}.`, 'volunteer');
         return;
@@ -787,35 +612,44 @@ export class LocalAdapter implements Adapter {
       if (c.type === 'sign') {
         const error = signingError(p, this.snapshot(s), c.identity);
         if (error) throw new Error(error);
-        if (!p.qualification?.details)
-          throw new Error(
-            'The organizer must configure all four legal requirements before signatures can be recorded.',
-          );
-        const submission = validateSubmission(p, c.submission);
-        if (!s.vaults?.[user.id])
-          throw new Error('Set up your private signature vault in Profile first.');
+        const { disclosure, signature } = validateSubmission(p, c.submission);
         const signatureId = this.uuid();
+        const signedAt = new Date().toISOString();
         const shownAs = publicName(user.name, c.identity);
+        // A ripple link only credits someone who signed this petition themselves. Anything else —
+        // an unknown code, your own link — is ignored rather than blocking the signature.
+        const referrer = c.via
+          ? s.profiles.find(
+              (x) =>
+                x.id !== user.id &&
+                localRippleCode(x.id) === c.via &&
+                s.signatures.some((sig) => sig.petitionId === p.id && sig.userId === x.id),
+            )
+          : undefined;
         s.receipts = [
           ...(s.receipts ?? []),
-          {
-            ...submission,
-            id: signatureId,
-            userId: user.id,
-            petitionId: p.id,
-            submittedAt: new Date().toISOString(),
-            status: 'pending',
-            reviewNote: '',
-          },
+          { id: signatureId, petitionId: p.id, userId: user.id, disclosure, signature, signedAt },
         ];
         s.signatures.push({
           id: signatureId,
           petitionId: p.id,
           userId: user.id,
-          signedAt: new Date().toISOString(),
+          signedAt,
           displayName: shownAs,
           identity: c.identity,
         });
+        if (referrer) {
+          (s.referrals ??= []).push({ signatureId, referrerId: referrer.id });
+          const brought = this.referrals(s).filter(
+            (r) => r.petitionId === p.id && r.referrerId === referrer.id,
+          ).length;
+          // Never who: a ripple is a count, so the referrer cannot map it back to a person.
+          notify(
+            [referrer.id],
+            `Someone signed “${p.title}” through your link. ${brought} ${brought === 1 ? 'person has' : 'people have'} signed it because of you.`,
+            'ripple',
+          );
+        }
         if (
           s.signatures.filter((x) => x.userId === user.id).length >= 5 &&
           !user.badges.includes('Showing up')
@@ -824,13 +658,9 @@ export class LocalAdapter implements Adapter {
         const before = p.count;
         p.count++;
         if (!user.badges.includes('First voice')) user.badges.push('First voice');
-        // Signing subscribes you to the petition: nobody signs something and then wants silence.
-        const signerFollows = (s.follows ??= {});
-        const followed = signerFollows[user.id] ?? [];
-        if (!followed.includes(p.id)) signerFollows[user.id] = [...followed, p.id];
         notify(
           [user.id],
-          `Your signature on “${p.title}” was recorded for review. Your public identity is ${shownAs}.`,
+          `Your signature on “${p.title}” is confirmed. Your public identity is ${shownAs}.`,
           'signature',
         );
         // Organizers only ever learn the public identity the signer chose, never their real name.
@@ -851,17 +681,14 @@ export class LocalAdapter implements Adapter {
       if (c.type === 'withdraw') {
         const signature = s.signatures.find((x) => x.petitionId === p.id && x.userId === user.id);
         if (!signature) throw new Error('You have not signed this petition.');
-        if ((s.affidavits ?? []).some((a) => a.signatureIds.includes(signature.id)))
-          throw new Error(
-            'This signature is already part of a submitted circulator affidavit and cannot be withdrawn here. Contact the organizer.',
-          );
         s.signatures = s.signatures.filter((x) => x !== signature);
         s.receipts = (s.receipts ?? []).filter((r) => r.id !== signature.id);
+        s.referrals = (s.referrals ?? []).filter((r) => r.signatureId !== signature.id);
         // Never fall below the fictional seed baseline, which is not made of real signatures.
         p.count = Math.max(p.sampleCount, p.count - 1);
         notify(
           [user.id],
-          `You withdrew your signature from “${p.title}”. It is no longer counted or shown publicly, and your private record was deleted.`,
+          `You withdrew your signature from “${p.title}”. It is no longer counted or shown publicly, and your drawn signature was deleted.`,
           'signature',
         );
         return;
@@ -954,19 +781,6 @@ export class LocalAdapter implements Adapter {
           ),
         );
         Object.assign(p, Object.fromEntries(changed.map((f) => [f, next[f]])));
-        if (changed.includes('action')) {
-          const previousChecks = (p.responseChecks ?? []).map(
-            (check) => `${check.ask} (${check.status})`,
-          );
-          p.responseChecks = [{ ask: p.action.slice(0, 240), status: 'not_reviewed', note: '' }];
-          p.edits.unshift(
-            entry(
-              `Response comparison reset because the requested action changed. Previous: ${previousChecks.join('; ') || 'not configured'}.`,
-              'response comparison',
-              true,
-            ),
-          );
-        }
         notify(
           followers(p),
           `“${p.title}” was revised by the organizer: ${changed.map((f) => fieldLabels[f]).join(', ')}. The previous wording is in its public history.`,
@@ -1018,19 +832,6 @@ export class LocalAdapter implements Adapter {
           `An unverified response from ${postSchema.parse(c.organization)} was recorded on “${p.title}”. Swipe4Change has not verified the respondent.`,
           'response',
         );
-        return;
-      }
-      if (c.type === 'responseChecks') {
-        const previous = p.responseChecks ?? [];
-        p.responseChecks = prepareResponseChecks(p, c.checks, user.name, new Date().toISOString());
-        p.edits.unshift(
-          entry(
-            `Organizer revised the request-to-response comparison. Previous checks: ${previous.length ? previous.map((check) => `${check.ask} (${check.status})`).join('; ') : 'none recorded'}. This is the organizer's reading of a response, not proof that work was completed.`,
-            'response comparison',
-            true,
-          ),
-        );
-        notify(followers(p), `The response comparison on “${p.title}” was updated.`, 'edit');
         return;
       }
       if (c.type === 'close') {

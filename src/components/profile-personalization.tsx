@@ -1,57 +1,33 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { Snapshot } from '../domain/model';
-import {
-  badgeProgress,
-  profileAccents,
-  profileAvatars,
-  profileSchema,
-} from '../domain/personalization';
+import { badgeProgress, profileSchema } from '../domain/personalization';
 import { useCommand } from '../data/provider';
 import { Button, Chip, Field, Icon, Notice, Panel, styles } from './ui';
 
-const accents = { forest: '#176D54', ocean: '#236580', plum: '#74517E', sunset: '#97512D' };
-const avatars = { leaf: '🌿', sun: '☀️', spark: '✨', mountain: '⛰️', flower: '🌼' };
 export function ProfilePersonalization({ snapshot: s }: { snapshot: Snapshot }) {
   const p = s.profile!;
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(p.name);
   const [bio, setBio] = useState(p.bio ?? '');
-  const [avatar, setAvatar] = useState(p.avatar ?? 'leaf');
-  const [accent, setAccent] = useState(p.accent ?? 'forest');
   const [history, setHistory] = useState(p.useSigningHistory !== false);
   const [error, setError] = useState('');
   const m = useCommand();
-  const color = accents[accent as keyof typeof accents] ?? accents.forest;
   return (
     <>
-      <Panel style={{ borderTopWidth: 8, borderTopColor: color }}>
-        {/* The identity panel above this one already carries the name, city and counts, so this
-            card shows only what it can change: the avatar, the accent, and the editor itself. */}
-        <View style={styles.row}>
-          <Text accessibilityLabel={`${avatar} profile avatar`} style={{ fontSize: 44 }}>
-            {avatars[avatar as keyof typeof avatars] ?? avatars.leaf}
-          </Text>
-          <View style={{ flex: 1, gap: 6 }}>
-            <Text style={styles.h3}>How you appear</Text>
-            <Text style={styles.small}>
-              {p.bio ||
-                'Add a line about what you are working on. Every small action tells a story.'}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.row}>
-          <Chip label={`${p.joined.length} communities`} />
-          <Chip label={`${s.drafts?.length ?? 0} private drafts`} />
-        </View>
+      <Panel>
+        {/* The identity panel above already carries the avatar, name, city and counts, so this
+            card holds only what can change. */}
+        <Text style={styles.h3}>How you appear</Text>
+        <Text style={styles.small}>
+          {p.bio || 'Add a line about what you are working on. Every small action tells a story.'}
+        </Text>
         <Button
           title={editing ? 'Cancel editing' : 'Edit profile'}
           variant="secondary"
           onPress={() => {
             setName(p.name);
             setBio(p.bio ?? '');
-            setAvatar(p.avatar ?? 'leaf');
-            setAccent(p.accent ?? 'forest');
             setHistory(p.useSigningHistory !== false);
             setError('');
             setEditing(!editing);
@@ -71,23 +47,6 @@ export function ProfilePersonalization({ snapshot: s }: { snapshot: Snapshot }) 
             <Text style={styles.muted}>
               {bio.length}/280 · Keep private identity and address details out of your bio.
             </Text>
-            <Text style={styles.h3}>Choose your avatar</Text>
-            <View style={styles.row}>
-              {profileAvatars.map((a) => (
-                <Chip
-                  key={a}
-                  label={`${avatars[a]} ${a}`}
-                  selected={avatar === a}
-                  onPress={() => setAvatar(a)}
-                />
-              ))}
-            </View>
-            <Text style={styles.h3}>Profile color</Text>
-            <View style={styles.row}>
-              {profileAccents.map((a) => (
-                <Chip key={a} label={a} selected={accent === a} onPress={() => setAccent(a)} />
-              ))}
-            </View>
             <Chip
               label="Personalize using petitions I signed"
               selected={history}
@@ -104,8 +63,6 @@ export function ProfilePersonalization({ snapshot: s }: { snapshot: Snapshot }) 
                 const parsed = profileSchema.safeParse({
                   name,
                   bio,
-                  avatar,
-                  accent,
                   useSigningHistory: history,
                 });
                 if (!parsed.success) {

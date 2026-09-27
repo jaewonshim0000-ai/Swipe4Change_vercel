@@ -1,7 +1,4 @@
-import type { Affidavit, AffidavitSubmission } from './affidavit';
-import type { Qualification, QualificationDetails } from './qualification';
 import type { SignatureReceipt, SignatureSubmission } from './signature-record';
-import type { EncryptedVault } from './signatory';
 export const topics = [
   'Safer streets',
   'Environment',
@@ -59,8 +56,6 @@ export interface Profile {
   locationApproved: boolean;
   badges: string[];
   bio?: string;
-  avatar?: string;
-  accent?: string;
   useSigningHistory?: boolean;
 }
 export interface Community {
@@ -95,15 +90,6 @@ export interface Response extends Entry {
   organization: string;
   /** The delivery this answers, when the organizer recorded one. */
   deliveryId?: string;
-}
-/** An organizer's reading of what a recorded response actually says, not proof of implementation. */
-export interface ResponseCheck {
-  ask: string;
-  status: 'not_reviewed' | 'answered' | 'partial' | 'unanswered';
-  note: string;
-  responseId?: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
 }
 export const deliveryMethods = ['email', 'portal', 'in_person', 'mail'] as const;
 export type DeliveryMethod = (typeof deliveryMethods)[number];
@@ -158,9 +144,8 @@ export interface Petition {
   status: Status;
   count: number;
   sampleCount: number;
-  qualification?: Qualification;
-  recordedSignatures?: number;
-  acceptedSignatures?: number;
+  /** Real signatures that arrived through a supporter's share link. Public aggregate only. */
+  viaShares: number;
   saves: number;
   /** Public aggregate. Who volunteered is visible only to the petition's organizers. */
   volunteerCount: number;
@@ -178,8 +163,6 @@ export interface Petition {
   endorsements: Entry[];
   discussion: Entry[];
   responses: Response[];
-  /** Optional for petitions saved before response checks were introduced. */
-  responseChecks?: ResponseCheck[];
 }
 export interface PublicSignature {
   id: string;
@@ -200,17 +183,7 @@ export const spaceLabels: Record<CommunitySpace, string> = {
   announcements: 'Announcements',
   organizers: 'Organizer space',
 };
-export const postKinds = [
-  'question',
-  'idea',
-  'experience',
-  'announcement',
-  'event',
-  'task',
-  'poll',
-  'proposal',
-  'document',
-] as const;
+export const postKinds = ['question', 'idea', 'experience', 'announcement', 'event'] as const;
 export type PostKind = (typeof postKinds)[number];
 export const postKindLabels: Record<PostKind, string> = {
   question: 'Question',
@@ -218,40 +191,21 @@ export const postKindLabels: Record<PostKind, string> = {
   experience: 'Experience',
   announcement: 'Announcement',
   event: 'Event',
-  task: 'Task',
-  poll: 'Poll',
-  proposal: 'Proposal',
-  document: 'Document',
 };
 /** Kinds only a moderator may post, because they speak for the community rather than a member. */
 export const moderatorOnlyKinds: PostKind[] = ['announcement'];
-export type TaskStatus = 'open' | 'claimed' | 'done';
 /**
- * One record behind every community surface. A calendar is events sorted by date, a task board is
- * tasks grouped by status, a channel is a filter — rather than nine separate subsystems.
+ * One record behind every community surface. The events list is event posts sorted by date and a
+ * channel is a filter, rather than separate subsystems.
  */
 export interface CommunityPost extends Entry {
   communityId: string;
   space: CommunitySpace;
   /** Topic channel inside a space. Empty string means the space's general channel. */
   channel: string;
-  /** Events and calendar entries. */
+  /** Event posts only. */
   eventAt?: string;
   location?: string;
-  /** Volunteer task board. */
-  taskStatus?: TaskStatus;
-  claimedName?: string;
-  /** Polls. Counts are public; who voted for what is not. */
-  options?: string[];
-  votes?: Record<string, number>;
-  /** The reading account's own choice, present only on their own snapshot. */
-  myVote?: string;
-  /** Proposals. */
-  support?: number;
-  oppose?: number;
-  myPosition?: 'support' | 'oppose';
-  /** Shared documents and evidence. HTTPS links only; no file uploads in this slice. */
-  url?: string;
 }
 /**
  * A moderation report on a community post. The reporter is deliberately not identified to
@@ -274,14 +228,24 @@ export interface Report {
   status: 'submitted' | 'reviewed' | 'appealed';
   appeal: string;
 }
+/**
+ * Your ripple: the people who signed through your share link, and everyone they brought in after
+ * them. Only counts ever leave the server — never who signed through whom.
+ */
+export interface Ripple {
+  /** Opaque code carried in your share links. It identifies you to the server, not to readers. */
+  code: string;
+  petitions: { petitionId: string; direct: number; further: number }[];
+}
 export interface Snapshot {
   drafts?: SavedDraft[];
   profile: Profile | null;
   petitions: Petition[];
   communities: Community[];
+  /** Saving is following: saved petitions send their updates to this account. */
   saved: string[];
-  /** Petitions whose updates reach this account. Saving bookmarks; following subscribes. */
-  following: string[];
+  /** Present only for a signed-in account. */
+  ripple: Ripple | null;
   /** This account's own offers of help. Other people's offers are organizer-only. */
   volunteering: { petitionId: string; roles: VolunteerRole[]; note: string }[];
   signed: string[];
@@ -344,28 +308,23 @@ export const fieldLabels: Record<EditableField, string> = {
   customRule: 'Custom eligibility rule',
 };
 export type Command =
-  | { type: 'affidavit'; petitionId: string; submission: AffidavitSubmission }
-  | { type: 'qualification'; petitionId: string; details: QualificationDetails; reason: string }
-  | { type: 'saveVault'; envelope: EncryptedVault }
-  | { type: 'deleteVault' }
-  | {
-      type: 'profile';
-      name: string;
-      bio: string;
-      avatar: string;
-      accent: string;
-      useSigningHistory: boolean;
-    }
+  | { type: 'profile'; name: string; bio: string; useSigningHistory: boolean }
   | { type: 'saveDraft'; id: string; draft: Draft; step: number }
   | { type: 'deleteDraft'; id: string }
   | { type: 'onboard'; interests: Topic[]; city: string }
   | { type: 'save'; petitionId: string }
-  | { type: 'follow'; petitionId: string }
   | { type: 'volunteer'; petitionId: string; roles: VolunteerRole[]; note: string }
   | { type: 'join'; communityId: string }
   | { type: 'create'; draft: Draft; publish: boolean; draftId?: string }
   | { type: 'publish'; petitionId: string }
-  | { type: 'sign'; petitionId: string; identity: Identity; submission?: SignatureSubmission }
+  | {
+      type: 'sign';
+      petitionId: string;
+      identity: Identity;
+      submission: SignatureSubmission;
+      /** Ripple code from the share link this signer arrived through, if any. */
+      via?: string;
+    }
   | { type: 'withdraw'; petitionId: string }
   | { type: 'update'; petitionId: string; body: string }
   | { type: 'edit'; petitionId: string; patch: EditPatch; reason: string }
@@ -400,15 +359,6 @@ export type Command =
       channel: string;
       eventAt?: string;
       location?: string;
-      options?: string[];
-      url?: string;
-    }
-  | {
-      type: 'communityInteract';
-      communityId: string;
-      postId: string;
-      action: 'vote' | 'claim' | 'release' | 'complete' | 'support' | 'oppose' | 'withdraw';
-      option?: string;
     }
   | { type: 'reportPost'; communityId: string; postId: string; reason: string }
   | {
@@ -421,7 +371,6 @@ export type Command =
   | { type: 'report'; petitionId: string; reason: string }
   | { type: 'appeal'; reportId: string; body: string }
   | { type: 'deliver'; petitionId: string; method: DeliveryMethod; note: string }
-  | { type: 'responseChecks'; petitionId: string; checks: ResponseCheck[] }
   | {
       type: 'response';
       petitionId: string;
@@ -447,9 +396,7 @@ export interface SavedDraft {
   updatedAt: string;
 }
 export interface Adapter {
-  affidavits(petitionId: string): Promise<Affidavit[]>;
   receipt(petitionId: string): Promise<SignatureReceipt | null>;
-  vault(): Promise<EncryptedVault | null>;
   load(): Promise<Snapshot>;
   execute(command: Command): Promise<string | void>;
   signIn(account: string): Promise<void>;

@@ -30,6 +30,8 @@ const kinds: Record<string, { title: string; icon: React.ComponentProps<typeof I
   volunteer: { title: 'Volunteer', icon: 'hand-left-outline' },
   moderation: { title: 'Moderation', icon: 'shield-outline' },
   close: { title: 'Petition closed', icon: 'flag-outline' },
+  status: { title: 'Petition status', icon: 'flag-outline' },
+  ripple: { title: 'Your ripple grew', icon: 'water-outline' },
 };
 
 export default function Notifications() {
@@ -40,10 +42,10 @@ export default function Notifications() {
     <Page
       back
       title="Your community, keeping you posted."
-      subtitle="What happened on the petitions you follow, signed, or organize."
+      subtitle="What happened on the petitions you saved, signed, or organize."
       eyebrow="NOTIFICATIONS"
     >
-      <Notice text="Following a petition is what delivers its updates — organizer posts, material edits, signature milestones, deliveries, recorded responses and closures. Signing and volunteering follow it for you. Saving is a private bookmark and notifies nobody. Organizers also hear about new signatures, endorsements, discussion, offers of help and eligibility requests, always by the public identity the signer chose. In-app only: push notifications and daily digests are not enabled in this demo." />
+      <Notice text="Petitions you save, sign or volunteer for send their updates here. In-app only in this demo." />
       {q.error ? (
         <Notice error text={q.error.message} />
       ) : items.length ? (
@@ -88,7 +90,7 @@ export default function Notifications() {
       ) : (
         <Empty
           title="You’re all caught up"
-          body="Follow a petition to hear when its organizer posts an update, delivers it, or receives a response."
+          body="Save a petition to hear when its organizer posts an update, delivers it, or receives a response."
         />
       )}
     </Page>

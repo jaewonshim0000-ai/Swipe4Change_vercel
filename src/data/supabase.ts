@@ -12,18 +12,8 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   return {
-    async affidavits(petition_id) {
-      const { data, error } = await db.rpc('circulator_affidavits', { petition_id });
-      if (error) throw error;
-      return data ?? [];
-    },
     async receipt(petition_id: string) {
       const { data, error } = await db.rpc('signature_receipt', { petition_id });
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    async vault() {
-      const { data, error } = await db.rpc('signature_vault', {});
       if (error) throw new Error(error.message);
       return data;
     },

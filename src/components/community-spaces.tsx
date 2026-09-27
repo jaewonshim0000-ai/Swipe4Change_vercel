@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -17,7 +17,7 @@ import { Avatar, KindBadge } from './design-system';
 
 /**
  * Every community surface is the same record filtered three ways: which space it lives in, what
- * kind it is, and which channel it was posted to. One list, one composer, nine views.
+ * kind it is, and which channel it was posted to. One list, one composer, a few views.
  */
 const views = [
   {
@@ -27,15 +27,11 @@ const views = [
     moderatorOnly: false,
   },
   { id: 'Announcements', space: 'announcements', kinds: ['announcement'], moderatorOnly: false },
-  { id: 'Calendar', space: 'discussion', kinds: ['event'], moderatorOnly: false },
-  { id: 'Tasks', space: 'discussion', kinds: ['task'], moderatorOnly: false },
-  { id: 'Polls', space: 'discussion', kinds: ['poll'], moderatorOnly: false },
-  { id: 'Proposals', space: 'discussion', kinds: ['proposal'], moderatorOnly: false },
-  { id: 'Documents', space: 'discussion', kinds: ['document'], moderatorOnly: false },
+  { id: 'Events', space: 'discussion', kinds: ['event'], moderatorOnly: false },
   {
     id: 'Organizer space',
     space: 'organizers',
-    kinds: ['question', 'idea', 'task', 'event', 'poll', 'proposal', 'document'],
+    kinds: ['question', 'idea', 'event'],
     moderatorOnly: true,
   },
 ] as const satisfies readonly {
@@ -50,17 +46,11 @@ const blurbs: Record<ViewId | 'Campaign updates' | 'Reports', string> = {
   Discussion: 'Anyone can read this. Members post questions, ideas and first-hand experience.',
   Announcements:
     'Posted in the community’s voice by its owner and moderators. Members read but do not post here.',
-  Calendar: 'Local coordination. Fictional demo events — nothing here is a real gathering.',
-  Tasks: 'Claim one thing you will actually do. Release it if plans change; nobody is chased.',
-  Polls:
-    'Counts are public; who voted for what is not. Polls inform a decision, they do not make one.',
-  Proposals: 'A proposal a community can weigh. Positions are reversible until it is acted on.',
-  Documents:
-    'Shared https:// links only — no uploads. Links are member-supplied and are not fact-checked.',
+  Events: 'Meetups, walk-throughs and hearings, soonest first. Fictional demo events.',
   'Organizer space':
     'A private working room for the owner and moderators. Members cannot read this space.',
   'Campaign updates':
-    'Updates written by the organizers of this community\u2019s petitions. Read-only here \u2014 they are posted from the petition, and everyone following it is notified.',
+    'Updates written by the organizers of this community\u2019s petitions. Read-only here \u2014 they are posted from the petition, and everyone who saved or signed it is notified.',
   Reports:
     'Reports on posts in this community. The reporter is never named to you: reporting a neighbour should not become a confrontation.',
 };
@@ -85,27 +75,8 @@ function Meta({ post }: { post: CommunityPost }) {
   );
 }
 
-function Bar({ value, total }: { value: number; total: number }) {
-  return (
-    <View
-      style={{ height: 6, backgroundColor: colors.pale, borderRadius: 6, overflow: 'hidden' }}
-      accessibilityRole="progressbar"
-      accessibilityValue={{ min: 0, max: Math.max(1, total), now: value }}
-    >
-      <View
-        style={{
-          width: `${total ? (100 * value) / total : 0}%`,
-          height: '100%',
-          backgroundColor: colors.sage,
-        }}
-      />
-    </View>
-  );
-}
-
 function Post({
   post,
-  community,
   profile,
   joined,
   moderates,
@@ -113,27 +84,12 @@ function Post({
   onReport,
 }: {
   post: CommunityPost;
-  community: Community;
   profile: Profile | null;
   joined: boolean;
   moderates: boolean;
   onRemove: (post: CommunityPost) => void;
   onReport: (post: CommunityPost) => void;
 }) {
-  const m = useCommand();
-  const act = (
-    action: 'vote' | 'claim' | 'release' | 'complete' | 'support' | 'oppose' | 'withdraw',
-    option?: string,
-  ) =>
-    m.mutate({
-      type: 'communityInteract',
-      communityId: community.id,
-      postId: post.id,
-      action,
-      option,
-    });
-  const votes = Object.values(post.votes ?? {}).reduce((a, b) => a + b, 0);
-  const positions = (post.support ?? 0) + (post.oppose ?? 0);
   return (
     <View style={{ gap: 8, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.line }}>
       <Meta post={post} />
@@ -147,113 +103,6 @@ function Post({
           </Text>
         </View>
       )}
-      {post.kind === 'document' && !!post.url && (
-        <Button
-          title="Open shared link"
-          icon="open-outline"
-          variant="secondary"
-          onPress={() => {
-            void Linking.openURL(post.url ?? '');
-          }}
-        />
-      )}
-      {post.kind === 'task' && (
-        <View style={[styles.row, { gap: 8 }]}>
-          <Chip
-            label={
-              post.taskStatus === 'done'
-                ? 'Done'
-                : post.taskStatus === 'claimed'
-                  ? `Claimed by ${post.claimedName}`
-                  : 'Open'
-            }
-          />
-          {joined && post.taskStatus === 'open' && (
-            <Button
-              title="Claim"
-              variant="secondary"
-              disabled={m.isPending}
-              onPress={() => act('claim')}
-            />
-          )}
-          {joined && post.taskStatus === 'claimed' && (
-            <>
-              <Button
-                title="Mark done"
-                variant="secondary"
-                disabled={m.isPending}
-                onPress={() => act('complete')}
-              />
-              <Button
-                title="Release"
-                variant="ghost"
-                disabled={m.isPending}
-                onPress={() => act('release')}
-              />
-            </>
-          )}
-        </View>
-      )}
-      {!!post.options?.length && (
-        <View style={{ gap: 8 }}>
-          {post.options.map((o) => (
-            <View key={o} style={{ gap: 4 }}>
-              <View style={styles.between}>
-                <Text style={[styles.small, post.myVote === o && { color: colors.accent }]}>
-                  {post.myVote === o ? '● ' : ''}
-                  {o}
-                </Text>
-                <Text style={styles.micro}>{post.votes?.[o] ?? 0}</Text>
-              </View>
-              <Bar value={post.votes?.[o] ?? 0} total={Math.max(1, votes)} />
-              {joined && post.myVote !== o && (
-                <Button
-                  title={`Choose ${o}`}
-                  variant="ghost"
-                  disabled={m.isPending}
-                  onPress={() => act('vote', o)}
-                />
-              )}
-            </View>
-          ))}
-          <Text style={styles.micro}>
-            {votes} {votes === 1 ? 'vote' : 'votes'} · your choice is not shown to anyone else
-          </Text>
-        </View>
-      )}
-      {post.kind === 'proposal' && (
-        <View style={{ gap: 8 }}>
-          <View style={styles.between}>
-            <Text style={styles.small}>Support {post.support ?? 0}</Text>
-            <Text style={styles.small}>Oppose {post.oppose ?? 0}</Text>
-          </View>
-          <Bar value={post.support ?? 0} total={Math.max(1, positions)} />
-          {joined && (
-            <View style={styles.row}>
-              <Button
-                title={post.myPosition === 'support' ? 'Supporting' : 'Support'}
-                variant={post.myPosition === 'support' ? 'primary' : 'secondary'}
-                disabled={m.isPending || post.myPosition === 'support'}
-                onPress={() => act('support')}
-              />
-              <Button
-                title={post.myPosition === 'oppose' ? 'Opposing' : 'Oppose'}
-                variant="secondary"
-                disabled={m.isPending || post.myPosition === 'oppose'}
-                onPress={() => act('oppose')}
-              />
-              {!!post.myPosition && (
-                <Button
-                  title="Withdraw"
-                  variant="ghost"
-                  disabled={m.isPending}
-                  onPress={() => act('withdraw')}
-                />
-              )}
-            </View>
-          )}
-        </View>
-      )}
       {!post.removed && (
         <View style={styles.row}>
           {(moderates || (!!profile && post.authorId === profile.id)) && (
@@ -264,7 +113,6 @@ function Post({
           )}
         </View>
       )}
-      {m.error && <Notice error text={m.error.message} />}
     </View>
   );
 }
@@ -283,8 +131,6 @@ function Composer({
   const [body, setBody] = useState('');
   const [eventAt, setEventAt] = useState('');
   const [location, setLocation] = useState('');
-  const [url, setUrl] = useState('');
-  const [options, setOptions] = useState('');
   const [newChannel, setNewChannel] = useState(channel);
   return (
     <View style={{ gap: 12, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line }}>
@@ -323,23 +169,6 @@ function Composer({
           />
         </>
       )}
-      {kind === 'document' && (
-        <Field
-          label="Link (https://)"
-          value={url}
-          onChangeText={setUrl}
-          placeholder="https://example.org/plan.pdf"
-        />
-      )}
-      {kind === 'poll' && (
-        <Field
-          label="Choices, one per line"
-          multiline
-          value={options}
-          onChangeText={setOptions}
-          placeholder={'Weeknight\nWeekend morning\nWeekend afternoon'}
-        />
-      )}
       <Field
         label="Channel (optional)"
         value={newChannel}
@@ -359,23 +188,12 @@ function Composer({
               space: view.space,
               channel: newChannel.trim(),
               ...(kind === 'event' ? { eventAt: eventAt.trim().replace(' ', 'T'), location } : {}),
-              ...(kind === 'document' ? { url: url.trim() } : {}),
-              ...(kind === 'poll'
-                ? {
-                    options: options
-                      .split('\n')
-                      .map((o) => o.trim())
-                      .filter(Boolean),
-                  }
-                : {}),
             },
             {
               onSuccess: () => {
                 setBody('');
                 setEventAt('');
                 setLocation('');
-                setUrl('');
-                setOptions('');
               },
             },
           )
@@ -518,7 +336,7 @@ export function CommunityWorkspace({
   // Channels are whatever people have actually used, not a fixed list an admin has to curate.
   const channels = [...new Set(inView.map((p) => p.channel).filter(Boolean))];
   const shown = (channel ? inView.filter((p) => p.channel === channel) : inView).sort((a, b) =>
-    active?.id === 'Calendar'
+    active?.id === 'Events'
       ? Date.parse(a.eventAt ?? a.date) - Date.parse(b.eventAt ?? b.date)
       : Date.parse(b.date) - Date.parse(a.date),
   );
@@ -586,7 +404,6 @@ export function CommunityWorkspace({
               <Post
                 key={p.id}
                 post={p}
-                community={community}
                 profile={profile}
                 joined={joined}
                 moderates={moderates}
@@ -602,7 +419,7 @@ export function CommunityWorkspace({
           )}
           {canPost && active && (
             // Keyed by view: the composer picks its default kind from the view it belongs to, so
-            // switching from Discussion to Polls has to give it a fresh state.
+            // switching from Discussion to Events has to give it a fresh state.
             <Composer key={active.id} community={community} view={active} channel={channel} />
           )}
           {joined && !canPost && (
@@ -660,8 +477,7 @@ export function CommunityWorkspace({
         {m.error && <Notice error text={m.error.message} />}
       </Confirm>
       <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.outline }}>
-        Fictional demo community. Posts, events, documents and tallies are sample data and carry no
-        official weight.
+        Fictional demo community. Posts and events are sample data and carry no official weight.
       </Text>
     </Panel>
   );

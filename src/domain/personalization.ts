@@ -1,13 +1,9 @@
 import { z } from 'zod';
 import { Snapshot } from './model';
 
-export const profileAccents = ['forest', 'ocean', 'plum', 'sunset'] as const;
-export const profileAvatars = ['leaf', 'sun', 'spark', 'mountain', 'flower'] as const;
 export const profileSchema = z.object({
   name: z.string().trim().min(2).max(100),
   bio: z.string().trim().max(280),
-  avatar: z.enum(profileAvatars),
-  accent: z.enum(profileAccents),
   useSigningHistory: z.boolean(),
 });
 export const badgeDefinitions = [

@@ -1,5 +1,3 @@
-import { CirculatorAffidavit } from '../../src/components/circulator-affidavit';
-import { QualificationEditor, QualificationChecklist } from '../../src/components/qualification';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,7 +34,6 @@ import {
 import { Entries } from '../../src/components/entries';
 import { SummaryRows } from '../../src/components/design-system';
 import { Progress } from '../../src/components/petition-card';
-import { ResponseCheckEditor } from '../../src/components/response-comparison';
 export default function Manager() {
   const { petitionId } = useLocalSearchParams<{ petitionId: string }>();
   const q = useSnapshot();
@@ -133,6 +130,11 @@ export default function Manager() {
           {p.updates.length} updates · {p.discussion.length} discussion posts ·{' '}
           {p.endorsements.length} endorsements
         </Text>
+        <Text style={styles.small}>
+          {p.viaShares > 0
+            ? `${p.viaShares} of ${p.count - p.sampleCount} real signatures arrived through a supporter’s share link. Supporters spreading it is working.`
+            : 'No one has signed through a supporter’s link yet. Ask signers to share their link from the petition page.'}
+        </Text>
         {p.status === 'draft' && (
           <Button title="Publish saved draft" onPress={() => setConfirm('publish')} />
         )}
@@ -203,7 +205,9 @@ export default function Manager() {
                   {
                     onSuccess: () => {
                       setDeliveryNote('');
-                      setMessage('Delivery recorded. Everyone following this petition was told.');
+                      setMessage(
+                        'Delivery recorded. Everyone who saved or signed this petition was told.',
+                      );
                     },
                   },
                 )
@@ -245,16 +249,6 @@ export default function Manager() {
         )}
         <Notice text="Swipe4Change has no volunteer messaging channel. Coordinate through a community post or an organizer update so the conversation stays visible to everyone involved." />
       </Panel>
-      <QualificationChecklist petition={p} />
-      <QualificationEditor key={p.id} petition={p} />
-      {q.data?.profile && (
-        <CirculatorAffidavit
-          key={q.data.profile.id}
-          ownerId={q.data.profile.id}
-          petition={p}
-          signatures={q.data.signatures.filter((record) => record.petitionId === p.id)}
-        />
-      )}
       {!!message && <Notice text={message} />}
       {m.error && <Notice error text={m.error.message} />}
       <Panel>
@@ -518,7 +512,6 @@ export default function Manager() {
           }
         />
       </Panel>
-      <ResponseCheckEditor petition={p} />
       {isDemo && q.data?.profile?.id === p.ownerId && (
         <Panel>
           <Text style={styles.h2}>Work together</Text>
@@ -592,7 +585,7 @@ export default function Manager() {
             : confirm === 'publish'
               ? 'This petition and its signing rules will be visible to the community.'
               : confirm === 'archived'
-                ? 'This petition will be removed from every feed, search result and profile, including for people who signed it. Their private signature records are kept. This cannot be undone here.'
+                ? 'This petition will be removed from every feed, search result and profile, including for people who signed it. Their own copies of what they signed are kept. This cannot be undone here.'
                 : `The petition will be marked ${confirm}. New signatures will stop, this change will appear in edit history, and its supporters will be notified.`
         }
         onCancel={() => setConfirm(null)}

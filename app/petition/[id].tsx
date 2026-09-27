@@ -1,5 +1,4 @@
-import { QualificationChecklist } from '../../src/components/qualification';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Text, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { isDemo, useCommand, useSnapshot } from '../../src/data/provider';
@@ -12,7 +11,8 @@ import {
   volunteerRoleLabels,
   volunteerRoles,
 } from '../../src/domain/model';
-import { SignatureConsent, PrivateSignatureReceipt } from '../../src/components/signature-consent';
+import { SignatureConsent, MySignature } from '../../src/components/signature-consent';
+import { RipplePanel, rememberVia } from '../../src/components/ripple';
 import {
   Button,
   Chip,
@@ -30,18 +30,20 @@ import { Progress, TopicArt, sharePetition } from '../../src/components/petition
 import { Entries, ManagerControl, entryRemover } from '../../src/components/entries';
 import { milestones, reachedMilestones } from '../../src/domain/rules';
 import { MilestoneNote, StickyActionBar } from '../../src/components/civic-journey';
-import { ResponseComparison } from '../../src/components/response-comparison';
 import { findOffice, levelLabels } from '../../src/domain/recipients';
 export default function Detail() {
   // `?sign=1` lets the Home deck's Support action land straight in the signing sheet.
+  // `?via=` is a supporter's ripple code from the link they shared.
   const {
     id,
     sign: signParam,
     volunteer: volunteerParam,
+    via,
   } = useLocalSearchParams<{
     id: string;
     sign?: string;
     volunteer?: string;
+    via?: string;
   }>();
   const q = useSnapshot();
   const mutation = useCommand();
@@ -49,7 +51,6 @@ export default function Detail() {
   const [tab, setTab] = useState('Story');
   const [ctaEnd, setCtaEnd] = useState(0);
   const [pastCta, setPastCta] = useState(false);
-  const [legal, setLegal] = useState(false);
   const [receipt, setReceipt] = useState(false);
   const [sign, setSign] = useState(signParam === '1');
   // `?volunteer=1` lets the Home deck's Volunteer action open the offer form directly.
@@ -67,6 +68,9 @@ export default function Detail() {
     scope: 'discussion' | 'update' | 'response';
     entry: Entry;
   } | null>(null);
+  useEffect(() => {
+    if (via) void rememberVia(id, via);
+  }, [id, via]);
   if (q.isPending) return <Loading />;
   if (q.error)
     return (
@@ -89,7 +93,6 @@ export default function Detail() {
       </Page>
     );
   const signed = s.signed.includes(p.id);
-  const following = s.following.includes(p.id);
   const myOffer = s.volunteering.find((v) => v.petitionId === p.id);
   const pendingSign = mutation.isPending && mutation.variables?.type === 'sign';
   return (
@@ -105,6 +108,9 @@ export default function Detail() {
         ) : undefined
       }
     >
+      {!!via && !signed && (
+        <Notice text="Shared with you by someone who signed it. If you sign too, you join their ripple." />
+      )}
       <View style={styles.between}>
         <View style={styles.row}>
           <Chip label={p.topic} />
@@ -171,31 +177,18 @@ export default function Detail() {
           }
         />
         <Button
-          title={following ? 'Following' : 'Follow'}
-          icon={following ? 'notifications' : 'notifications-outline'}
-          variant="secondary"
-          disabled={mutation.isPending}
-          onPress={() =>
-            s.profile
-              ? mutation.mutate({ type: 'follow', petitionId: p.id })
-              : router.push('/(auth)/sign-in')
-          }
-        />
-        <Button
           title="Share"
           icon="share-outline"
           variant="ghost"
           onPress={() => {
-            void sharePetition(p)
+            void sharePetition(p, s)
               .then(setNotice)
               .catch(() => setNotice('Sharing is unavailable. Copy this page’s browser address.'));
           }}
         />
       </View>
       <Text style={{ fontSize: 12, color: colors.muted }}>
-        {following
-          ? 'You receive this petition’s updates. Saving alone is a private bookmark.'
-          : 'Saving is a private bookmark. Follow to receive updates.'}
+        Saving sends this petition’s updates to your inbox. So does signing it.
       </Text>
       <View
         style={{
@@ -359,8 +352,6 @@ export default function Detail() {
             )}
             {tab === 'Progress' && (
               <>
-                <ResponseComparison petition={p} />
-                <View style={styles.divider} />
                 <Text style={styles.h2}>Milestones</Text>
                 {milestones.map((n) => (
                   <Text key={n} style={styles.body}>
@@ -457,8 +448,10 @@ export default function Detail() {
           <Panel>
             <Text style={styles.label}>EVERY VOICE ADDS UP</Text>
             <Progress petition={p} />
-            {!p.qualification?.details && (
-              <Notice text="Signatures are paused until the organizer supplies all four legal requirements in Manage." />
+            {p.viaShares > 0 && (
+              <Text style={styles.small}>
+                {p.viaShares.toLocaleString()} signed because a supporter shared it
+              </Text>
             )}
             <Text style={styles.muted}>
               Deadline: {new Date(p.deadline + 'T12:00:00').toLocaleDateString()}
@@ -632,16 +625,15 @@ export default function Detail() {
               />
             </Panel>
           )}
+          <RipplePanel petition={p} snapshot={s} onMessage={setNotice} />
           {signed && (
             <>
-              <PrivateSignatureReceipt key={s.profile?.id} petitionId={p.id} />
+              <MySignature key={s.profile?.id} petitionId={p.id} />
               <Panel>
                 <Text style={styles.h3}>Change your mind</Text>
                 <Text style={styles.muted}>
                   You can withdraw your signature at any time. It stops being counted, your public
-                  name is removed from the supporter list, and your private signatory record is
-                  deleted. A signature already included in a submitted circulator affidavit must be
-                  handled by the organizer.
+                  name is removed from the supporter list, and your drawn signature is deleted.
                 </Text>
                 <Button
                   title="Withdraw my signature"
@@ -651,25 +643,6 @@ export default function Detail() {
                 />
               </Panel>
             </>
-          )}
-          <Button
-            title={legal ? 'Hide legal requirements' : 'Legal requirements and qualification'}
-            variant="ghost"
-            onPress={() => setLegal(!legal)}
-          />
-          {legal && (
-            <Panel>
-              <QualificationChecklist petition={p} />
-              <Text style={styles.h3}>Legal qualification</Text>
-              <Text style={styles.body}>
-                {p.recordedSignatures ?? 0} encrypted signatory records ·{' '}
-                {p.acceptedSignatures ?? 0} accepted for qualification
-              </Text>
-              <Text style={styles.muted}>
-                Community support and fictional sample counts do not establish a statutory threshold
-                or legal validity.
-              </Text>
-            </Panel>
           )}
           <Panel>
             <Text style={styles.h3}>Voices behind the progress</Text>
@@ -705,34 +678,30 @@ export default function Detail() {
           onRecorded={() => {
             setSign(false);
             setReceipt(true);
-            setNotice(
-              'Your signature was recorded for review. This is not a certification of legal validity.',
-            );
+            setNotice('Your signature is recorded.');
           }}
         />
       )}
       <Confirm
         visible={receipt && signed}
         title="Your signature is recorded"
-        body="Your voice has been added. Keep following the work from here."
+        body="Your voice has been added, and this petition’s updates will reach your inbox."
         confirmLabel="Back to the petition"
         onConfirm={() => setReceipt(false)}
         onCancel={() => setReceipt(false)}
       >
         <Progress petition={p} animateFrom={p.count - 1} />
         <MilestoneNote petition={p} />
-        <PrivateSignatureReceipt key={s.profile?.id} petitionId={p.id} />
+        <Text style={styles.h3}>Now start a ripple</Text>
+        <Text style={styles.small}>
+          Share your link. Everyone who signs through it joins your ripple, and so does everyone
+          they bring in. You will see the count grow, never the names.
+        </Text>
         <Button
-          title={following ? 'Following updates' : 'Follow updates'}
-          variant="secondary"
-          disabled={following || mutation.isPending}
-          onPress={() => mutation.mutate({ type: 'follow', petitionId: p.id })}
-        />
-        <Button
-          title="Share this petition"
-          variant="secondary"
+          title="Share my link"
+          icon="share-outline"
           onPress={() => {
-            void sharePetition(p)
+            void sharePetition(p, s)
               .then(setNotice)
               .catch(() => setNotice('Sharing is unavailable. Try again.'));
           }}
@@ -764,7 +733,7 @@ export default function Detail() {
       <Confirm
         visible={withdraw}
         title="Withdraw your signature?"
-        body={`Your signature on “${p.title}” will stop being counted, your public name will be removed from the supporter list, and your encrypted signatory record for this petition will be deleted. You can sign again later.`}
+        body={`Your signature on “${p.title}” will stop being counted, your public name will be removed from the supporter list, and your drawn signature will be deleted. You can sign again later.`}
         pending={mutation.isPending}
         onCancel={() => setWithdraw(false)}
         onConfirm={() =>
@@ -773,7 +742,7 @@ export default function Detail() {
             {
               onSuccess: () => {
                 setWithdraw(false);
-                setNotice('Your signature was withdrawn and your private record deleted.');
+                setNotice('Your signature was withdrawn and your drawn signature deleted.');
               },
             },
           )

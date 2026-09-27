@@ -1,4 +1,3 @@
-import { qualificationFixture } from './qualification-fixture';
 import { prepareSubmission } from './signature-fixture';
 import { LocalAdapter, Storage } from '../src/data/local';
 import { demoIds, seedPetitions } from '../src/data/seed';
@@ -21,12 +20,6 @@ async function published(a: LocalAdapter) {
   await a.signIn(demoIds.maya);
   const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: true });
   if (typeof id !== 'string') throw new Error('Missing id');
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   return id;
 }
 async function sign(a: LocalAdapter, who: string, identity: 'full_name' | 'anonymous') {
@@ -108,11 +101,11 @@ test('only an organizer can deliver, and only a published petition with support'
   ).rejects.toThrow(/at least 5|Say where it went/);
 });
 
-test('followers hear that the petition was delivered', async () => {
+test('people who saved it hear that the petition was delivered', async () => {
   const a = setup();
   const id = await published(a);
   await a.signIn(demoIds.jordan);
-  await a.execute({ type: 'follow', petitionId: id });
+  await a.execute({ type: 'save', petitionId: id });
   await sign(a, demoIds.sam, 'full_name');
   await a.signIn(demoIds.maya);
   await a.execute({

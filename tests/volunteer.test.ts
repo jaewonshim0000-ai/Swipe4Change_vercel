@@ -1,4 +1,3 @@
-import { qualificationFixture } from './qualification-fixture';
 import { LocalAdapter, Storage } from '../src/data/local';
 import { demoIds, seedPetitions } from '../src/data/seed';
 
@@ -18,12 +17,6 @@ async function publish(a: LocalAdapter) {
   await a.signIn(demoIds.maya);
   const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: true });
   if (typeof id !== 'string') throw new Error('Missing id');
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   return id;
 }
 
@@ -45,8 +38,6 @@ test('an offer of help reaches the organizer and subscribes the volunteer', asyn
       note: 'Free on weekends and I know the neighbourhood.',
     },
   ]);
-  // Volunteering is a commitment, so it subscribes without a second tap.
-  expect(sam.following).toContain(id);
   expect(sam.petitions.find((p) => p.id === id)?.volunteerCount).toBe(1);
   await a.signIn(demoIds.maya);
   const inbox = (await a.load()).notifications.map((n) => n.body);
@@ -116,15 +107,16 @@ test('duplicate roles collapse and an over-long note is rejected', async () => {
   ).rejects.toThrow(/under 500 characters/);
 });
 
-test('following toggles and is independent of saving', async () => {
+test('volunteers hear about updates without saving or signing', async () => {
   const a = setup();
   const id = await publish(a);
   await a.signIn(demoIds.jordan);
-  await a.execute({ type: 'follow', petitionId: id });
-  expect((await a.load()).following).toEqual([id]);
-  expect((await a.load()).saved).toEqual([]);
-  await a.execute({ type: 'follow', petitionId: id });
-  expect((await a.load()).following).toEqual([]);
+  await a.execute({ type: 'volunteer', petitionId: id, roles: ['research'], note: '' });
+  await a.signIn(demoIds.maya);
+  await a.execute({ type: 'update', petitionId: id, body: 'Research help needed this week.' });
+  await a.signIn(demoIds.jordan);
+  const inbox = (await a.load()).notifications.map((n) => n.body);
+  expect(inbox.some((b) => b.includes('New update'))).toBe(true);
 });
 
 test('a closed petition takes no new offers of help', async () => {

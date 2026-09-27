@@ -4,30 +4,26 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SignatureConsent } from '../src/components/signature-consent';
 import { localAdapter } from '../src/data/provider';
 import { demoIds } from '../src/data/seed';
-import { fixtureEnvelope } from './signature-fixture';
 
-jest.mock('expo-router', () => ({
-  router: { push: jest.fn() },
-  useFocusEffect: (effect: () => void) => {
-    jest.requireActual('react').useEffect(effect, [effect]);
-  },
-}));
-// Cryptography has separate real encryption tests; this suite covers consent and mutation behavior.
-jest.mock('../src/security/signature-vault', () => ({
-  decryptSignatory: async () => ({
-    printedName: 'Maya Chen',
-    residenceAddress: 'Sample address',
-    jurisdiction: 'Sample jurisdiction',
-    signature: {},
-  }),
-  encryptReceipt: async () => ({ version: 1, ciphertext: 'A'.repeat(100) }),
-}));
-jest.mock('../src/components/signature-pad', () => ({ SignaturePad: () => null }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+// Drawing is a gesture; the test stands in for it with a button that supplies a finished stroke.
+jest.mock('../src/components/signature-pad', () => {
+  const React = jest.requireActual('react');
+  const { Pressable, Text } = jest.requireActual('react-native');
+  const { fixtureSignature } = jest.requireActual('./signature-fixture');
+  return {
+    SignaturePad: ({ onChange }: { onChange: (value: unknown) => void }) =>
+      React.createElement(
+        Pressable,
+        { accessibilityLabel: 'Draw signature', onPress: () => onChange(fixtureSignature) },
+        React.createElement(Text, null, 'Draw'),
+      ),
+  };
+});
 
-test('signing requires review, eligibility, exact identity preview and unchecked consent; failed writes never show a receipt', async () => {
+test('signing walks through the text, an exact identity preview, a drawn signature and unchecked consent; failed writes never confirm', async () => {
   await localAdapter.reset();
   await localAdapter.signIn(demoIds.maya);
-  await localAdapter.execute({ type: 'saveVault', envelope: fixtureEnvelope });
   const s = await localAdapter.load();
   const recorded = jest.fn();
   const client = new QueryClient({
@@ -46,33 +42,26 @@ test('signing requires review, eligibility, exact identity preview and unchecked
       />
     </QueryClientProvider>,
   );
-  expect(screen.getByText('Review the requirements')).toBeTruthy();
+  expect(screen.getByText('Read what you’re signing')).toBeTruthy();
+  expect(screen.getByText(/You can sign this petition/)).toBeTruthy();
   expect(screen.queryByLabelText('Confirm my signature')).toBeNull();
   await fireEvent.press(screen.getByLabelText('Continue'));
-  expect(screen.getByText('Eligible under the configured rule')).toBeTruthy();
-  expect(screen.getByLabelText('Continue').props.accessibilityState.disabled).toBe(true);
-  await waitFor(() => expect(screen.getByLabelText('Vault recovery key')).toBeTruthy());
-  await fireEvent.changeText(screen.getByLabelText('Vault recovery key'), 'test-recovery-key');
-  await fireEvent.press(screen.getByLabelText('Unlock my signature for review'));
-  await waitFor(() =>
-    expect(screen.getByLabelText('Continue').props.accessibilityState.disabled).toBe(false),
-  );
-  await fireEvent.press(screen.getByLabelText('Continue'));
   expect(screen.getByText('Maya Chen')).toBeTruthy();
-  expect(screen.getByText('Maya C.')).toBeTruthy();
   await fireEvent.press(screen.getByText('Maya C.'));
   await fireEvent.press(screen.getByLabelText('Continue'));
-  expect(screen.getByLabelText('Confirm my signature').props.accessibilityState.disabled).toBe(
-    true,
-  );
-  expect(screen.getByText('Maya C.')).toBeTruthy();
+  const confirm = () => screen.getByLabelText('Confirm my signature');
+  expect(confirm().props.accessibilityState.disabled).toBe(true);
   await fireEvent.press(screen.getByRole('checkbox'));
+  // Consent alone is not a signature.
+  expect(confirm().props.accessibilityState.disabled).toBe(true);
+  await fireEvent.press(screen.getByLabelText('Draw signature'));
+  expect(confirm().props.accessibilityState.disabled).toBe(false);
   localAdapter.simulateFailure();
-  await fireEvent.press(screen.getByLabelText('Confirm my signature'));
+  await fireEvent.press(confirm());
   await waitFor(() => expect(screen.getByText(/connection interrupted/)).toBeTruthy());
   expect(recorded).not.toHaveBeenCalled();
   expect((await localAdapter.load()).signed).toEqual([]);
-  await fireEvent.press(screen.getByLabelText('Confirm my signature'));
+  await fireEvent.press(confirm());
   await waitFor(() => expect(recorded).toHaveBeenCalledTimes(1));
   const confirmed = await localAdapter.load();
   expect(confirmed.signed).toContain(s.petitions[0].id);
@@ -80,6 +69,7 @@ test('signing requires review, eligibility, exact identity preview and unchecked
     confirmed.signatures.find((signature) => signature.petitionId === s.petitions[0].id)
       ?.displayName,
   ).toBe('Maya C.');
+  expect((await localAdapter.receipt(s.petitions[0].id))?.signature).toHaveLength(10);
   await view.unmount();
   client.clear();
 });

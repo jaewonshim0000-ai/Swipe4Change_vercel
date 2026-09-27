@@ -222,6 +222,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
     collaborators: [],
     status: 'draft',
     count: 0,
+    viaShares: 0,
     deliveries: [],
     volunteerCount: 0,
     sampleVolunteers: 0,
@@ -492,7 +493,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                   </Text>
                 </View>
               )}
-              <Notice text="After publishing, open Manage to configure all four legal requirements from the responsible authority. Signatures stay blocked until that setup is complete. Saving a draft lets you gather the documents first." />
+              <Notice text="Publishing makes this petition public and signable right away. Save a draft instead if you want to keep working on it first." />
               <Button
                 title="Publish petition"
                 onPress={() => setConfirm(true)}

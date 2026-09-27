@@ -6,9 +6,9 @@
 --
 -- Later migrations wrap lookaware_command / lookaware_snapshot as a decorator chain, each
 -- delegating unknown commands downward. So this migration replaces the BASE implementations
--- (lookaware_command_v1, lookaware_snapshot_v1) in place: the drafts, vault, receipt,
--- qualification and affidavit layers above keep working untouched, and new command types fall
--- through their delegation to the base. Grants were revoked on the base names and `create or
+-- (lookaware_command_v1, lookaware_snapshot_v1) in place: the drafts and signature-receipt
+-- layers above keep working untouched, and new command types fall through their delegation to
+-- the base. Grants were revoked on the base names and `create or
 -- replace` preserves that, so nothing is re-granted here.
 begin;
 
@@ -30,6 +30,7 @@ create or replace function private.notify(recipients uuid[], body text, kind tex
  select distinct r, kind, body from unnest(recipients) r where r is not null $fn$;
 
 -- Signers and savers, minus the actor. Saving a petition is how you follow it without signing.
+-- The volunteering migration adds volunteers to this set.
 create or replace function private.followers(pid uuid, actor uuid) returns uuid[]
  language sql stable set search_path='' as $fn$
  select coalesce(array_agg(distinct u),'{}'::uuid[]) from (
@@ -228,10 +229,9 @@ begin
  elsif kind='withdraw' then
   select id into author from public.signatures where petition_id=pid and user_id=uid;
   if author is null then raise exception 'You have not signed this petition.'; end if;
-  if exists(select 1 from private.circulator_affidavits a where author=any(a.signature_ids)) then raise exception 'This signature is already part of a submitted circulator affidavit and cannot be withdrawn here. Contact the organizer.'; end if;
-  delete from private.signature_receipts where id=author;
+  -- The receipt and any ripple credit cascade with the signature.
   delete from public.signatures where id=author;
-  perform private.notify(array[uid],'You withdrew your signature from “'||(p.content->>'title')||'”. It is no longer counted or shown publicly, and your private record was deleted.','signature');
+  perform private.notify(array[uid],'You withdrew your signature from “'||(p.content->>'title')||'”. It is no longer counted or shown publicly, and your drawn signature was deleted.','signature');
   return null;
  elsif kind='discussion' then
   if p.status<>'active' then raise exception 'Discussion is closed.';end if;

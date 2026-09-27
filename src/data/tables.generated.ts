@@ -41,10 +41,6 @@ export type Tables = {
     channel: string;
     event_at: string | null;
     location: string;
-    task_status: string | null;
-    claimed_by: string | null;
-    options: string | null;
-    url: string | null;
   }>;
   notifications: Table<{
     id: string;
@@ -103,19 +99,6 @@ export type Tables = {
     body: string;
     created_at: string;
   }>;
-  petition_follows: Table<{
-    id: string;
-    petition_id: string;
-    user_id: string;
-    created_at: string;
-  }>;
-  petition_qualification: Table<{
-    petition_id: string;
-    details: Json | null;
-    status: string;
-    review_note: string;
-    updated_at: string;
-  }>;
   petition_saves: Table<{
     id: string;
     petition_id: string;
@@ -158,13 +141,6 @@ export type Tables = {
     updated_at: string;
     sample_volunteers: number;
   }>;
-  post_positions: Table<{
-    id: string;
-    post_id: string;
-    user_id: string;
-    position: string;
-    created_at: string;
-  }>;
   post_reports: Table<{
     id: string;
     community_id: string;
@@ -174,13 +150,6 @@ export type Tables = {
     status: string;
     created_at: string;
   }>;
-  post_votes: Table<{
-    id: string;
-    post_id: string;
-    user_id: string;
-    choice: string;
-    created_at: string;
-  }>;
   profiles: Table<{
     id: string;
     name: string;
@@ -188,8 +157,6 @@ export type Tables = {
     onboarded: boolean;
     created_at: string;
     bio: string;
-    avatar: string;
-    accent: string;
     use_signing_history: boolean;
   }>;
   reports: Table<{

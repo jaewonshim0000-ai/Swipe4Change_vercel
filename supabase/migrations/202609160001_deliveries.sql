@@ -42,8 +42,8 @@ create or replace function private.deliveries(pid uuid) returns jsonb
  from public.petition_deliveries d join public.profiles u on u.id=d.delivered_by
  where d.petition_id=pid $fn$;
 
-alter function public.lookaware_command(jsonb) rename to lookaware_command_v8;
-revoke all on function public.lookaware_command_v8(jsonb) from public,anon,authenticated;
+alter function public.lookaware_command(jsonb) rename to lookaware_command_v5;
+revoke all on function public.lookaware_command_v5(jsonb) from public,anon,authenticated;
 create function public.lookaware_command(command jsonb) returns text language plpgsql security definer set search_path='' as $$
 declare uid uuid:=private.actor(); p public.petitions; names jsonb; total integer; who text; did uuid;
 begin
@@ -75,23 +75,23 @@ begin
                 where id=did and petition_id=(command->>'petitionId')::uuid) then
    raise exception 'That delivery is not on this petition.'; end if;
   -- Let the existing layer create the response, then attach it to the delivery it answers.
-  perform public.lookaware_command_v8(command - 'deliveryId');
+  perform public.lookaware_command_v5(command - 'deliveryId');
   update public.official_responses set delivery_id=did
    where id=(select id from public.official_responses
              where petition_id=(command->>'petitionId')::uuid order by created_at desc limit 1);
   return null;
  end if;
- return public.lookaware_command_v8(command);
+ return public.lookaware_command_v5(command);
 end $$;
 revoke all on function public.lookaware_command(jsonb) from public,anon;
 grant execute on function public.lookaware_command(jsonb) to authenticated;
 
-alter function public.lookaware_snapshot() rename to lookaware_snapshot_v6;
-revoke all on function public.lookaware_snapshot_v6() from public,anon,authenticated;
+alter function public.lookaware_snapshot() rename to lookaware_snapshot_v3;
+revoke all on function public.lookaware_snapshot_v3() from public,anon,authenticated;
 create function public.lookaware_snapshot() returns jsonb language plpgsql security definer set search_path='' as $$
 declare result jsonb;
 begin
- result:=public.lookaware_snapshot_v6();
+ result:=public.lookaware_snapshot_v3();
 -- Deliveries hang off the petition, and each response carries the delivery it answers so the
  -- reader can see which hand-off produced which reply.
  return jsonb_set(result,'{petitions}',(

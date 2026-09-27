@@ -20,7 +20,7 @@ const snapshot: Snapshot = {
   communities: [],
   signed: [],
   saved: [],
-  following: [],
+  ripple: null,
   volunteering: [],
   signatures: [],
   reports: [],

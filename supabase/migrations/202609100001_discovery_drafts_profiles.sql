@@ -1,7 +1,5 @@
 -- Extend the existing API without weakening its authorization or public projection.
 alter table public.profiles add column bio text not null default '' check(length(bio)<=280),
- add column avatar text not null default 'leaf' check(avatar in ('leaf','sun','spark','mountain','flower')),
- add column accent text not null default 'forest' check(accent in ('forest','ocean','plum','sunset')),
  add column use_signing_history boolean not null default true;
 create table public.petition_drafts (
  id uuid primary key, user_id uuid not null references public.profiles(id),
@@ -25,7 +23,7 @@ declare result jsonb; uid uuid;
 begin
  result:=public.lookaware_snapshot_v1(); uid:=private.actor();
  if uid is not null then
-  result:=jsonb_set(result,'{profile}',(result->'profile')||(select jsonb_build_object('bio',p.bio,'avatar',p.avatar,'accent',p.accent,'useSigningHistory',p.use_signing_history) from public.profiles p where p.id=uid));
+  result:=jsonb_set(result,'{profile}',(result->'profile')||(select jsonb_build_object('bio',p.bio,'useSigningHistory',p.use_signing_history) from public.profiles p where p.id=uid));
  end if;
  return result||jsonb_build_object('drafts',coalesce((select jsonb_agg(jsonb_build_object('id',id,'draft',draft,'step',step,'updatedAt',updated_at) order by updated_at desc) from public.petition_drafts where user_id=uid),'[]'::jsonb));
 end $$;
@@ -39,8 +37,8 @@ declare uid uuid:=private.actor(); kind text:=command->>'type'; result text; did
 begin
  if uid is null then raise exception 'Sign in before making changes.'; end if;
  if kind='profile' then
-  if exists(select 1 from unnest(array['name','bio','avatar','accent']) k where jsonb_typeof(command->k) is distinct from 'string') or jsonb_typeof(command->'useSigningHistory') is distinct from 'boolean' or length(trim(command->>'name')) not between 2 and 100 then raise exception 'Enter a display name and valid profile preferences.'; end if;
-  update public.profiles set name=trim(command->>'name'),bio=trim(command->>'bio'),avatar=command->>'avatar',accent=command->>'accent',use_signing_history=(command->>'useSigningHistory')::boolean where id=uid;
+  if exists(select 1 from unnest(array['name','bio']) k where jsonb_typeof(command->k) is distinct from 'string') or jsonb_typeof(command->'useSigningHistory') is distinct from 'boolean' or length(trim(command->>'name')) not between 2 and 100 then raise exception 'Enter a display name and valid profile preferences.'; end if;
+  update public.profiles set name=trim(command->>'name'),bio=trim(command->>'bio'),use_signing_history=(command->>'useSigningHistory')::boolean where id=uid;
   return null;
  elsif kind in ('saveDraft','deleteDraft') then
   did:=(command->>'id')::uuid;

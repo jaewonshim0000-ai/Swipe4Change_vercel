@@ -139,7 +139,6 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
   );
   const current = remaining[0];
   const saved = !!current && snapshot.saved.includes(current.id);
-  const following = !!current && snapshot.following.includes(current.id);
   const volunteered = !!current && snapshot.volunteering.some((v) => v.petitionId === current.id);
   useEffect(() => {
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -175,19 +174,18 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
         useNativeDriver: Platform.OS !== 'web',
       }).start(finish);
   }
-  function toggle(type: 'save' | 'follow', on: boolean) {
+  function toggleSave(on: boolean) {
     if (!current) return;
     if (!snapshot.profile) {
       router.push('/(auth)/sign-in');
       return;
     }
-    const messages = {
-      save: on ? 'Removed from saved.' : 'Saved to read later.',
-      follow: on ? 'Unfollowed. No more updates.' : 'Following. Updates reach your inbox.',
-    };
     mutation.mutate(
-      { type, petitionId: current.id },
-      { onSuccess: () => setToast(messages[type]) },
+      { type: 'save', petitionId: current.id },
+      {
+        onSuccess: () =>
+          setToast(on ? 'Removed from saved.' : 'Saved. Its updates will reach your inbox.'),
+      },
     );
   }
   return (
@@ -352,7 +350,7 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
               icon={saved ? 'bookmark' : 'bookmark-outline'}
               tone={saved ? 'selected' : 'plain'}
               disabled={mutation.isPending}
-              onPress={() => toggle('save', saved)}
+              onPress={() => toggleSave(saved)}
             />
             <DeckAction
               label="Interested"
@@ -371,13 +369,6 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
             }}
           >
             <Button
-              title={following ? 'Following' : 'Follow'}
-              icon={following ? 'notifications' : 'notifications-outline'}
-              variant="ghost"
-              disabled={mutation.isPending}
-              onPress={() => toggle('follow', following)}
-            />
-            <Button
               title={volunteered ? 'Helping' : 'Volunteer'}
               icon="hand-left-outline"
               variant="ghost"
@@ -392,7 +383,7 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
               icon="share-outline"
               variant="ghost"
               onPress={() => {
-                void sharePetition(current)
+                void sharePetition(current, snapshot)
                   .then(setToast)
                   .catch(() =>
                     setToast('Sharing is unavailable. Copy the address from your browser.'),

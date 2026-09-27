@@ -67,3 +67,14 @@ No external Clerk or Supabase credentials were supplied. Hosted SQL behavior was
 - Browser walkthrough on the running web app: created a community (owner + first member, headcount labeled with no fictional padding), appointed moderators, revised a published petition's recipient and goal through the new patch editor with a before/after confirmation and reset form, and confirmed the loop end to end — Sam saved a petition without signing, Maya posted an organizer update, and Sam's notification screen showed it.
 
 One regression was caught by the existing test suite during this work and fixed: the new private signing timestamp was leaking into the public signature projection, which would have let anyone correlate an anonymous supporter with whoever was active at that moment.
+
+## 2026-09-23 — Trim and Ripple
+
+- Removed: signature vault and encryption, legal qualification records, circulator affidavits and trusted-review functions, polls, proposals, task boards, shared documents, the request-to-response comparison, the separate follow command, and the emoji avatar/accent. Kept and simplified: the drawn signature, now drawn on the signing sheet itself.
+- Prettier, Expo ESLint and strict TypeScript passed.
+- All 91 tests across 16 Jest suites passed, including a new `tests/ripple.test.ts` (direct and further counts, loop safety, self-links, links from non-signers, unknown codes, withdrawal, anonymity of the notification, guest snapshot) and a rewritten signing-journey test that requires a drawing as well as consent.
+- Embedded PostgreSQL integration passed against 23 RLS-protected tables, including the recursive ripple query, private referral and code tables that deny app-role reads, codes that are not profile ids and not visible to other accounts, and receipts that return the drawing only to its signer.
+- Expo web production export passed.
+- Browser walkthrough at 375 × 812: Maya read, chose a public name, drew a signature and confirmed; shared her ripple link; Sam opened it, navigated away and back, and signed without the link in the URL; Maya's bell showed "Your ripple grew" without naming Sam, and the ripple appeared on the petition page, Profile and Manage. No console errors.
+
+One real bug surfaced in the browser: the signature pad appended each point to the list from the last render, so touch moves arriving between renders were dropped and strokes came out choppy. The pad now takes a state setter and appends functionally.

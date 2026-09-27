@@ -1,6 +1,4 @@
-import type { Affidavit } from '../domain/affidavit';
 import type { SignatureReceipt } from '../domain/signature-record';
-import type { EncryptedVault } from '../domain/signatory';
 /** Client RPC contract. Public payloads never include Clerk subjects or verification evidence. */
 import type { Tables } from './tables.generated';
 import type {
@@ -17,9 +15,7 @@ export interface Database {
     Tables: Tables;
     Views: Record<string, never>;
     Functions: {
-      circulator_affidavits: { Args: { petition_id: string }; Returns: Affidavit[] };
       signature_receipt: { Args: { petition_id: string }; Returns: SignatureReceipt | null };
-      signature_vault: { Args: Record<string, never>; Returns: EncryptedVault | null };
       lookaware_snapshot: { Args: Record<string, never>; Returns: Snapshot };
       lookaware_command: { Args: { command: Command }; Returns: string | null };
       lookaware_requests: { Args: { petition_id: string }; Returns: EligibilityRequest[] };

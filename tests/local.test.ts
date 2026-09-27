@@ -1,6 +1,4 @@
-import { qualificationFixture } from './qualification-fixture';
-import { qualificationChecklist } from '../src/domain/qualification';
-import { prepareSubmission, fixtureSubmission, fixtureEnvelope } from './signature-fixture';
+import { prepareSubmission, fixtureSubmission } from './signature-fixture';
 import { LocalAdapter, Storage } from '../src/data/local';
 import { demoIds, petitionId, seedPetitions } from '../src/data/seed';
 function setup() {
@@ -26,12 +24,6 @@ test('create, publish, sign anonymously, persist, manage and discuss end to end'
   expect(typeof id).toBe('string');
   if (!id) throw new Error('Missing id');
   await a.execute({ type: 'publish', petitionId: id });
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Fictional source requirements supplied',
-  });
   await a.signOut();
   await a.signIn(demoIds.sam);
   await a.execute({
@@ -43,7 +35,7 @@ test('create, publish, sign anonymously, persist, manage and discuss end to end'
   let s = await a.load();
   expect(s.signed).toContain(id);
   expect(s.signatures[0]).toEqual({
-    id: 'test-3',
+    id: 'test-2',
     petitionId: id,
     displayName: 'Anonymous supporter',
     identity: 'anonymous',
@@ -87,7 +79,12 @@ test('rejected writes leave persisted data intact', async () => {
   const before = await a.load();
   a.simulateFailure();
   await expect(
-    a.execute({ type: 'sign', petitionId: petitionId(1), identity: 'anonymous' }),
+    a.execute({
+      type: 'sign',
+      petitionId: petitionId(1),
+      identity: 'anonymous',
+      submission: await prepareSubmission(a, petitionId(1)),
+    }),
   ).rejects.toThrow(/interrupted/);
   expect(await a.load()).toEqual(before);
   await a.execute({ type: 'save', petitionId: petitionId(1) });
@@ -102,9 +99,14 @@ test('eligibility review, immutable rules and unverified responses', async () =>
     petitionId: id,
     statement: 'I regularly use these courts.',
   });
-  await expect(a.execute({ type: 'sign', petitionId: id, identity: 'anonymous' })).rejects.toThrow(
-    /review/,
-  );
+  await expect(
+    a.execute({
+      type: 'sign',
+      petitionId: id,
+      identity: 'anonymous',
+      submission: await prepareSubmission(a, id),
+    }),
+  ).rejects.toThrow(/review/);
   await a.signIn(demoIds.sam);
   const [request] = await a.requests(id);
   expect(request).not.toHaveProperty('userId');
@@ -131,7 +133,6 @@ test('eligibility review, immutable rules and unverified responses', async () =>
     submission: await prepareSubmission(a, id),
   });
   await a.signIn(demoIds.sam);
-  const p = (await a.load()).petitions.find((p) => p.id === id)!;
   await expect(
     a.execute({
       type: 'edit',
@@ -181,8 +182,6 @@ test('profile edits are validated and do not mutate prior public signatures', as
     type: 'profile',
     name: 'Maya C',
     bio: 'Safer routes for everyone.',
-    avatar: 'sun',
-    accent: 'ocean',
     useSigningHistory: false,
   });
   expect((await a.load()).profile?.bio).toBe('Safer routes for everyone.');
@@ -193,8 +192,6 @@ test('profile edits are validated and do not mutate prior public signatures', as
       type: 'profile',
       name: '',
       bio: '',
-      avatar: 'sun',
-      accent: 'ocean',
       useSigningHistory: true,
     }),
   ).rejects.toThrow();
@@ -217,52 +214,34 @@ test('participation awards are earned by saved actions', async () => {
   expect((await a.load()).profile?.badges).toContain('Conversation starter');
 });
 
-test('encrypted vault is account-scoped and never appears in a snapshot', async () => {
-  const { adapter: a } = setup();
-  await expect(a.vault()).rejects.toThrow(/Sign in/);
-  await a.signIn(demoIds.maya);
-  const envelope = { version: 1 as const, ciphertext: 'A'.repeat(100) };
-  await a.execute({ type: 'saveVault', envelope });
-  expect(await a.vault()).toEqual(envelope);
-  expect(JSON.stringify(await a.load())).not.toContain(envelope.ciphertext);
-  await a.signIn(demoIds.sam);
-  expect(await a.vault()).toBeNull();
-  await a.execute({ type: 'deleteVault' });
-  await a.signIn(demoIds.maya);
-  expect(await a.vault()).toEqual(envelope);
-  await a.execute({ type: 'deleteVault' });
-  expect(await a.vault()).toBeNull();
-});
-
-test('signature receipts require consent, reject stale disclosure, and stay private and immutable across edits', async () => {
+test('a signature needs a drawing and consent, matches the text read, and stays private', async () => {
   const { adapter: a } = setup();
   await a.signIn(demoIds.sam);
   const id = petitionId(1);
   const p = (await a.load()).petitions.find((p) => p.id === id)!;
   const submission = fixtureSubmission(p);
-  await expect(a.execute({ type: 'sign', petitionId: id, identity: 'anonymous' })).rejects.toThrow(
-    /full petition/,
-  );
-  await expect(
-    a.execute({ type: 'sign', petitionId: id, identity: 'anonymous', submission }),
-  ).rejects.toThrow(/vault/);
-  await a.execute({ type: 'saveVault', envelope: fixtureEnvelope });
-  await expect(
+  const sign = (s: unknown) =>
     a.execute({
       type: 'sign',
       petitionId: id,
       identity: 'anonymous',
-      submission: { ...submission, disclosure: { ...submission.disclosure, title: 'Stale title' } },
-    }),
+      submission: s as typeof submission,
+    });
+  await expect(
+    sign({ ...submission, signature: submission.signature.slice(0, 3) }),
+  ).rejects.toThrow(/Draw your signature/);
+  await expect(sign({ ...submission, consent: false })).rejects.toThrow(/consent/);
+  await expect(
+    sign({ ...submission, disclosure: { ...submission.disclosure, title: 'Stale title' } }),
   ).rejects.toThrow(/changed/);
   expect((await a.load()).signed).toEqual([]);
   expect(await a.receipt(id)).toBeNull();
-  await a.execute({ type: 'sign', petitionId: id, identity: 'anonymous', submission });
+  await sign(submission);
   const original = await a.receipt(id);
   expect(original?.disclosure).toEqual(submission.disclosure);
-  expect(original?.status).toBe('pending');
-  expect((await a.load()).petitions.find((p) => p.id === id)?.acceptedSignatures).toBe(0);
-  expect(JSON.stringify(await a.load())).not.toContain(fixtureEnvelope.ciphertext);
+  expect(original?.signature).toEqual(submission.signature);
+  // The drawing never appears in anything another account can read.
+  expect(JSON.stringify(await a.load())).not.toContain('"start":true');
   await a.signIn(demoIds.maya);
   expect(await a.receipt(id)).toBeNull();
   await a.execute({
@@ -272,87 +251,9 @@ test('signature receipts require consent, reject stale disclosure, and stay priv
     reason: 'Clarifying the requested equipment',
   });
   await a.signIn(demoIds.sam);
-  await a.execute({ type: 'deleteVault' });
   expect(await a.receipt(id)).toEqual(original);
+  await a.execute({ type: 'withdraw', petitionId: id });
+  expect(await a.receipt(id)).toBeNull();
   await a.signOut();
   await expect(a.receipt(id)).rejects.toThrow(/Sign in/);
-});
-
-test('legal setup and affidavit are validated, history-preserving and cannot be self-approved', async () => {
-  const { adapter: a } = setup();
-  await a.signIn(demoIds.maya);
-  const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: true });
-  if (!id) throw new Error('Missing created petition');
-  await expect(
-    a.execute({
-      type: 'sign',
-      petitionId: id,
-      identity: 'anonymous',
-      submission: fixtureSubmission(seedPetitions()[0]),
-    }),
-  ).rejects.toThrow(/configure all four/);
-  await a.execute({
-    type: 'qualification',
-    petitionId: id,
-    details: qualificationFixture,
-    reason: 'Supplied fictional source requirements',
-  });
-  let p = (await a.load()).petitions.find((p) => p.id === id)!;
-  expect(p.qualification?.status).toBe('pending');
-  expect(p.edits).toHaveLength(1);
-  await a.signIn(demoIds.sam);
-  await expect(
-    a.execute({
-      type: 'qualification',
-      petitionId: id,
-      details: qualificationFixture,
-      reason: 'Not authorized',
-    }),
-  ).rejects.toThrow(/permission/);
-  const submission = await prepareSubmission(a, id);
-  expect(submission.disclosure.fullText).toBe(qualificationFixture.officialText);
-  await a.execute({ type: 'sign', petitionId: id, identity: 'anonymous', submission });
-  const receipt = (await a.receipt(id))!;
-  await a.signIn(demoIds.maya);
-  await expect(
-    a.execute({
-      type: 'qualification',
-      petitionId: id,
-      details: { ...qualificationFixture, statutoryThreshold: 1 },
-      reason: 'Change to make it easier',
-    }),
-  ).rejects.toThrow(/locked/);
-  await a.execute({ type: 'saveVault', envelope: fixtureEnvelope });
-  const affidavit = {
-    id: 'a1000000-0000-4000-8000-000000000001',
-    petitionId: id,
-    signatureIds: [receipt.id],
-    declaration: qualificationFixture.circulatorDeclaration,
-    witnessed: true as const,
-    notarizationProvided: true,
-    envelope: fixtureEnvelope,
-  };
-  await expect(
-    a.execute({
-      type: 'affidavit',
-      petitionId: id,
-      submission: { ...affidavit, notarizationProvided: false },
-    }),
-  ).rejects.toThrow(/notarized/);
-  await expect(
-    a.execute({
-      type: 'affidavit',
-      petitionId: id,
-      submission: { ...affidavit, signatureIds: ['unrelated-id'] },
-    }),
-  ).rejects.toThrow(/only signatures/);
-  await a.execute({ type: 'affidavit', petitionId: id, submission: affidavit });
-  expect((await a.affidavits(id))[0].status).toBe('pending');
-  p = (await a.load()).petitions.find((p) => p.id === id)!;
-  expect(p.qualification?.affidavitCount).toBe(1);
-  expect(p.qualification?.acceptedAffidavits).toBe(0);
-  expect(qualificationChecklist(p).every((item) => !item.ready)).toBe(true);
-  expect(JSON.stringify(await a.load())).not.toContain(fixtureEnvelope.ciphertext);
-  await a.signIn(demoIds.sam);
-  expect(await a.affidavits(id)).toEqual([]);
 });

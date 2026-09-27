@@ -1,4 +1,4 @@
-import { fixtureSubmission, fixtureEnvelope } from './signature-fixture';
+import { fixtureSubmission } from './signature-fixture';
 import { SwipeDeck } from '../src/components/swipe-deck';
 import { router } from 'expo-router';
 import React from 'react';
@@ -46,7 +46,6 @@ function Harness() {
 test('a rejected optimistic signature restores the rendered count', async () => {
   await localAdapter.reset();
   await localAdapter.signIn(demoIds.maya);
-  await localAdapter.execute({ type: 'saveVault', envelope: fixtureEnvelope });
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: Infinity },

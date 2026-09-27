@@ -160,11 +160,18 @@ export function Progress({
     </View>
   );
 }
-export async function sharePetition(p: Petition) {
-  const url = `${Platform.OS === 'web' ? window.location.origin : 'swipe4change:/'}/petition/${p.id}`;
+/**
+ * Once you have signed, your share link carries your ripple code, so everyone who signs through it
+ * joins your ripple. Before that it is a plain link: a ripple only credits people who signed.
+ */
+export async function sharePetition(p: Petition, s: Snapshot) {
+  const via = s.ripple && s.signed.includes(p.id) ? `?via=${s.ripple.code}` : '';
+  const url = `${Platform.OS === 'web' ? window.location.origin : 'swipe4change:/'}/petition/${p.id}${via}`;
   if (Platform.OS === 'web') {
     await Clipboard.setStringAsync(url);
-    return 'Petition link copied. Share it with your community.';
+    return via
+      ? 'Your link is copied. Everyone who signs through it joins your ripple.'
+      : 'Petition link copied. Share it with your community.';
   }
   await Share.share({ message: `${p.title} — Swipe4Change\n${url}` });
   return 'Share sheet opened.';
@@ -311,7 +318,7 @@ export function PetitionCard({
               accessibilityRole="button"
               accessibilityLabel={`Share ${p.title}`}
               onPress={() => {
-                void sharePetition(p)
+                void sharePetition(p, s)
                   .then(setShareError)
                   .catch(() =>
                     setShareError('Sharing is unavailable. Copy the address from your browser.'),

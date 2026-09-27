@@ -331,6 +331,7 @@ export function seedPetitions(): Petition[] {
       status: 'active',
       count,
       sampleCount: count,
+      viaShares: 0,
       saves: 28 + i * 3,
       deliveries:
         i === 0
@@ -416,54 +417,6 @@ export function seedPetitions(): Petition[] {
               },
             ]
           : [],
-      responseChecks:
-        i === 0
-          ? [
-              {
-                ask: 'Assess lighting gaps between the Eastbridge campus gate and bus shelter.',
-                status: 'partial',
-                note: 'The fictional response promises to include the path in a future review, but does not say the assessment is complete.',
-                responseId: 'r1',
-                reviewedAt: date,
-                reviewedBy: 'Maya Chen',
-              },
-              {
-                ask: 'Publish a pedestrian-lighting plan for the public path.',
-                status: 'unanswered',
-                note: 'The response does not commit to a published plan.',
-                responseId: 'r1',
-                reviewedAt: date,
-                reviewedBy: 'Maya Chen',
-              },
-              {
-                ask: 'Give the community a plan before winter evening classes.',
-                status: 'unanswered',
-                note: 'No date for a plan appears in the response.',
-                responseId: 'r1',
-                reviewedAt: date,
-                reviewedBy: 'Maya Chen',
-              },
-            ]
-          : [{ ask: action, status: 'not_reviewed', note: '' }],
-    };
-    petition.qualification = {
-      details: {
-        jurisdiction: petition.city + ' (fictional)',
-        authority: 'Sample Election Office (fictional)',
-        measureId: `DEMO-${i + 1}`,
-        officialTitle: petition.title,
-        officialText: `${petition.problem}\n\nRequested action\n${petition.action}`,
-        sourceUrl: 'https://example.org/fictional-petition-requirements',
-        statutoryRule: `Fictional demonstration threshold: ${goal} accepted signatures. This sample number is not a statement of actual law.`,
-        statutoryThreshold: goal,
-        circulatorDeclaration:
-          'Fictional sample declaration: I personally witnessed each selected signer execute their signature and affirm the accuracy of this collection record. This text is not a jurisdiction-approved affidavit.',
-        notarization: 'required',
-      },
-      status: 'pending',
-      reviewNote: 'Fictional sample requirements. No authority has approved this measure.',
-      affidavitCount: 0,
-      acceptedAffidavits: 0,
     };
     return petition;
   });

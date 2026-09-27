@@ -37,7 +37,6 @@ for (const p of seedPetitions()) {
     verification,
     identities,
     customRule,
-    responseChecks,
   } = p;
   const content = {
     title,
@@ -54,15 +53,10 @@ for (const p of seedPetitions()) {
     verification,
     identities,
     customRule,
-    ...(responseChecks?.some((check) => check.responseId) ? {} : { responseChecks }),
   };
   rows.push(
     `insert into public.petitions(id,owner_id,community_id,content,status,sample_count,sample_saves,sample_velocity,created_at) values(${sql(p.id)},${sql(p.ownerId)},${sql(p.communityId)},${sql(JSON.stringify(content))}::jsonb,'active',${p.sampleCount},${p.saves},${p.sampleVelocity},${sql(p.createdAt)}) on conflict(id) do nothing;`,
   );
-  if (p.qualification?.details)
-    rows.push(
-      `update public.petition_qualification set details=${sql(JSON.stringify(p.qualification.details))}::jsonb,status='pending',review_note='Fictional sample requirements. No authority has approved this measure.' where petition_id=${sql(p.id)} and status='missing' and not exists(select 1 from private.signature_receipts where petition_id=${sql(p.id)});`,
-    );
   for (const e of p.evidence)
     rows.push(
       `insert into public.petition_sources(petition_id,label,url) select ${sql(p.id)},${sql(e.label)},${sql(e.url)} where not exists(select 1 from public.petition_sources where petition_id=${sql(p.id)} and url=${sql(e.url)});`,
@@ -91,20 +85,9 @@ for (const p of seedPetitions()) {
     rows.push(
       `insert into public.official_responses(petition_id,author_id,body,organization,verification,delivery_id) select ${sql(p.id)},${sql(p.ownerId)},${sql(e.body)},${sql(e.organization)},'verified',${e.deliveryId ? sql(e.deliveryId) : 'null'} where not exists(select 1 from public.official_responses where petition_id=${sql(p.id)});`,
     );
-  if (responseChecks?.some((check) => check.responseId)) {
-    const clean = responseChecks.map(({ responseId: _id, ...check }) => check);
-    const sampleResponse = p.responses[0];
-    if (!sampleResponse) throw new Error(`Missing sample response for ${p.title}`);
-    rows.push(
-      `update public.petitions set content=jsonb_set(content,'{responseChecks}',(select jsonb_agg(check_value||jsonb_build_object('responseId',response_id)) from jsonb_array_elements(${sql(JSON.stringify(clean))}::jsonb) as check_value cross join lateral (select id as response_id from public.official_responses where petition_id=${sql(p.id)} and body=${sql(sampleResponse.body)} and verification='verified' order by created_at desc limit 1) response_row),true) where id=${sql(p.id)} and content->'responseChecks' is null and exists(select 1 from public.official_responses where petition_id=${sql(p.id)} and body=${sql(sampleResponse.body)} and verification='verified');`,
-    );
-  }
 }
 rows.push(
   `insert into public.petition_saves(petition_id,user_id) values(${sql(petitionId(2))},${sql(demoIds.maya)}) on conflict do nothing;`,
-);
-rows.push(
-  `insert into public.petition_follows(petition_id,user_id) values(${sql(petitionId(1))},${sql(demoIds.maya)}) on conflict do nothing;`,
 );
 for (const name of ['First voice', 'Community starter', 'Local voice'])
   rows.push(

@@ -340,13 +340,11 @@ export function SettingsRow({
 
 /** The small uppercase tag saying what kind of thing an entry is. */
 export function KindBadge({ label }: { label: string }) {
-  const tone = /question|poll/i.test(label)
+  const tone = /question/i.test(label)
     ? { bg: '#E6EDF7', ink: '#405E82' }
-    : /event|task|volunteer/i.test(label)
+    : /event|volunteer/i.test(label)
       ? { bg: '#F5EBD9', ink: '#755329' }
-      : /document|resource|proposal/i.test(label)
-        ? { bg: '#EDE6F4', ink: '#66517C' }
-        : { bg: colors.primarySoft, ink: colors.primary };
+      : { bg: colors.primarySoft, ink: colors.primary };
   return (
     <View
       style={{
