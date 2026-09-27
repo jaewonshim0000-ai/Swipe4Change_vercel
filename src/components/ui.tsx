@@ -11,6 +11,7 @@ import {
   View,
   ViewStyle,
   useWindowDimensions,
+  ScrollViewProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,7 +74,9 @@ export function Button({
         gap: 8,
         backgroundColor:
           variant === 'primary'
-            ? colors.sage
+            ? pressed
+              ? colors.primaryPressed
+              : colors.primary
             : variant === 'danger'
               ? colors.error
               : variant === 'secondary'
@@ -85,7 +88,11 @@ export function Button({
       })}
     >
       {icon && (
-        <Icon name={icon} size={18} color={variant === 'danger' ? colors.white : colors.ink} />
+        <Icon
+          name={icon}
+          size={18}
+          color={variant === 'danger' || variant === 'primary' ? colors.white : colors.ink}
+        />
       )}
       <Text
         style={{
@@ -93,7 +100,7 @@ export function Button({
           textAlign: 'center',
           fontSize: 14,
           fontFamily: fonts.semibold,
-          color: variant === 'danger' ? colors.white : colors.ink,
+          color: variant === 'danger' || variant === 'primary' ? colors.white : colors.ink,
         }}
       >
         {title}
@@ -122,7 +129,7 @@ export function Chip({
         minHeight: onPress ? 44 : 28,
         paddingVertical: onPress ? 12 : 5,
         paddingHorizontal: 14,
-        borderRadius: 12,
+        borderRadius: 999,
         borderWidth: 1,
         borderColor: selected ? colors.accent : colors.line,
         backgroundColor: selected ? colors.pale : colors.white,
@@ -175,6 +182,8 @@ export function Page({
   eyebrow,
   back,
   action,
+  bottomBar,
+  onScroll,
 }: {
   children: React.ReactNode;
   title?: string;
@@ -182,6 +191,8 @@ export function Page({
   eyebrow?: string;
   back?: boolean;
   action?: React.ReactNode;
+  bottomBar?: React.ReactNode;
+  onScroll?: ScrollViewProps['onScroll'];
 }) {
   const { width } = useWindowDimensions();
   const pathname = usePathname();
@@ -191,6 +202,8 @@ export function Page({
       edges={['top', 'left', 'right']}
     >
       <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={32}
         stickyHeaderIndices={[0]}
         contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
@@ -210,7 +223,7 @@ export function Page({
                 maxWidth: 1280,
                 alignSelf: 'center',
                 paddingHorizontal: width < 600 ? 16 : 32,
-                paddingVertical: 16,
+                paddingVertical: width < 600 ? 8 : 16,
               },
             ]}
           >
@@ -225,17 +238,35 @@ export function Page({
               >
                 <Icon name="leaf-outline" color={colors.accent} size={24} />
               </View>
-              <Text
-                style={{
-                  fontSize: width < 600 ? 21 : 24,
-                  fontFamily: fonts.display,
-                  letterSpacing: -1,
-                  color: colors.ink,
-                  flexShrink: 1,
-                }}
-              >
-                Swipe4Change<Text style={{ color: colors.accent }}>↗</Text>
-              </Text>
+              <View style={{ flexShrink: 1, gap: 3 }}>
+                <Text
+                  style={{
+                    fontSize: width < 600 ? 21 : 24,
+                    fontFamily: fonts.display,
+                    letterSpacing: -1,
+                    color: colors.ink,
+                    flexShrink: 1,
+                  }}
+                >
+                  Swipe4Change<Text style={{ color: colors.accent }}>↗</Text>
+                </Text>
+                {isDemo && width < 600 && (
+                  <Text
+                    style={[
+                      styles.micro,
+                      {
+                        color: colors.accent,
+                        alignSelf: 'flex-start',
+                        backgroundColor: colors.primarySoft,
+                        borderRadius: 8,
+                        paddingHorizontal: 6,
+                      },
+                    ]}
+                  >
+                    Demo data
+                  </Text>
+                )}
+              </View>
             </Pressable>
             {width >= 1000 && (
               <View style={[styles.row, { gap: 24 }]}>
@@ -274,6 +305,7 @@ export function Page({
               </View>
             )}
             <View style={[styles.row, { gap: width < 600 ? 4 : 12 }]}>
+              {isDemo && width >= 600 && <Chip label="Demo data" />}
               {width >= 760 && (
                 <Button title="Start a petition" onPress={() => router.push('/(tabs)/create')} />
               )}
@@ -350,6 +382,7 @@ export function Page({
           </Text>
         </View>
       </ScrollView>
+      {bottomBar}
     </SafeAreaView>
   );
 }
@@ -394,6 +427,9 @@ export function Confirm({
   onCancel,
   pending = false,
   children,
+  confirmLabel = 'Confirm',
+  confirmDisabled = false,
+  contentKey,
 }: {
   visible: boolean;
   title: string;
@@ -402,9 +438,19 @@ export function Confirm({
   onCancel: () => void;
   pending?: boolean;
   children?: React.ReactNode;
+  confirmLabel?: string;
+  confirmDisabled?: boolean;
+  contentKey?: string | number;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={() => {
+        if (!pending) onCancel();
+      }}
+    >
       <View
         style={{
           flex: 1,
@@ -418,15 +464,19 @@ export function Confirm({
           accessibilityViewIsModal
           style={[styles.card, { width: '100%', maxWidth: 520, maxHeight: '90%' }]}
         >
-          <ScrollView contentContainerStyle={{ gap: 16 }}>
+          <ScrollView
+            key={contentKey}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ gap: 16 }}
+          >
             <Text accessibilityRole="header" style={styles.h2}>
               {title}
             </Text>
             <Text style={styles.body}>{body}</Text>
             {children}
             <Button
-              title={pending ? 'Saving…' : 'Confirm'}
-              disabled={pending}
+              title={pending ? 'Saving…' : confirmLabel}
+              disabled={pending || confirmDisabled}
               onPress={onConfirm}
             />
             <Button title="Cancel" variant="ghost" disabled={pending} onPress={onCancel} />

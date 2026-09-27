@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  AccessibilityInfo,
-  Animated,
-  Platform,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { AccessibilityInfo, Animated, Platform, Pressable, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Petition, Snapshot } from '../domain/model';
 import { useCommand } from '../data/provider';
@@ -21,9 +14,9 @@ const TILT_DEG = TILT_SPAN / 26;
 
 /** Directions the deck understands, and what each one means. */
 const gestures = {
-  support: { label: 'Support', color: colors.accent, side: 'left', rotate: '8deg' },
-  pass: { label: 'Pass', color: colors.error, side: 'right', rotate: '-8deg' },
-  learn: { label: 'Learn more', color: colors.orange, side: 'center', rotate: '0deg' },
+  support: { label: 'Interested', color: colors.accent, side: 'left', rotate: '8deg' },
+  pass: { label: 'Not for me', color: colors.error, side: 'right', rotate: '-8deg' },
+  learn: { label: 'Read petition', color: colors.orange, side: 'center', rotate: '0deg' },
 } as const;
 type Direction = keyof typeof gestures;
 
@@ -86,7 +79,7 @@ function DeckAction({
   disabled?: boolean;
 }) {
   return (
-    <View style={{ alignItems: 'center', gap: 5, width: 62 }}>
+    <View style={{ alignItems: 'center', gap: 5, width: 68 }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -126,7 +119,21 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState('');
   const mutation = useCommand();
-  const { height } = useWindowDimensions();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpKey = `swipe4change.swipe-help.${snapshot.profile?.id ?? 'guest'}`;
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(helpKey)
+      .then((value) => {
+        if (active) setShowHelp(value !== 'seen');
+      })
+      .catch(() => {
+        if (active) setShowHelp(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [helpKey]);
   const remaining = petitions.filter(
     (p) => !skipped.includes(p.id) && !snapshot.signed.includes(p.id),
   );
@@ -134,9 +141,6 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
   const saved = !!current && snapshot.saved.includes(current.id);
   const following = !!current && snapshot.following.includes(current.id);
   const volunteered = !!current && snapshot.volunteering.some((v) => v.petitionId === current.id);
-  // The stack is the focus of the screen rather than one card in a scrolling page, so it takes a
-  // share of the viewport instead of sizing to its content.
-  const stackHeight = Math.max(430, Math.min(560, height * 0.56));
   useEffect(() => {
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
     const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
@@ -194,9 +198,28 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
           {remaining.length} to explore
         </Text>
       </View>
+      {showHelp && (
+        <View
+          style={{ backgroundColor: colors.primarySoft, borderRadius: 16, padding: 16, gap: 8 }}
+        >
+          <Text style={styles.h3}>A swipe is just a starting point.</Text>
+          <Text style={styles.small}>
+            Left: Not for me. Right: Interested. Up: Read the petition. Interested opens a review;
+            only your explicit confirmation records a signature. The buttons do the same things.
+          </Text>
+          <Button
+            title="Got it"
+            variant="ghost"
+            onPress={() => {
+              setShowHelp(false);
+              void AsyncStorage.setItem(helpKey, 'seen').catch(() => undefined);
+            }}
+          />
+        </View>
+      )}
       {current ? (
         <>
-          <View style={{ height: stackHeight }}>
+          <View style={{ paddingTop: 8 }}>
             {/* Two resting cards hint at the depth of the stack. */}
             <View
               pointerEvents="none"
@@ -227,11 +250,7 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
             />
             <Animated.View
               style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
+                position: 'relative',
                 transform: [
                   { translateX: x },
                   { translateY: y },
@@ -312,10 +331,18 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
               />
             </Animated.View>
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, paddingTop: 14 }}>
-            <DeckAction label="Pass" icon="close" onPress={() => act('pass')} />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 6,
+              flexWrap: 'wrap',
+              paddingTop: 14,
+            }}
+          >
+            <DeckAction label="Not for me" icon="close" onPress={() => act('pass')} />
             <DeckAction
-              label="Learn more"
+              label="Read petition"
               icon="arrow-up"
               tone="selected"
               onPress={() => act('learn')}
@@ -328,7 +355,7 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
               onPress={() => toggle('save', saved)}
             />
             <DeckAction
-              label="Support"
+              label="Interested"
               icon="checkmark"
               tone="primary"
               onPress={() => act('support')}
@@ -373,10 +400,6 @@ export function SwipeDeck({ petitions, snapshot }: { petitions: Petition[]; snap
               }}
             />
           </View>
-          <Text style={[styles.micro, { textAlign: 'center' }]}>
-            Swipe right to support · left to pass · up to read more. Signing always needs your
-            confirmation.
-          </Text>
         </>
       ) : (
         <View

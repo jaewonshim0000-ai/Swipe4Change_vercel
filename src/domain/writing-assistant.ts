@@ -19,17 +19,17 @@ export function suggestRecipient(d: Partial<Draft>) {
   return {
     name: `${d.city?.trim() ? `${d.city.trim()} — ` : ''}${department}`.slice(0, 150),
     explanation:
-      'Assigned from your issue, topic, and city. Confirm that this office controls the requested action; no individual official is inferred.',
+      'Suggested category from your issue and topic. Enter or select a real responsible office before publishing; no official is inferred.',
   };
 }
 export function writingSupport(d: Partial<Draft>) {
-  const recipient = d.recipient?.trim() || suggestRecipient(d).name;
+  const recipient = d.recipient?.trim();
   const action = d.action?.trim();
   const problem = d.problem?.trim();
   return {
     body:
       problem && action
-        ? `${problem}\n\nWe ask ${recipient} to ${action.charAt(0).toLowerCase()}${action.slice(1).replace(/[.!?]+$/, '')}.\n\nPlease publish a response explaining the next steps, the responsible office, and a proposed schedule${d.deadline ? ` by ${d.deadline}` : ''}.`
+        ? `${problem}\n\n${recipient ? `We ask ${recipient} to ${action.charAt(0).toLowerCase()}${action.slice(1).replace(/[.!?]+$/, '')}.` : `Requested action: ${action.replace(/[.!?]+$/, '')}.`}\n\nPlease publish a response explaining the next steps, the responsible office, and a proposed schedule${d.deadline ? ` by ${d.deadline}` : ''}.`
         : '',
     prompts: [
       !problem ? 'What did you observe, where, and who is affected?' : '',

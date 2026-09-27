@@ -17,12 +17,15 @@ import {
 import { Avatar, Stats } from '../../src/components/design-system';
 import { SignatureVault } from '../../src/components/signature-vault';
 import { ProfilePersonalization } from '../../src/components/profile-personalization';
+import { CommunityCard, SectionHeader } from '../../src/components/civic-journey';
+import { reachedMilestones } from '../../src/domain/rules';
 import { Grid } from '../../src/screens/feed';
 export default function Profile() {
   const q = useSnapshot();
   const { adapter, signOut } = useBackend();
   const client = useQueryClient();
   const m = useCommand();
+  const [settings, setSettings] = useState(false);
   const [filter, setFilter] = useState('Created');
   const [message, setMessage] = useState('');
   const [reset, setReset] = useState(false);
@@ -86,6 +89,7 @@ export default function Profile() {
             },
             { value: s.signed.length, label: 'Signed' },
             { value: s.following.length, label: 'Following' },
+            { value: p.joined.length, label: 'Communities' },
           ]}
         />
         {p.badges.length > 0 && (
@@ -106,8 +110,34 @@ export default function Profile() {
           }}
         />
       </Panel>
-      <ProfilePersonalization key={p.id} snapshot={s} />
-      <SignatureVault key={`vault-${p.id}`} ownerId={p.id} />
+      <SectionHeader
+        title="Your participation"
+        note={`${s.petitions.filter((x) => s.signed.includes(x.id) && reachedMilestones(x.count, x.goal).length > 0).length} supported petitions have reached a signature milestone. This does not establish a policy outcome.`}
+      />
+      <View style={styles.row}>
+        {['Created', 'Signed', 'Saved', 'Following', 'Volunteering'].map((x) => (
+          <Chip key={x} label={x} selected={filter === x} onPress={() => setFilter(x)} />
+        ))}
+      </View>
+      {petitions.length ? (
+        <Grid petitions={petitions} snapshot={s} />
+      ) : (
+        <Notice
+          text={
+            filter === 'Following'
+              ? 'You are not following anything yet. Following a petition sends its updates here; saving is just a private bookmark.'
+              : filter === 'Volunteering'
+                ? 'You have not offered to help with a petition yet. Organizers see your name and the roles you pick.'
+                : `No ${filter.toLowerCase()} petitions yet. Explore a petition or start your own.`
+          }
+        />
+      )}
+      <SectionHeader title="Your communities" />
+      {s.communities
+        .filter((c) => p.joined.includes(c.id))
+        .map((c) => (
+          <CommunityCard key={c.id} community={c} snapshot={s} />
+        ))}
       <Panel>
         <View style={styles.between}>
           <Text style={styles.h2}>Your drafts</Text>
@@ -157,24 +187,14 @@ export default function Profile() {
       >
         {m.error && <Notice error text={m.error.message} />}
       </Confirm>
-      <View style={styles.row}>
-        {['Created', 'Signed', 'Saved', 'Following', 'Volunteering'].map((x) => (
-          <Chip key={x} label={x} selected={filter === x} onPress={() => setFilter(x)} />
-        ))}
-      </View>
-      {petitions.length ? (
-        <Grid petitions={petitions} snapshot={s} />
-      ) : (
-        <Notice
-          text={
-            filter === 'Following'
-              ? 'You are not following anything yet. Following a petition sends its updates here; saving is just a private bookmark.'
-              : filter === 'Volunteering'
-                ? 'You have not offered to help with a petition yet. Organizers see your name and the roles you pick.'
-                : `No ${filter.toLowerCase()} petitions yet. Explore a petition or start your own.`
-          }
-        />
-      )}
+      <SectionHeader title="Privacy and preferences" />
+      <Button
+        title={settings ? 'Hide personal settings' : 'Edit profile appearance and interests'}
+        variant="secondary"
+        onPress={() => setSettings(!settings)}
+      />
+      {settings && <ProfilePersonalization key={p.id} snapshot={s} />}
+      <SignatureVault key={`vault-${p.id}`} ownerId={p.id} />
       <Panel>
         <Text style={styles.h2}>Make this space yours</Text>
         <Text style={styles.muted}>Interests: {p.interests.join(', ') || 'Not selected'}</Text>

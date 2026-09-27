@@ -65,6 +65,7 @@ export function seedProfiles(): Profile[] {
       emailVerified: true,
       locationApproved: false,
       badges: ['Community starter'],
+      bio: 'Student organizer working toward a brighter walk home from Eastbridge.',
     },
     {
       id: demoIds.sam,
@@ -129,7 +130,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'Make room for a neighborhood garden',
-    'Create a community garden at the unused Oak Street lot',
+    'Check who owns the Oak Street lot and publish a feasible community-garden plan',
     'Public spaces',
     4,
     'location',
@@ -167,7 +168,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
     'Our bus stops need a seat',
     'Add accessible benches at Brookside bus stops',
     'Accessibility',
-    3,
+    4,
     'account',
     304,
     500,
@@ -200,9 +201,90 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
     200,
   ],
 ];
+/** Concrete sample cases, with the fictional office that can actually decide each request. */
+const storyCases: { summary: string; problem: string; recipientId: string }[] = [
+  {
+    summary:
+      'Light the public path from the Eastbridge campus gate to the bus stop before winter evening classes.',
+    problem:
+      'Evening classes finish after sunset, but the public path from the Eastbridge campus gate to the bus shelter has gaps between lights. Students want to see the route clearly and wait for the bus without standing in the dark. The student path audit illustrates the concern; it is sample evidence, not a measured safety study.',
+    recipientId: 'public-works',
+  },
+  {
+    summary:
+      'Plant shade trees around the Riverton school courtyard and publish a maintenance plan.',
+    problem:
+      'Students use the school courtyard for breaks and outdoor activities, but the seating area has little shade. The request asks the district to assess suitable planting sites and explain how new trees would be cared for.',
+    recipientId: 'school-board',
+  },
+  {
+    summary: 'Keep the Brookside public library open until 7 pm on school nights.',
+    problem:
+      'Students who need a quiet place after class cannot use the Brookside library once it closes for the day. An evening-hours pilot would give them a predictable place to study; staffing and costs need a public review.',
+    recipientId: 'brookside-library',
+  },
+  {
+    summary: 'Create an accessible entrance to Willow Park and publish a route plan.',
+    problem:
+      'The current route into Willow Park is difficult for visitors using mobility devices. Residents are asking the parks department to assess the entrance, choose an accessible route and share when improvements could be made.',
+    recipientId: 'parks',
+  },
+  {
+    summary: 'Check ownership of the Oak Street lot before proposing a neighborhood garden there.',
+    problem:
+      'Neighbors have suggested the Oak Street lot for a shared garden, but its ownership and suitability have not been established. A public feasibility review would show whether a garden is possible and who must approve it.',
+    recipientId: 'brookside-parks',
+  },
+  {
+    summary: 'Assess a raised crosswalk near Eastbridge School and publish the street design.',
+    problem:
+      'Families cross the public street near Eastbridge School at busy arrival and dismissal times. They want the city to review a raised crossing and explain what design would make the route clearer for children.',
+    recipientId: 'public-works',
+  },
+  {
+    summary: 'Install water refill stations at Riverton recreation centers.',
+    problem:
+      'Visitors to recreation centers need a dependable way to refill water bottles during activities. The request asks the parks department to identify suitable sites, costs and a maintenance schedule.',
+    recipientId: 'parks',
+  },
+  {
+    summary: 'Make a sensory-friendly study room available at the Riverton public library.',
+    problem:
+      'A shared library room can be noisy for residents who need a lower-stimulation place to read or study. The library board can assess an existing room and publish hours and access guidelines.',
+    recipientId: 'library-board',
+  },
+  {
+    summary: 'Add accessible benches at Brookside bus stops with long waits.',
+    problem:
+      'Some Brookside stops lack a place to sit while waiting for a bus. Riders with limited stamina need the city to assess clear sidewalk space and choose bench sites that preserve accessible travel paths.',
+    recipientId: 'brookside-public-works',
+  },
+  {
+    summary: 'Repair the Cedar Commons basketball courts and share a reopening plan.',
+    problem:
+      'Neighbors want to use the Cedar Commons courts, but worn playing surfaces need a maintenance assessment. Brookside Parks can inspect the site and publish a repair schedule and reopening criteria.',
+    recipientId: 'brookside-parks',
+  },
+  {
+    summary: 'Pilot a protected bike lane on College Avenue and publish the traffic review.',
+    problem:
+      'Students biking on College Avenue share space with turning vehicles. They want the city to study a protected lane, consult people who use the street and publish a pilot design.',
+    recipientId: 'public-works',
+  },
+  {
+    summary: 'Test food-scrap collection in Eastbridge campus dining halls.',
+    problem:
+      'Campus dining produces food scraps that students would like to keep out of general waste. A limited collection pilot could measure participation and the work required before any campuswide rollout.',
+    recipientId: 'campus-facilities',
+  },
+];
 export function seedPetitions(): Petition[] {
   return stories.map((s, i) => {
     const [title, action, topic, c, verification, count, goal] = s;
+    const caseFile = storyCases[i];
+    if (!caseFile) throw new Error(`Missing fictional case for ${title}`);
+    const office = recipientDirectory.find((candidate) => candidate.id === caseFile.recipientId);
+    if (!office) throw new Error(`Missing fictional recipient for ${title}`);
     const date = new Date(Date.now() - (i + 1) * 86400000).toISOString();
     const petition: Petition = {
       id: petitionId(i + 1),
@@ -210,20 +292,13 @@ export function seedPetitions(): Petition[] {
       creator: i === 0 ? 'Maya Chen' : 'Sam Rivera',
       collaborators: [],
       title,
-      summary: `A practical change for a more welcoming neighborhood. Help us ${action.charAt(0).toLowerCase()}${action.slice(1)}.`,
-      problem:
+      summary: caseFile.summary,
+      problem: caseFile.problem,
+      action:
         i === 0
-          ? 'The path between Eastbridge campus and the bus stop has long gaps between lights. Students describe feeling uncomfortable walking home after evening activities. This fictional petition asks for a lighting assessment and a public implementation plan.'
-          : 'Neighbors have identified a shared need in this fictional community. We are asking the responsible department to review this proposal with residents and publish a practical next step.',
-      action,
-      // Seeded recipients come from the directory so every demo petition can show the level of
-      // government and the published response time beside the office name.
-      recipient:
-        i === 0
-          ? 'Riverton Public Works (fictional)'
-          : (recipientDirectory.filter((o) => o.topics.includes(topic))[i % 2]?.name ??
-            recipientDirectory.find((o) => o.topics.includes(topic))?.name ??
-            'Riverton Public Works (fictional)'),
+          ? 'Assess the public path from the Eastbridge campus gate to the bus shelter and publish a pedestrian-lighting plan before winter evening classes.'
+          : action,
+      recipient: office.name,
       topic,
       city: c === 4 ? 'Brookside, CA' : 'Riverton, CA',
       communityId: communityId(c),
@@ -257,7 +332,22 @@ export function seedPetitions(): Petition[] {
       count,
       sampleCount: count,
       saves: 28 + i * 3,
-      deliveries: [],
+      deliveries:
+        i === 0
+          ? [
+              {
+                id: '30000000-0000-4000-8000-000000000001',
+                petitionId: petitionId(1),
+                recipient: 'Riverton Public Works (fictional)',
+                method: 'in_person',
+                deliveredBy: 'Maya Chen',
+                deliveredAt: date,
+                note: 'Sample hand-off of the student path audit at a community listening session.',
+                signatureCount: 500,
+                signatories: [],
+              },
+            ]
+          : [],
       volunteerCount: 4 + (i % 5),
       sampleVolunteers: 4 + (i % 5),
       sampleVelocity: Math.max(2, 42 - i * 3),
@@ -268,7 +358,7 @@ export function seedPetitions(): Petition[] {
           ? [
               {
                 id: 'u1',
-                body: 'We reached our halfway milestone. Next: share the student path audit at the community listening session. All events in this demo are fictional.',
+                body: 'We shared the student path audit and 500 sample signatures at the listening session. Next milestone: 750 voices. We are asking for a published lighting plan before winter evening classes.',
                 author: 'Maya Chen',
                 date,
                 kind: 'update',
@@ -316,6 +406,7 @@ export function seedPetitions(): Petition[] {
           ? [
               {
                 id: 'r1',
+                deliveryId: '30000000-0000-4000-8000-000000000001',
                 body: 'We will include the campus path in our next lighting review and invite student input. This is a fictional response for demonstration only.',
                 author: 'Avery Park (fictional)',
                 organization: 'Riverton Public Works (fictional)',
@@ -325,6 +416,35 @@ export function seedPetitions(): Petition[] {
               },
             ]
           : [],
+      responseChecks:
+        i === 0
+          ? [
+              {
+                ask: 'Assess lighting gaps between the Eastbridge campus gate and bus shelter.',
+                status: 'partial',
+                note: 'The fictional response promises to include the path in a future review, but does not say the assessment is complete.',
+                responseId: 'r1',
+                reviewedAt: date,
+                reviewedBy: 'Maya Chen',
+              },
+              {
+                ask: 'Publish a pedestrian-lighting plan for the public path.',
+                status: 'unanswered',
+                note: 'The response does not commit to a published plan.',
+                responseId: 'r1',
+                reviewedAt: date,
+                reviewedBy: 'Maya Chen',
+              },
+              {
+                ask: 'Give the community a plan before winter evening classes.',
+                status: 'unanswered',
+                note: 'No date for a plan appears in the response.',
+                responseId: 'r1',
+                reviewedAt: date,
+                reviewedBy: 'Maya Chen',
+              },
+            ]
+          : [{ ask: action, status: 'not_reviewed', note: '' }],
     };
     petition.qualification = {
       details: {

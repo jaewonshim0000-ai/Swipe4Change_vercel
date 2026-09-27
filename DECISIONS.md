@@ -129,3 +129,19 @@ The default local demo cannot award legal acceptance. Real verification and docu
     is one ignorable suggestion, while the benefit is a check that runs offline with no model and can be
     read and argued with by the student maintaining it. Completeness scoring answers "are the fields
     filled in"; this answers "can a neighbour read the result", which is the harder question.
+
+## 2026-09-19 — Refine around the Eastbridge journey
+
+Keep Expo Router, the existing query/provider boundary, local persistence keys, Clerk/Supabase integration, encryption, and legal-qualification checks. Use incremental feature components instead of moving working modules. Home emphasizes local context; Explore owns intentional search and staged filters. Topic accents and rounded feature surfaces retain Newsreader and Work Sans.
+
+Use three petition sections and progressive disclosure for advanced legal information. A right swipe expresses interest and opens review; it does not sign. The four-step signing sheet previews the actual `publicName` output, requires explicit consent, and displays a receipt only after the mutation resolves. Only this confirmed receipt animates signature progress. Persistent swipe guidance is a small per-account local UI preference, separate from server-owned participation.
+
+Preserve hosted failure semantics: a failed remote write never falls back to a successful local write. The default local demo is the explicit offline presentation path. Updated seed content applies to fresh/reset demo state and repeatable development SQL, without rewriting saved user petitions. Existing draft step indices remain valid; users are asked to review regrouped fields before publishing.
+
+## 2026-09-22 — Make sample cases and recipient guidance specific
+
+Each seeded petition now has a distinct local problem and a fictional office in the relevant city with authority appropriate to the request. The assistant suggests only a recipient category; it does not insert a plausible but unconfirmed office into the publishable field. Organizers must choose or enter the actual recipient. This keeps deterministic writing help useful without making unsupported claims about jurisdiction. Signing eligibility presentation derives its state from the same rule that authorizes signing, while keeping location attestation distinct from approximate city personalization.
+
+## 2026-09-22 — Compare the request with the answer, not a claimed outcome
+
+An organizer may split a requested action into one to three asks and compare each with a verified response linked to that petition. The status answers only whether the response text covers an ask. It does not assert that a promise was fulfilled or confer official verification. Every assessment includes an explanation, author, and date; revisions preserve the prior content in edit history. Changing the underlying requested action resets the comparison. The same typed command has local and server implementations; the server validates management rights and response verification before writing to the petition's public content. Existing local sample state receives only the new Eastbridge comparison where its original action and verified fictional response still match.

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  AccessibilityInfo,
+  Animated,
   View,
   Image,
   Text,
@@ -14,6 +16,7 @@ import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Petition, Snapshot, Topic, verificationLabels } from '../domain/model';
 import { scorePetition } from '../domain/rules';
+import { topicColors } from './theme';
 import { useCommand } from '../data/provider';
 import { Button, Icon, Notice, colors, fonts, styles, tokens } from './ui';
 const topicImages: Record<Topic, React.ComponentProps<typeof Image>['source']> = {
@@ -44,8 +47,8 @@ export function TopicArt({ topic, large = false }: { topic: Topic; large?: boole
           position: 'absolute',
           top: 12,
           left: 12,
-          backgroundColor: colors.white,
-          borderRadius: 8,
+          backgroundColor: topicColors[topic].soft,
+          borderRadius: 999,
           paddingHorizontal: 10,
           paddingVertical: 5,
         }}
@@ -75,11 +78,40 @@ export function TopicArt({ topic, large = false }: { topic: Topic; large?: boole
 export function Progress({
   petition: p,
   compact = false,
+  animateFrom,
 }: {
   petition: Petition;
   /** Cards drop the sample-count footnote; the detail page carries the full disclosure. */
   compact?: boolean;
+  /** Supplied only by the receipt after the adapter confirms a signature. */
+  animateFrom?: number;
 }) {
+  const percent = Math.min(100, Math.max(0, (100 * p.count) / p.goal));
+  const [progress] = useState(() => new Animated.Value(percent));
+  useEffect(() => {
+    if (animateFrom === undefined) return;
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((reduced) => {
+        if (!active) return;
+        if (reduced) progress.setValue(percent);
+        else {
+          progress.setValue(Math.max(0, (100 * animateFrom) / p.goal));
+          Animated.timing(progress, {
+            toValue: percent,
+            duration: 280,
+            useNativeDriver: false,
+          }).start();
+        }
+      })
+      .catch(() => {
+        if (active) progress.setValue(percent);
+      });
+    return () => {
+      active = false;
+      progress.stopAnimation();
+    };
+  }, [animateFrom, p.goal, percent, progress]);
   return (
     <View style={{ gap: 8 }}>
       <View style={styles.between}>
@@ -102,11 +134,18 @@ export function Progress({
         }}
         style={{ height: 7, backgroundColor: colors.pale, borderRadius: 8, overflow: 'hidden' }}
       >
-        <View
+        <Animated.View
           style={{
-            width: `${Math.min(100, (100 * p.count) / p.goal)}%`,
+            width:
+              animateFrom === undefined
+                ? `${percent}%`
+                : progress.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                    extrapolate: 'clamp',
+                  }),
             height: '100%',
-            backgroundColor: colors.sage,
+            backgroundColor: topicColors[p.topic].accent,
             borderRadius: 8,
           }}
         />
@@ -114,7 +153,7 @@ export function Progress({
       {!compact && (
         <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.muted }}>
           {p.sampleCount > 0
-            ? `${p.sampleCount.toLocaleString()} fictional sample signatures · new signatures checked against eligibility`
+            ? `${p.sampleCount.toLocaleString()} sample signatures · new signatures checked against eligibility`
             : 'Signatures checked against the configured eligibility rule'}
         </Text>
       )}
@@ -158,7 +197,7 @@ export function PetitionCard({
     <View
       style={{
         backgroundColor: colors.white,
-        borderRadius: tokens.radius,
+        borderRadius: tokens.featureRadius,
         ...tokens.shadow,
         borderWidth: 1,
         borderColor: colors.line,
@@ -346,6 +385,11 @@ export function PetitionRow({
       <View style={{ flex: 1, minWidth: 0, padding: 14, gap: 7 }}>
         <Text style={[styles.label, { fontSize: 10, letterSpacing: 1.2 }]}>{p.topic}</Text>
         <Text style={styles.cardTitle}>{p.title}</Text>
+        <Text numberOfLines={2} style={styles.small}>
+          {p.summary}
+        </Text>
+        <Text style={styles.micro}>To: {p.recipient}</Text>
+        <Text style={styles.micro}>{verificationLabels[p.verification]}</Text>
         <Text style={styles.micro}>
           {p.city} · {days} days left
         </Text>
@@ -359,24 +403,25 @@ export function PetitionRow({
             style={{
               width: `${Math.min(100, (100 * p.count) / p.goal)}%`,
               height: '100%',
-              backgroundColor: colors.sage,
+              backgroundColor: topicColors[p.topic].accent,
             }}
           />
         </View>
         <View style={[styles.between, { gap: 8 }]}>
           <Text style={styles.micro}>
             {p.count.toLocaleString()} of {p.goal.toLocaleString()}
+            {p.sampleCount > 0 ? ' · sample counts' : ''}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={saved ? `Unsave ${p.title}` : `Save ${p.title}`}
             disabled={mutation.isPending}
             hitSlop={12}
-            onPress={() =>
-              s.profile
-                ? mutation.mutate({ type: 'save', petitionId: p.id })
-                : router.push('/(auth)/sign-in')
-            }
+            onPress={(event) => {
+              event.stopPropagation();
+              if (s.profile) mutation.mutate({ type: 'save', petitionId: p.id });
+              else router.push('/(auth)/sign-in');
+            }}
             style={{
               minWidth: 44,
               minHeight: 44,
@@ -387,6 +432,11 @@ export function PetitionRow({
             <Icon name={saved ? 'bookmark' : 'bookmark-outline'} size={18} />
           </Pressable>
         </View>
+        {mutation.error && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {mutation.error.message}
+          </Text>
+        )}
       </View>
     </Pressable>
   );

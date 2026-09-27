@@ -6,6 +6,37 @@ A mobile-first civic petition app for iOS, Android, and web. Notice something, u
 
 The public app name is **Swipe4Change**. New native links use `swipe4change://`; the original `lookaware://` scheme remains an alias for existing links. Bundle/package IDs (`org.lookaware.app`), local storage/draft keys, and the existing migration/RPC names remain stable to preserve installed-app identity, saved demo data, and backend compatibility. Register `swipe4change://auth-callback` in Clerk before using native hosted sign-in with the renamed build. Rebuild native apps to pick up the display name and URL scheme.
 
+## The Eastbridge journey
+
+Home now opens with a local welcome and the Eastbridge lighting spotlight, followed by the personalized swipe deck, compact collections, community activity, and a creation invitation. Explore searches petition and community text with a filter sheet for location, eligibility, recipient level, community, deadline, and recent updates. Match explanations use only explicit interests, approximate location, membership, and visible activity.
+
+Petition details use **Story / Progress / Activity**. Read the request and sources in Story, milestones and the recorded hand-off/response in Progress, and organizer updates, discussion, endorsements, and edits in Activity. On phones, a signing bar appears after the opening action leaves view. Advanced legal qualification remains available through an expandable control.
+
+**Did they answer the request?** in Progress compares up to three concrete asks with a recorded, verified response. Each status and explanation is the organizer's public assessment of the response text, not a platform verdict or evidence that the requested work happened. The Eastbridge sample shows a promised review but no published lighting plan or deadline. Organizers configure and revise the checks in Manage; changes enter public edit history and notify followers. A new petition starts with its requested action as one unreviewed check. Editing that action resets the comparison so an old assessment cannot silently describe a new request. Unverified or retracted responses cannot be used for an assessment. Existing saved local demo work remains in place; the original Eastbridge sample gains these checks without resetting signatures or drafts.
+
+Signing now moves through requirements, eligibility and vault unlock, exact public-name previews, and an unchecked confirmation. The receipt appears only after the active data adapter confirms the write. Its progress animation respects reduced motion. The existing encrypted vault, qualification requirements, duplicate prevention, edit history, and hosted authorization are preserved. A first-time participant must create a private signature vault in Profile before signing; use fictional information in the local demo. No vault key or private record is pre-seeded.
+
+Create uses **Define the change / Build the case / Configure participation / Review and publish**. The prototype writing assistant remains visible on the review step; both card and detail previews are available. Research and recipient-directory guidance is expandable. The assistant suggests a recipient category but never silently assigns an office; creators must identify the actual recipient themselves. Existing saved drafts keep their content and step number; because fields were regrouped, review all four steps before publishing an older draft. Profile puts participation and joined communities before drafts, personalization, and private settings.
+
+Fresh local data includes Maya's saved shade-tree petition and followed lighting petition, plus a fictional delivery linked to the lighting response. All twelve sample petitions have distinct local problems and a fictional responsible office matched to the request. Existing on-device work is never reset automatically. To see fresh sample content, use the existing confirmed **Profile → Reset all local demo data** action after preserving any demo work you want to keep. `npm run seed` regenerates the equivalent SQL fixture; run it only in a development database.
+
+The no-network demonstration remains the default local adapter. Hosted failures show an error and retry; the app does not silently turn a rejected Supabase signature into a successful local signature. For an offline presentation, start with the default local backend. No dependencies or backend migrations were needed for this refinement.
+
+Validation for this refinement: typecheck and lint pass; all 100 Jest tests pass; PostgreSQL integration passes with 27 RLS-protected tables and repeatable seed execution; Expo exports web, iOS, and Android bundles. Browser checks cover 320px/390px phone layouts, desktop creation with an empty recipient field, filter application, deep-linked petition details, eligibility guidance, the sticky signing action, and the request-to-response comparison and organizer editor. Physical-device builds and live Clerk/Supabase authentication were not exercised in this local environment.
+
+### Refinement smoke checklist
+
+- At 320px, 390px, tablet, and desktop widths, check the header, navigation, card text, filter sheet, and all four creation steps. Increase system text size; the swipe card now grows with its content.
+- Sign in as Maya, complete onboarding, and open **Understand this petition**. Check the recipient, 684 sample signatures, and next milestone of 750.
+- Open **Progress** and inspect the three asks, Maya's clearly labeled comparison, the 500-signature sample delivery, and the linked fictional response. **Activity** exposes discussion and edits without seven tabs.
+- Open **Review and sign**. Confirm cannot be reached without reviewing requirements and unlocking the vault; final consent starts unchecked. Each public-name preview must match the recorded public name.
+- In a fresh demo, set up the vault in Profile using fictional details, retain its recovery key privately, and return. Choose Profile's simulated write failure before signing; no success receipt should appear. Retry, then check the receipt, progress, follow action, and duplicate prevention.
+- In Explore, combine topic, city, requirement, and deadline filters; cancel the sheet to discard unapplied edits, and clear filters to recover results.
+- Create a request, use and undo assistant suggestions, preview both layouts, and publish only after the final confirmation. New petitions retain the existing requirement to configure legal details in Manage before collecting signatures.
+- In Manage, break a request into one to three asks. Select a verified response, explain whether it answers each ask, save, and check Progress and public edit history. A newly recorded unverified response cannot be marked as answering an ask.
+- Visit a joined community, post a permitted structured contribution, and view participation in Profile. Reload a petition/community deep link and check guest access and manager-only controls.
+- Use an OS reduced-motion preference to check that deck and confirmed-progress effects stop. Check keyboard focus and modal controls on web.
+
 ## Run it
 
 Use Node 22 LTS or newer (Node 26 also tested) and npm.
@@ -193,7 +224,7 @@ Home is a single-card swipe deck reading three directions: right supports (openi
 
 Profile supports display name, a 280-character bio, avatar selection, accent color, participation counts, earned badges with visible criteria, and an opt-out for signing-history personalization. Changing a display name does not rewrite historical signatures.
 
-The simulated AI assigns a suggested department from the topic, issue text, and approximate city. Creators can edit the recipient or disable automatic assignment. It structures supplied observations into a request with a response deadline, offers reversible title/summary/body improvements, and provides relevant official research links. These are research starting points, not claims that a statute applies. Current references: [DOJ Title II guidance](https://www.ada.gov/topics/title-ii/) and [EPA Clean Water Act overview](https://www.epa.gov/laws-regulations/summary-clean-water-act). Confirm local jurisdiction and facts before relying on a legal basis.
+The simulated AI suggests a recipient category from the topic, issue text, and approximate city. It never fills the actual recipient field or fabricates an office. Creators choose an office or enter one after confirming its jurisdiction. The assistant structures supplied observations into a request with a response deadline, offers reversible title/summary/body improvements, and provides relevant official research links. These are research starting points, not claims that a statute applies. Current references: [DOJ Title II guidance](https://www.ada.gov/topics/title-ii/) and [EPA Clean Water Act overview](https://www.epa.gov/laws-regulations/summary-clean-water-act). Confirm local jurisdiction and facts before relying on a legal basis.
 
 ## Private signature vault
 

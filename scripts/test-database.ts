@@ -80,6 +80,52 @@ async function run() {
   assert.equal(s.signatures[0].displayName, 'Anonymous supporter');
   assert(!('userId' in s.signatures[0]));
   assert(!JSON.stringify(s).includes('clerk_'));
+  const sampleChecks = s.petitions.find((p) => p.id === petitionId(1))!.responseChecks!;
+  assert.equal(sampleChecks.length, 3);
+  assert.equal(sampleChecks[0].status, 'partial');
+  assert.equal(sampleChecks[0].responseId, s.petitions[0].responses[0].id);
+  await auth('clerk_sam');
+  await assert.rejects(() =>
+    command({
+      type: 'responseChecks',
+      petitionId: petitionId(1),
+      checks: [
+        {
+          ask: 'Publish a lighting plan',
+          status: 'unanswered',
+          note: 'No plan appears in the reply.',
+          responseId: sampleChecks[0].responseId,
+        },
+      ],
+    }),
+  );
+  await auth('clerk_maya');
+  await assert.rejects(() =>
+    command({
+      type: 'responseChecks',
+      petitionId: petitionId(1),
+      checks: [
+        {
+          ask: 'Publish a lighting plan',
+          status: 'answered',
+          note: 'Claims an answer without a linked response.',
+        },
+      ],
+    }),
+  );
+  await command({
+    type: 'responseChecks',
+    petitionId: petitionId(1),
+    checks: [
+      {
+        ask: 'Publish a lighting plan',
+        status: 'unanswered',
+        note: 'No plan appears in the reply.',
+        responseId: sampleChecks[0].responseId,
+      },
+    ],
+  });
+  assert.equal((await snapshot()).petitions[0].responseChecks?.[0].reviewedBy, 'Maya Chen');
   await assert.rejects(
     () =>
       command({
@@ -100,6 +146,7 @@ async function run() {
     publish: false,
   });
   assert(id);
+  assert.equal((await snapshot()).petitions.find((item) => item.id === id)?.responseChecks, undefined);
   await auth('clerk_sam');
   assert(!(await snapshot()).petitions.some((p) => p.id === id));
   await assert.rejects(() => command({ type: 'publish', petitionId: id }));
@@ -254,6 +301,10 @@ async function run() {
     patch: { action: 'Install a crosswalk along this school route.' },
     reason: 'Clarifying our requested crossing',
   });
+  assert.deepEqual(
+    (await snapshot()).petitions.find((item) => item.id === id)?.responseChecks?.[0].status,
+    'not_reviewed',
+  );
   await auth('clerk_sam');
   assert.deepEqual(await receipt(id), original);
   await auth('clerk_jordan');

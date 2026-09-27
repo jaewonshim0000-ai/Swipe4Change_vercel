@@ -36,6 +36,7 @@ import {
 import { Entries } from '../../src/components/entries';
 import { SummaryRows } from '../../src/components/design-system';
 import { Progress } from '../../src/components/petition-card';
+import { ResponseCheckEditor } from '../../src/components/response-comparison';
 export default function Manager() {
   const { petitionId } = useLocalSearchParams<{ petitionId: string }>();
   const q = useSnapshot();
@@ -517,6 +518,7 @@ export default function Manager() {
           }
         />
       </Panel>
+      <ResponseCheckEditor petition={p} />
       {isDemo && q.data?.profile?.id === p.ownerId && (
         <Panel>
           <Text style={styles.h2}>Work together</Text>

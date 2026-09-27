@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import { Command, Entry, Petition, Profile } from '../domain/model';
 import { canManage } from '../domain/rules';
 import { Button, Empty, styles } from './ui';
+import { KindBadge } from './design-system';
 import { router } from 'expo-router';
 export function Entries({
   entries,
@@ -24,7 +25,9 @@ export function Entries({
           key={e.id}
           style={{ gap: 7, borderBottomWidth: 1, borderBottomColor: '#DFE5DD', paddingBottom: 16 }}
         >
-          <Text style={styles.label}>{e.kind}</Text>
+          <View style={{ alignSelf: 'flex-start' }}>
+            <KindBadge label={e.kind} />
+          </View>
           <Text style={e.removed ? styles.muted : styles.body}>{e.body}</Text>
           <Text style={styles.muted}>
             {e.author} · {new Date(e.date).toLocaleDateString()}

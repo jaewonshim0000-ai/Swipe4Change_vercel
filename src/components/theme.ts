@@ -3,6 +3,16 @@ import { Platform, StyleSheet } from 'react-native';
 // Adapted from the supplied LookAware reference. Sage is a surface accent;
 // dark olive is its readable text companion (white on sage fails normal-text contrast).
 export const colors = {
+  surface: '#FFFFFF',
+  surfaceRaised: '#FFFFFF',
+  inkMuted: '#5D6259',
+  primary: '#526344',
+  primaryPressed: '#3D4B32',
+  primarySoft: '#EAF0E3',
+  border: '#DDE0D5',
+  focus: '#385D88',
+  success: '#326544',
+  warning: '#805C24',
   ink: '#121113',
   secondary: '#222725',
   muted: '#5D6259',
@@ -16,6 +26,13 @@ export const colors = {
   orange: '#8B6B37',
   error: '#BA1A1A',
 };
+export const topicColors = {
+  'Safer streets': { accent: '#755329', soft: '#F5EBD9' },
+  Environment: { accent: '#3D6546', soft: '#E5EFE2' },
+  Education: { accent: '#405E82', soft: '#E6EDF7' },
+  'Public spaces': { accent: '#78504F', soft: '#F4E5E2' },
+  Accessibility: { accent: '#66517C', soft: '#EDE6F4' },
+};
 export const fonts = {
   body: 'WorkSans_400Regular',
   medium: 'WorkSans_500Medium',
@@ -27,7 +44,8 @@ export const fonts = {
 };
 export const tokens = {
   space: [0, 8, 16, 24, 32, 40, 48],
-  radius: 8,
+  radius: 16,
+  featureRadius: 24,
   font: { body: 16, small: 14, title: 40, hero: 56 },
   // Phone-first metrics from the Swipe4Change mobile design. Screen padding is tighter than the
   // 8-point desktop rhythm because a 402pt-wide frame cannot afford 24-32pt gutters.

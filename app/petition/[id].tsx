@@ -29,6 +29,8 @@ import {
 import { Progress, TopicArt, sharePetition } from '../../src/components/petition-card';
 import { Entries, ManagerControl, entryRemover } from '../../src/components/entries';
 import { milestones, reachedMilestones } from '../../src/domain/rules';
+import { MilestoneNote, StickyActionBar } from '../../src/components/civic-journey';
+import { ResponseComparison } from '../../src/components/response-comparison';
 import { findOffice, levelLabels } from '../../src/domain/recipients';
 export default function Detail() {
   // `?sign=1` lets the Home deck's Support action land straight in the signing sheet.
@@ -44,7 +46,11 @@ export default function Detail() {
   const q = useSnapshot();
   const mutation = useCommand();
   const { width } = useWindowDimensions();
-  const [tab, setTab] = useState('Overview');
+  const [tab, setTab] = useState('Story');
+  const [ctaEnd, setCtaEnd] = useState(0);
+  const [pastCta, setPastCta] = useState(false);
+  const [legal, setLegal] = useState(false);
+  const [receipt, setReceipt] = useState(false);
   const [sign, setSign] = useState(signParam === '1');
   // `?volunteer=1` lets the Home deck's Volunteer action open the offer form directly.
   const [offering, setOffering] = useState(volunteerParam === '1');
@@ -87,7 +93,18 @@ export default function Detail() {
   const myOffer = s.volunteering.find((v) => v.petitionId === p.id);
   const pendingSign = mutation.isPending && mutation.variables?.type === 'sign';
   return (
-    <Page back>
+    <Page
+      back
+      onScroll={(event) => setPastCta(ctaEnd > 0 && event.nativeEvent.contentOffset.y > ctaEnd)}
+      bottomBar={
+        width < 900 && pastCta && !signed && !sign && p.status === 'active' ? (
+          <StickyActionBar
+            petition={p}
+            onPress={() => (s.profile ? setSign(true) : router.push('/(auth)/sign-in'))}
+          />
+        ) : undefined
+      }
+    >
       <View style={styles.between}>
         <View style={styles.row}>
           <Chip label={p.topic} />
@@ -111,25 +128,75 @@ export default function Detail() {
       <Text
         style={[styles.body, { maxWidth: 900 }, width >= 600 && { fontSize: 19, lineHeight: 29 }]}
       >
-        {p.summary}
+        {p.action}
       </Text>
       <Text style={styles.muted}>
         Started by {p.creator} · {s.communities.find((c) => c.id === p.communityId)?.name} ·{' '}
         {new Date(p.createdAt).toLocaleDateString()}
       </Text>
+      <Text style={styles.body}>To: {p.recipient}</Text>
+      <View style={{ maxWidth: 650, gap: 12 }}>
+        <Progress petition={p} compact />
+        <MilestoneNote petition={p} />
+      </View>
       {width < 900 && (
+        <View
+          onLayout={(event) =>
+            setCtaEnd(event.nativeEvent.layout.y + event.nativeEvent.layout.height + 100)
+          }
+        >
+          <Button
+            title={signed ? 'Signature recorded' : 'Review and sign'}
+            disabled={signed || mutation.isPending || p.status !== 'active'}
+            onPress={() => {
+              if (!s.profile) {
+                router.push('/(auth)/sign-in');
+                return;
+              }
+              setSign(true);
+            }}
+          />
+        </View>
+      )}
+      <View style={styles.row}>
         <Button
-          title={signed ? '✓ Signature recorded' : 'Sign this petition'}
-          disabled={signed || mutation.isPending || p.status !== 'active'}
+          title={s.saved.includes(p.id) ? 'Saved' : 'Save'}
+          icon="bookmark-outline"
+          variant="secondary"
+          disabled={mutation.isPending}
+          onPress={() =>
+            s.profile
+              ? mutation.mutate({ type: 'save', petitionId: p.id })
+              : router.push('/(auth)/sign-in')
+          }
+        />
+        <Button
+          title={following ? 'Following' : 'Follow'}
+          icon={following ? 'notifications' : 'notifications-outline'}
+          variant="secondary"
+          disabled={mutation.isPending}
+          onPress={() =>
+            s.profile
+              ? mutation.mutate({ type: 'follow', petitionId: p.id })
+              : router.push('/(auth)/sign-in')
+          }
+        />
+        <Button
+          title="Share"
+          icon="share-outline"
+          variant="ghost"
           onPress={() => {
-            if (!s.profile) {
-              router.push('/(auth)/sign-in');
-              return;
-            }
-            setSign(true);
+            void sharePetition(p)
+              .then(setNotice)
+              .catch(() => setNotice('Sharing is unavailable. Copy this page’s browser address.'));
           }}
         />
-      )}
+      </View>
+      <Text style={{ fontSize: 12, color: colors.muted }}>
+        {following
+          ? 'You receive this petition’s updates. Saving alone is a private bookmark.'
+          : 'Saving is a private bookmark. Follow to receive updates.'}
+      </Text>
       <View
         style={{
           flexDirection: width >= 900 ? 'row' : 'column',
@@ -142,21 +209,12 @@ export default function Detail() {
             <TopicArt topic={p.topic} large />
           </View>
           <View style={styles.row}>
-            {[
-              'Overview',
-              'Legal requirements',
-              'Updates',
-              'Discussion',
-              'History',
-              'Endorsements',
-              'Responses',
-            ].map((t) => (
+            {['Story', 'Progress', 'Activity'].map((t) => (
               <Chip key={t} label={t} selected={tab === t} onPress={() => setTab(t)} />
             ))}
           </View>
           <Panel>
-            {tab === 'Legal requirements' && <QualificationChecklist petition={p} />}
-            {tab === 'Overview' && (
+            {tab === 'Story' && (
               <>
                 <Text style={styles.label}>THE CHANGE WE’RE ASKING FOR</Text>
                 <Text style={styles.h2}>{p.action}</Text>
@@ -180,48 +238,15 @@ export default function Detail() {
                     </>
                   ) : null;
                 })()}
-                {p.deliveries.length > 0 ? (
-                  <>
-                    <View style={styles.divider} />
-                    <Text style={styles.h2}>Delivered</Text>
-                    {p.deliveries.map((d) => (
-                      <View key={d.id} style={{ gap: 4 }}>
-                        <Text style={styles.body}>
-                          Sent to {d.recipient} on {new Date(d.deliveredAt).toLocaleDateString()} by{' '}
-                          {d.deliveredBy} · {deliveryMethodLabels[d.method]}
-                        </Text>
-                        <Text style={styles.muted}>
-                          {d.signatureCount.toLocaleString()} signatures at the time of delivery.{' '}
-                          {d.note}
-                        </Text>
-                        <Button
-                          title="Read the document that was sent"
-                          variant="secondary"
-                          icon="document-text-outline"
-                          onPress={() => router.push(`/packet/${p.id}?delivery=${d.id}`)}
-                        />
-                        {p.responses
-                          .filter((r) => r.deliveryId === d.id)
-                          .map((r) => (
-                            <Text key={r.id} style={styles.small}>
-                              Answered by {r.organization} on{' '}
-                              {new Date(r.date).toLocaleDateString()}.
-                            </Text>
-                          ))}
-                      </View>
-                    ))}
-                  </>
-                ) : (
-                  <Text style={styles.small}>
-                    Not yet delivered. The organizer records the hand-off here once this petition
-                    reaches {p.recipient}.
-                  </Text>
-                )}
                 <View style={styles.divider} />
                 <Text style={styles.h2}>Why it matters</Text>
                 <Text style={styles.body}>{p.problem}</Text>
                 <Text style={styles.h2}>Evidence & sources</Text>
-                <Notice text="Creator-supplied sources. Swipe4Change does not fact-check these claims. Demo links are illustrative placeholders, not real evidence." />
+                <Text style={styles.small}>
+                  {p.sampleCount > 0
+                    ? 'Illustrative evidence · sample source links'
+                    : 'Creator-supplied sources · independently review the claims'}
+                </Text>
                 {p.evidence.length ? (
                   p.evidence.map((e) => (
                     <Button
@@ -239,19 +264,9 @@ export default function Detail() {
                 ) : (
                   <Text style={styles.muted}>No supporting sources have been supplied yet.</Text>
                 )}
-                <Text style={styles.h2}>Milestones</Text>
-                {milestones.map((n) => (
-                  <Text key={n} style={styles.body}>
-                    {reachedMilestones(p.count, p.goal).includes(n) ? '✓' : '○'} {n}% of the
-                    signature goal · {Math.ceil((p.goal * n) / 100)} voices
-                  </Text>
-                ))}
-                <Text style={styles.muted}>
-                  Milestones describe signature progress, not verified policy outcomes.
-                </Text>
               </>
             )}
-            {tab === 'Updates' && (
+            {tab === 'Activity' && (
               <>
                 <Text style={styles.h2}>From the organizer</Text>
                 <Entries
@@ -263,82 +278,7 @@ export default function Detail() {
                 />
               </>
             )}
-            {tab === 'History' && (
-              <>
-                <Notice text="Material edits keep their prior wording and explanation here. Signing rules cannot change after signatures exist." />
-                <Entries entries={p.edits} empty="No edits yet" />
-              </>
-            )}
-            {tab === 'Endorsements' && (
-              <>
-                <Text style={styles.h2}>Community support</Text>
-                <Entries entries={p.endorsements} empty="No endorsements yet" />
-                {s.profile &&
-                  s.communities
-                    .filter((c) => c.ownerId === s.profile?.id)
-                    .map((c) => (
-                      <Button
-                        key={c.id}
-                        title={`Endorse as ${c.name}`}
-                        variant="secondary"
-                        disabled={
-                          mutation.isPending || p.endorsements.some((e) => e.author === c.name)
-                        }
-                        onPress={() =>
-                          mutation.mutate(
-                            { type: 'endorse', petitionId: p.id, communityId: c.id },
-                            { onSuccess: () => setNotice('Community endorsement added.') },
-                          )
-                        }
-                      />
-                    ))}
-              </>
-            )}
-            {tab === 'Responses' && (
-              <>
-                <Text style={styles.h2}>Responses from recipients</Text>
-                <Notice text="Only a trusted verification process can assign verified status. In this demo, the verified example is entirely fictional." />
-                {p.responses.length ? (
-                  p.responses.map((r) => (
-                    <View
-                      key={r.id}
-                      style={{
-                        padding: 20,
-                        borderRadius: 14,
-                        backgroundColor: r.verification === 'verified' ? colors.pale : '#F5F5F1',
-                        gap: 12,
-                      }}
-                    >
-                      <Chip
-                        label={
-                          r.verification === 'verified'
-                            ? isDemo || r.organization.includes('(fictional)')
-                              ? 'VERIFIED · FICTIONAL SAMPLE'
-                              : 'VERIFIED OFFICIAL RESPONSE'
-                            : `${r.verification.toUpperCase()} · NOT AN OFFICIAL RESPONSE`
-                        }
-                      />
-                      <Text style={styles.h3}>{r.organization}</Text>
-                      <Text style={styles.body}>{r.body}</Text>
-                      <Text style={styles.muted}>
-                        {r.author} · {new Date(r.date).toLocaleDateString()}
-                      </Text>
-                      {!r.removed && entryRemover('response', s.profile, p)(r) && (
-                        <Button
-                          title="Retract this response"
-                          variant="ghost"
-                          disabled={mutation.isPending}
-                          onPress={() => setRemoving({ scope: 'response', entry: r })}
-                        />
-                      )}
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.muted}>No responses have been submitted.</Text>
-                )}
-              </>
-            )}
-            {tab === 'Discussion' && (
+            {tab === 'Activity' && (
               <>
                 <Text style={styles.h2}>A constructive conversation</Text>
                 <Entries
@@ -386,6 +326,131 @@ export default function Detail() {
                 )}
               </>
             )}
+            {tab === 'Activity' && (
+              <>
+                <Text style={styles.h2}>Community support</Text>
+                <Entries entries={p.endorsements} empty="No endorsements yet" />
+                {s.profile &&
+                  s.communities
+                    .filter((c) => c.ownerId === s.profile?.id)
+                    .map((c) => (
+                      <Button
+                        key={c.id}
+                        title={`Endorse as ${c.name}`}
+                        variant="secondary"
+                        disabled={
+                          mutation.isPending || p.endorsements.some((e) => e.author === c.name)
+                        }
+                        onPress={() =>
+                          mutation.mutate(
+                            { type: 'endorse', petitionId: p.id, communityId: c.id },
+                            { onSuccess: () => setNotice('Community endorsement added.') },
+                          )
+                        }
+                      />
+                    ))}
+              </>
+            )}
+            {tab === 'Activity' && (
+              <>
+                <Notice text="Material edits keep their prior wording and explanation here. Signing rules cannot change after signatures exist." />
+                <Entries entries={p.edits} empty="No edits yet" />
+              </>
+            )}
+            {tab === 'Progress' && (
+              <>
+                <ResponseComparison petition={p} />
+                <View style={styles.divider} />
+                <Text style={styles.h2}>Milestones</Text>
+                {milestones.map((n) => (
+                  <Text key={n} style={styles.body}>
+                    {reachedMilestones(p.count, p.goal).includes(n) ? '✓' : '○'} {n}% of the
+                    signature goal · {Math.ceil((p.goal * n) / 100)} voices
+                  </Text>
+                ))}
+                <Text style={styles.muted}>
+                  Milestones describe signature progress, not verified policy outcomes.
+                </Text>
+                {p.deliveries.length > 0 ? (
+                  <>
+                    <View style={styles.divider} />
+                    <Text style={styles.h2}>Delivered</Text>
+                    {p.deliveries.map((d) => (
+                      <View key={d.id} style={{ gap: 4 }}>
+                        <Text style={styles.body}>
+                          Sent to {d.recipient} on {new Date(d.deliveredAt).toLocaleDateString()} by{' '}
+                          {d.deliveredBy} · {deliveryMethodLabels[d.method]}
+                        </Text>
+                        <Text style={styles.muted}>
+                          {d.signatureCount.toLocaleString()} signatures at the time of delivery.{' '}
+                          {d.note}
+                        </Text>
+                        <Button
+                          title="Read the document that was sent"
+                          variant="secondary"
+                          icon="document-text-outline"
+                          onPress={() => router.push(`/packet/${p.id}?delivery=${d.id}`)}
+                        />
+                        {p.responses
+                          .filter((r) => r.deliveryId === d.id)
+                          .map((r) => (
+                            <Text key={r.id} style={styles.small}>
+                              Answered by {r.organization} on{' '}
+                              {new Date(r.date).toLocaleDateString()}.
+                            </Text>
+                          ))}
+                      </View>
+                    ))}
+                  </>
+                ) : (
+                  <Text style={styles.small}>
+                    Not yet delivered. The organizer records the hand-off here once this petition
+                    reaches {p.recipient}.
+                  </Text>
+                )}
+
+                <Text style={styles.h2}>Responses from recipients</Text>
+
+                {p.responses.length ? (
+                  p.responses.map((r) => (
+                    <View
+                      key={r.id}
+                      style={{
+                        padding: 20,
+                        borderRadius: 14,
+                        backgroundColor: r.verification === 'verified' ? colors.pale : '#F5F5F1',
+                        gap: 12,
+                      }}
+                    >
+                      <Chip
+                        label={
+                          r.verification === 'verified'
+                            ? isDemo || r.organization.includes('(fictional)')
+                              ? 'VERIFIED · FICTIONAL SAMPLE'
+                              : 'VERIFIED OFFICIAL RESPONSE'
+                            : `${r.verification.toUpperCase()} · NOT AN OFFICIAL RESPONSE`
+                        }
+                      />
+                      <Text style={styles.h3}>{r.organization}</Text>
+                      <Text style={styles.body}>{r.body}</Text>
+                      <Text style={styles.muted}>
+                        {r.author} · {new Date(r.date).toLocaleDateString()}
+                      </Text>
+                      {!r.removed && entryRemover('response', s.profile, p)(r) && (
+                        <Button
+                          title="Retract this response"
+                          variant="ghost"
+                          disabled={mutation.isPending}
+                          onPress={() => setRemoving({ scope: 'response', entry: r })}
+                        />
+                      )}
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.muted}>No responses have been submitted.</Text>
+                )}
+              </>
+            )}
           </Panel>
         </View>
         <View style={{ width: width >= 900 ? 330 : '100%', gap: 20 }}>
@@ -418,7 +483,7 @@ export default function Detail() {
                       ? 'Private draft'
                       : p.status !== 'active'
                         ? 'Signatures closed'
-                        : 'Add my signature'
+                        : 'Review and sign'
               }
               disabled={signed || mutation.isPending || p.status !== 'active'}
               onPress={() => {
@@ -432,47 +497,6 @@ export default function Detail() {
             {pendingSign && (
               <Notice text="Awaiting confirmation. The progress change is temporary until the data layer accepts your signature." />
             )}
-            <View style={styles.row}>
-              <Button
-                title={s.saved.includes(p.id) ? 'Saved' : 'Save'}
-                icon="bookmark-outline"
-                variant="secondary"
-                disabled={mutation.isPending}
-                onPress={() =>
-                  s.profile
-                    ? mutation.mutate({ type: 'save', petitionId: p.id })
-                    : router.push('/(auth)/sign-in')
-                }
-              />
-              <Button
-                title={following ? 'Following' : 'Follow'}
-                icon={following ? 'notifications' : 'notifications-outline'}
-                variant="secondary"
-                disabled={mutation.isPending}
-                onPress={() =>
-                  s.profile
-                    ? mutation.mutate({ type: 'follow', petitionId: p.id })
-                    : router.push('/(auth)/sign-in')
-                }
-              />
-              <Button
-                title="Share"
-                icon="share-outline"
-                variant="ghost"
-                onPress={() => {
-                  void sharePetition(p)
-                    .then(setNotice)
-                    .catch(() =>
-                      setNotice('Sharing is unavailable. Copy this page’s browser address.'),
-                    );
-                }}
-              />
-            </View>
-            <Text style={{ fontSize: 12, color: colors.muted }}>
-              {following
-                ? 'You receive this petition’s updates. Saving alone is a private bookmark.'
-                : 'Saving is a private bookmark. Follow to receive updates.'}
-            </Text>
             {p.verification === 'community' &&
               s.profile &&
               !s.profile.joined.includes(p.communityId) && (
@@ -628,17 +652,25 @@ export default function Detail() {
               </Panel>
             </>
           )}
-          <Panel>
-            <Text style={styles.h3}>Legal qualification</Text>
-            <Text style={styles.body}>
-              {p.recordedSignatures ?? 0} encrypted signatory records · {p.acceptedSignatures ?? 0}{' '}
-              accepted for qualification
-            </Text>
-            <Text style={styles.muted}>
-              Community support and fictional sample counts do not establish a statutory threshold
-              or legal validity.
-            </Text>
-          </Panel>
+          <Button
+            title={legal ? 'Hide legal requirements' : 'Legal requirements and qualification'}
+            variant="ghost"
+            onPress={() => setLegal(!legal)}
+          />
+          {legal && (
+            <Panel>
+              <QualificationChecklist petition={p} />
+              <Text style={styles.h3}>Legal qualification</Text>
+              <Text style={styles.body}>
+                {p.recordedSignatures ?? 0} encrypted signatory records ·{' '}
+                {p.acceptedSignatures ?? 0} accepted for qualification
+              </Text>
+              <Text style={styles.muted}>
+                Community support and fictional sample counts do not establish a statutory threshold
+                or legal validity.
+              </Text>
+            </Panel>
+          )}
           <Panel>
             <Text style={styles.h3}>Voices behind the progress</Text>
             {s.signatures
@@ -672,12 +704,41 @@ export default function Detail() {
           onCancel={() => setSign(false)}
           onRecorded={() => {
             setSign(false);
+            setReceipt(true);
             setNotice(
               'Your signature was recorded for review. This is not a certification of legal validity.',
             );
           }}
         />
       )}
+      <Confirm
+        visible={receipt && signed}
+        title="Your signature is recorded"
+        body="Your voice has been added. Keep following the work from here."
+        confirmLabel="Back to the petition"
+        onConfirm={() => setReceipt(false)}
+        onCancel={() => setReceipt(false)}
+      >
+        <Progress petition={p} animateFrom={p.count - 1} />
+        <MilestoneNote petition={p} />
+        <PrivateSignatureReceipt key={s.profile?.id} petitionId={p.id} />
+        <Button
+          title={following ? 'Following updates' : 'Follow updates'}
+          variant="secondary"
+          disabled={following || mutation.isPending}
+          onPress={() => mutation.mutate({ type: 'follow', petitionId: p.id })}
+        />
+        <Button
+          title="Share this petition"
+          variant="secondary"
+          onPress={() => {
+            void sharePetition(p)
+              .then(setNotice)
+              .catch(() => setNotice('Sharing is unavailable. Try again.'));
+          }}
+        />
+        {mutation.error && <Notice error text={mutation.error.message} />}
+      </Confirm>
       <Confirm
         visible={report}
         title="Report this petition"

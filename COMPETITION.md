@@ -6,51 +6,23 @@
 
 **Civic value:** Swipe4Change connects a concrete concern to an action, a responsible recipient, supporting sources, a community, and visible follow-through. It supports constructive local participation without campaigning, fundraising, payments, or political profiling.
 
-**Innovation:** Private signature eligibility and public identity are two separate choices. An email-verified signer can remain publicly anonymous. The feed explains its ranking, and a deterministic simulated AI helper improves clarity without manufacturing evidence. Public edits, updates, community endorsements, and explicitly labeled responses make follow-through inspectable.
+**Innovation:** Private signature eligibility and public identity are two separate choices. An email-verified signer can remain publicly anonymous. The feed explains its ranking, and a deterministic simulated AI helper improves clarity without manufacturing evidence. The request-to-response comparison shows which concrete asks a verified response actually covers, with an attributed organizer explanation. It does not mistake a reply for a completed outcome. Public edits, updates, community endorsements, and explicitly labeled responses make follow-through inspectable.
 
-**Technical explanation:** One Expo/React Native TypeScript app runs on iOS, Android, and web. Expo Router organizes the five tabs and deep links. React Hook Form and Zod validate drafts. TanStack Query handles data, pending state, invalidation, and rollback. The persistent local adapter and Clerk-authenticated Supabase adapter share a typed command boundary. PostgreSQL uses RLS on all 20 public tables, a unique signature constraint, transactional row locks, and narrowly authorized functions. Pure domain tests and PostgreSQL integration tests exercise privacy and permissions.
+**Technical explanation:** One Expo/React Native TypeScript app runs on iOS, Android, and web. Expo Router organizes the five tabs and deep links. React Hook Form and Zod validate drafts. TanStack Query handles data, pending state, invalidation, and rollback. The persistent local adapter and Clerk-authenticated Supabase adapter share a typed command boundary. PostgreSQL uses RLS on all exposed public tables, a unique signature constraint, transactional row locks, and narrowly authorized functions. Pure domain tests and PostgreSQL integration tests exercise privacy and permissions.
 
 ## A 2–3 minute demonstration
 
-Target: about **2 minutes 45 seconds**. Begin with fresh demo data and Maya selected. Keep a short original petition request ready to type. All names and events are fictional; say this up front.
+Target: **2 minutes 50 seconds**. Start in the local demo as Maya, with onboarding completed and the private signature vault prepared using fictional details. Keep the recovery key private and ready. Do not display or use a real address. Keep a short original request ready to enter. All names, evidence, signatures, deliveries, and official responses are fictional.
 
-**0:00–0:20 — Notice the problem**
+**0:00–0:30 — A familiar local problem.** Show Home's Riverton welcome and Eastbridge spotlight. Tap **Understand this petition**. Explain the dark campus-to-bus path, requested lighting plan, responsible Public Works recipient, and sample audit. Open **Why these petitions?** on Home if explaining ranking: explicit interests, location, joined communities, activity, and endorsements.
 
-“Swipe4Change turns a local concern into a clear next step. This entire neighborhood is fictional. Our flagship story follows students asking for better lighting on their walk home.”
+**0:30–1:10 — Deliberate participation.** Tap **Review and sign**. Show what is privately checked and what the organizer sees. Unlock the prepared vault in the eligibility step, choose **Anonymous supporter**, and review the privacy summary. Check the consent box and confirm. Show the receipt and updated progress only after the write completes. Explain that the database rejects duplicates and that a support record does not establish legal qualification.
 
-Choose three interests and Riverton. Continue to the Home feed.
+**1:10–1:55 — Turn a concern into a clear request.** Open Create. Enter a specific problem, requested action, recipient, and city. Add a concise summary and deadline, choose participation rules, then compare card and detail previews. Show the completeness rubric and an editable, reversible suggestion. Say: “This prototype writing assistant uses local rules, not generative AI.” Publish through the final confirmation. Explain that a newly created petition still needs its legal requirements configured in Manage before signatures can be collected.
 
-**0:20–0:45 — Understand what you see**
+**1:55–2:30 — Participation after signing.** Return to Eastbridge. In **Activity**, show the organizer update, student question, endorsement, and edit history. In **Progress**, show the three-ask comparison: a promised review partly answers the first ask, while a published plan and deadline remain unanswered. Then show the sample hand-off at 500 signatures and linked fictional response. The comparison is Maya's reading of the response, never proof that lighting was installed. Show the follow control and joined Riverton students community.
 
-“The feed uses interests I chose, my approximate city, joined communities, recent activity, and endorsements. I can see the recipe, and it never guesses my political affiliation.”
-
-Open How your feed works, then the spotlight petition. Show the requested action and recipient. Briefly open Updates and Responses.
-
-“An official-looking response only receives verified styling when its verification state permits it. This seeded example is explicitly fictional.”
-
-**0:45–1:05 — Add a voice without giving up privacy**
-
-Tap Add my signature. Keep Anonymous selected. Confirm.
-
-“This petition requires privately approved email eligibility, but my public signature says Anonymous supporter. Those are separate rules. A second signature is prevented in the data layer and database.”
-
-**1:05–1:50 — Turn an idea into a petition**
-
-Open Create. Choose the safer-walk template. Enter an original observed problem and a specific action. Apply a simulated title suggestion. In Details, enter a recipient and apply the supplied-text summary suggestion. Keep Riverton, a goal, and a future deadline. Choose email eligibility and anonymous public identity. Preview and publish.
-
-“The helper is deliberately simulated. It rearranges my own words, shows a completeness rubric, and never invents a statistic, official, source, or endorsement. I can edit or undo every suggestion. Nothing is auto-published.”
-
-**1:50–2:20 — Show follow-through**
-
-Open Manage. Post: “We are collecting feedback on the requested lighting assessment.” Show the update. Return to Profile, switch to Sam, open the new petition, and sign anonymously.
-
-“Creators can post progress and make explained edits. They cannot rewrite signatures or silently change eligibility after people have signed.”
-
-**2:20–2:45 — Connect the community**
-
-Open Communities, join Riverton students, and post a short idea.
-
-“Petitions are connected to people who can work together. Swipe4Change includes discussions, endorsements, milestones, badges, and reports. Its value is a clear, accountable next step—not just a bigger number.”
+**2:30–2:50 — Personal impact and control.** Open Profile to show created/signed/followed petitions and joined communities. Explain the five technical ideas: explainable ranking, private eligibility checks, user-controlled public identity, database duplicate prevention, and auditable edits.
 
 ## Backup demonstration
 
@@ -58,6 +30,6 @@ If time is short, use the flagship petition’s existing updates, edit history, 
 
 ## Responsible design
 
-No inferred politics, donation flows, fake generated evidence, or claims of real verification. Approximate city matching is optional, and exact addresses are never requested. The competition prototype does not claim to solve bot detection, real residency verification, or staffed moderation. Its privacy boundary and backend limitations are documented honestly.
+No inferred politics, donation flows, fake generated evidence, or claims of real verification. Approximate city matching is optional, and exact addresses are never requested for discovery. The separate encrypted signature vault requests self-attested signatory details; use fictional details during the demo. The competition prototype does not claim to solve bot detection, real residency verification, or staffed moderation. Its privacy boundary and backend limitations are documented honestly.
 
 The discovery demo now includes a reversible swipe deck, topic filters, and explainable recommendations informed by signed petition topics. Show a draft saved before it is complete, then resume it from the personalized profile. Badges recognize confirmed participation. The private signature vault demonstrates owner-controlled encryption; it does not demonstrate voter-roll verification or legally qualified ballot collection. Show the four mandatory legal checks and a pending encrypted receipt/collector affidavit. Explain that real legal acceptance requires the responsible authority’s review; no fictional record is presented as legally valid.

@@ -50,7 +50,12 @@ const blank: Draft = {
   identities: ['first_name_last_initial', 'anonymous'],
   customRule: '',
 };
-const steps = ['The idea', 'The details', 'Signing & privacy', 'Preview'];
+const steps = [
+  'Define the change',
+  'Build the case',
+  'Configure participation',
+  'Review and publish',
+];
 export default function CreateRoute() {
   const q = useSnapshot();
   const params = useLocalSearchParams<{ draftId?: string }>();
@@ -72,10 +77,9 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   const hydrated = useRef(false);
   const [initialSnapshot] = useState(q.data);
   const [ready, setReady] = useState(false);
-  const [automaticRecipient, setAutomaticRecipient] = useState(
-    !selectedDraftId || selectedDraftId === 'new',
-  );
   const [bodyUndo, setBodyUndo] = useState<string | null>(null);
+  const [research, setResearch] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'card' | 'page'>('card');
   const [step, setStep] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const [undo, setUndo] = useState<{ title: string; summary: string } | null>(null);
@@ -113,7 +117,6 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           if (!active) return;
           if (raw) {
             form.reset({ ...blank, ...JSON.parse(raw) });
-            setAutomaticRecipient(false);
             setDraftMessage('Restored your on-device writing backup.');
           }
           setReady(true);
@@ -129,9 +132,6 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
       active = false;
     };
   }, [initialSnapshot, selectedDraftId, draftKey, form]);
-  useEffect(() => {
-    if (ready && automaticRecipient) form.setValue('recipient', recipient.name);
-  }, [automaticRecipient, ready, recipient.name, form]);
   const backup = JSON.stringify(draft);
   useEffect(() => {
     if (!ready) return;
@@ -153,9 +153,9 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   }
   async function next() {
     const fields: (keyof Draft)[][] = [
-      ['title', 'problem', 'action', 'topic'],
-      ['summary', 'recipient', 'city', 'communityId', 'goal', 'deadline', 'evidence'],
-      ['verification', 'identities', 'customRule'],
+      ['title', 'problem', 'action', 'recipient', 'city'],
+      ['summary', 'topic', 'communityId', 'deadline', 'evidence'],
+      ['verification', 'identities', 'customRule', 'goal'],
     ];
     if (await form.trigger(fields[step])) {
       setStep(step + 1);
@@ -178,10 +178,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           <Field
             label={label}
             value={field.value}
-            onChangeText={(value) => {
-              if (name === 'recipient') setAutomaticRecipient(false);
-              field.onChange(value);
-            }}
+            onChangeText={field.onChange}
             onBlur={field.onBlur}
             error={fieldState.error?.message}
             multiline={multiline}
@@ -197,7 +194,6 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         {
           onSuccess: (id) => {
             setConfirm(false);
-            setAutomaticRecipient(true);
             setId(Crypto.randomUUID());
             form.reset(blank);
             setStep(0);
@@ -270,7 +266,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           gap: 24,
           width: '100%',
           alignSelf: 'center',
-          flexDirection: width >= 1200 && step < 3 ? 'row' : 'column',
+          flexDirection: width >= 1000 ? 'row' : 'column',
           alignItems: 'flex-start',
         }}
       >
@@ -300,6 +296,17 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
               {input('title', 'Petition title')}
               {input('problem', 'What is the problem?', true)}
               {input('action', 'What specific action are you asking for?', true)}
+              {input('recipient', 'Who has the authority to act?')}
+              {input('city', 'Where is it happening? City and state')}
+            </>
+          )}
+          {step === 1 && (
+            <>
+              {input('summary', 'One-sentence summary', true)}
+              <Text style={styles.small}>
+                Make the outcome measurable: name the place, the requested change, and when it
+                should happen.
+              </Text>
               <Text style={styles.h3}>Topic</Text>
               <View style={styles.row}>
                 {topics.map((t) => (
@@ -311,48 +318,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                   />
                 ))}
               </View>
-            </>
-          )}
-          {step === 1 && (
-            <>
-              {input('recipient', 'Responsible recipient')}
-              <Chip
-                label="Automatically assign recipient"
-                selected={automaticRecipient}
-                onPress={() => setAutomaticRecipient(!automaticRecipient)}
-              />
-              <Text style={styles.muted}>{recipient.explanation}</Text>
-              <Text style={styles.h3}>Offices that handle this</Text>
-              <Text style={styles.muted}>
-                Sending a request to the wrong office is the most common way a petition stalls.
-                These fictional offices are ranked by how well they match your topic and wording.
-              </Text>
-              {suggestOffices(draft.topic, `${draft.problem ?? ''} ${draft.action ?? ''}`)
-                .slice(0, 4)
-                .map((office) => (
-                  <View key={office.id} style={{ gap: 4 }}>
-                    <Chip
-                      label={`${office.name} · ${levelLabels[office.level]}`}
-                      selected={draft.recipient === office.name}
-                      onPress={() => {
-                        setAutomaticRecipient(false);
-                        form.setValue('recipient', office.name, { shouldValidate: true });
-                      }}
-                    />
-                    <Text style={styles.small}>
-                      Decides: {office.controls.slice(0, 2).join('; ')}. Does not decide:{' '}
-                      {office.notResponsibleFor}
-                    </Text>
-                  </View>
-                ))}
-              <Button
-                title="Browse the full directory"
-                variant="ghost"
-                icon="information-circle-outline"
-                onPress={() => router.push('/recipients')}
-              />
-              {input('summary', 'One-sentence summary', true)}
-              {input('city', 'Approximate city and state')}
+
               <Text style={styles.h3}>Community</Text>
               <View style={styles.row}>
                 {q.data.communities.map((c) => (
@@ -364,19 +330,6 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                   />
                 ))}
               </View>
-              <Controller
-                control={form.control}
-                name="goal"
-                render={({ field, fieldState }) => (
-                  <Field
-                    label="Signature goal"
-                    keyboardType="number-pad"
-                    value={String(field.value)}
-                    onChangeText={(v) => field.onChange(Number(v))}
-                    error={fieldState.error?.message}
-                  />
-                )}
-              />
               {input('deadline', 'Deadline (YYYY-MM-DD)')}
               <Text style={styles.h3}>Evidence & sources</Text>
               <Notice text="Sources are supplied by the creator and are not fact-checked by Swipe4Change. Add only material you can support. Do not upload private information." />
@@ -422,6 +375,19 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           )}
           {step === 2 && (
             <>
+              <Controller
+                control={form.control}
+                name="goal"
+                render={({ field, fieldState }) => (
+                  <Field
+                    label="Signature goal"
+                    keyboardType="number-pad"
+                    value={String(field.value)}
+                    onChangeText={(v) => field.onChange(Number(v))}
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
               <Text style={styles.h3}>Private eligibility requirement</Text>
               <View style={styles.row}>
                 {verificationModes.map((v) => (
@@ -482,17 +448,50 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 Review the exact content you will publish. Publishing makes this petition visible in
                 the community feed.
               </Text>
-              <View>
-                <PetitionCard petition={preview} snapshot={q.data} preview />
+              <View style={styles.row}>
+                <Chip
+                  label="Card preview"
+                  selected={previewMode === 'card'}
+                  onPress={() => setPreviewMode('card')}
+                />
+                <Chip
+                  label="Detail preview"
+                  selected={previewMode === 'page'}
+                  onPress={() => setPreviewMode('page')}
+                />
               </View>
-              <Text style={styles.h3}>The problem</Text>
-              <Text style={styles.body}>{draft.problem}</Text>
-              <Text style={styles.h3}>Requested action</Text>
-              <Text style={styles.body}>{draft.action}</Text>
-              <Text style={styles.muted}>
-                Public choices: {draft.identities.map((i) => identityLabels[i]).join(', ')}.
-                Sources: {draft.evidence.length}.
-              </Text>
+              {previewMode === 'card' ? (
+                <PetitionCard petition={preview} snapshot={q.data} preview />
+              ) : (
+                <View style={{ gap: 16 }}>
+                  <Text style={styles.label}>
+                    {draft.topic} · {draft.city}
+                  </Text>
+                  <Text style={styles.title}>{draft.title}</Text>
+                  <Text style={styles.body}>{draft.action}</Text>
+                  <Text style={styles.small}>To: {draft.recipient}</Text>
+                  <Text style={styles.h3}>Why it matters</Text>
+                  <Text style={styles.body}>{draft.problem}</Text>
+                  <Text style={styles.h3}>Evidence and sources</Text>
+                  {draft.evidence.length ? (
+                    draft.evidence.map((e) => (
+                      <Text key={e.url} style={styles.small}>
+                        {e.label} · {e.url}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={styles.small}>No sources supplied yet.</Text>
+                  )}
+                  <Text style={styles.small}>
+                    {verificationLabels[draft.verification]} · Goal: {draft.goal} · Deadline:{' '}
+                    {draft.deadline}
+                  </Text>
+                  <Text style={styles.small}>
+                    Public identity choices:{' '}
+                    {draft.identities.map((i) => identityLabels[i]).join(', ')}
+                  </Text>
+                </View>
+              )}
               <Notice text="After publishing, open Manage to configure all four legal requirements from the responsible authority. Signatures stay blocked until that setup is complete. Saving a draft lets you gather the documents first." />
               <Button
                 title="Publish petition"
@@ -525,15 +524,19 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
             )}
           </View>
         </Panel>
-        {step < 3 && (
-          <Panel style={{ backgroundColor: '#EEF2E5', width: width >= 1200 ? 340 : '100%' }}>
+        {
+          <Panel style={{ backgroundColor: '#EEF2E5', width: width >= 1000 ? 340 : '100%' }}>
             <View style={styles.between}>
-              <Text style={styles.h2}>A little help getting clear</Text>
+              <Text style={styles.h2}>Prototype writing assistant</Text>
               <Chip label="SIMULATED AI · LOCAL RULES" />
             </View>
             <Text style={styles.muted}>
-              This prototype rearranges only the words you supply. It does not invent facts or
-              verify your claims. Everything stays editable.
+              Uses local rules, not generative AI. This prototype rearranges only the words you
+              supply. It does not invent facts or verify your claims. Everything stays editable.
+            </Text>
+            <Text style={{ fontSize: 32, fontWeight: '800', color: colors.accent }}>
+              {analysis.score}
+              <Text style={styles.muted}> / 100 completeness score</Text>
             </Text>
             <Text style={styles.h3}>Let’s build your case</Text>
             {support.prompts.map((prompt) => (
@@ -560,41 +563,6 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 }}
               />
             )}
-            <Text style={styles.h3}>Explore a possible legal basis</Text>
-            <Text style={styles.muted}>
-              Official research starting points, not a finding that a law applies or was violated.
-              Confirm jurisdiction, facts, and current local rules.
-            </Text>
-            {support.legal.map((source) => (
-              <View key={source.url} style={{ gap: 8 }}>
-                <Text style={styles.h3}>{source.title}</Text>
-                <Text style={styles.muted}>{source.relevance}</Text>
-                <Button
-                  title="Read official guidance"
-                  variant="ghost"
-                  onPress={() => {
-                    void Linking.openURL(source.url).catch(() =>
-                      setDraftMessage('Could not open the source. Please try again.'),
-                    );
-                  }}
-                />
-                <Button
-                  title="Add as research source"
-                  variant="secondary"
-                  disabled={draft.evidence.some((e) => e.url === source.url)}
-                  onPress={() =>
-                    form.setValue('evidence', [
-                      ...draft.evidence,
-                      { label: source.title, url: source.url },
-                    ])
-                  }
-                />
-              </View>
-            ))}
-            <Text style={{ fontSize: 32, fontWeight: '800', color: colors.accent }}>
-              {analysis.score}
-              <Text style={styles.muted}> / 100 completeness score</Text>
-            </Text>
             {(() => {
               // Completeness says whether the fields are filled in. This says whether a neighbour
               // can read the result, which is a different question and usually the harder one.
@@ -671,8 +639,83 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 />
               )}
             </View>
+            <Text style={styles.small}>Suggested recipient category: {recipient.name}</Text>
+            <Text style={styles.micro}>{recipient.explanation}</Text>
+            <Button
+              title={
+                research
+                  ? 'Hide recipient and research guidance'
+                  : 'Recipient directory and research guidance'
+              }
+              variant="ghost"
+              onPress={() => setResearch(!research)}
+            />
+            {research && (
+              <>
+                <Text style={styles.muted}>{recipient.explanation}</Text>
+                <Text style={styles.h3}>Offices that handle this</Text>
+                <Text style={styles.muted}>
+                  Sending a request to the wrong office is the most common way a petition stalls.
+                  These fictional offices are ranked by how well they match your topic and wording.
+                </Text>
+                {suggestOffices(draft.topic, `${draft.problem ?? ''} ${draft.action ?? ''}`)
+                  .slice(0, 4)
+                  .map((office) => (
+                    <View key={office.id} style={{ gap: 4 }}>
+                      <Chip
+                        label={`${office.name} · ${levelLabels[office.level]}`}
+                        selected={draft.recipient === office.name}
+                        onPress={() =>
+                          form.setValue('recipient', office.name, { shouldValidate: true })
+                        }
+                      />
+                      <Text style={styles.small}>
+                        Decides: {office.controls.slice(0, 2).join('; ')}. Does not decide:{' '}
+                        {office.notResponsibleFor}
+                      </Text>
+                    </View>
+                  ))}
+                <Button
+                  title="Browse the full directory"
+                  variant="ghost"
+                  icon="information-circle-outline"
+                  onPress={() => router.push('/recipients')}
+                />
+                <Text style={styles.h3}>Explore a possible legal basis</Text>
+                <Text style={styles.muted}>
+                  Official research starting points, not a finding that a law applies or was
+                  violated. Confirm jurisdiction, facts, and current local rules.
+                </Text>
+                {support.legal.map((source) => (
+                  <View key={source.url} style={{ gap: 8 }}>
+                    <Text style={styles.h3}>{source.title}</Text>
+                    <Text style={styles.muted}>{source.relevance}</Text>
+                    <Button
+                      title="Read official guidance"
+                      variant="ghost"
+                      onPress={() => {
+                        void Linking.openURL(source.url).catch(() =>
+                          setDraftMessage('Could not open the source. Please try again.'),
+                        );
+                      }}
+                    />
+                    <Button
+                      title="Add as research source"
+                      variant="secondary"
+                      disabled={draft.evidence.some((e) => e.url === source.url)}
+                      onPress={() =>
+                        form.setValue('evidence', [
+                          ...draft.evidence,
+                          { label: source.title, url: source.url },
+                        ])
+                      }
+                    />
+                  </View>
+                ))}
+              </>
+            )}
           </Panel>
-        )}
+        }
       </View>
       <Confirm
         visible={confirm}
@@ -682,6 +725,18 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         onCancel={() => setConfirm(false)}
         onConfirm={() => publish(true)}
       >
+        <Text style={styles.h3}>{draft.title}</Text>
+        <Text style={styles.body}>{draft.action}</Text>
+        <Text style={styles.small}>
+          To: {draft.recipient} · {draft.city}
+        </Text>
+        <Text style={styles.small}>
+          {verificationLabels[draft.verification]} ·{' '}
+          {draft.identities.map((i) => identityLabels[i]).join(', ')}
+        </Text>
+        <Text style={styles.small}>
+          Goal {draft.goal} · Deadline {draft.deadline} · {draft.evidence.length} sources
+        </Text>
         {command.error && <Notice error text={command.error.message} />}
       </Confirm>
     </Page>

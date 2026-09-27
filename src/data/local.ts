@@ -39,8 +39,9 @@ import {
   volunteerSchema,
 } from '../domain/rules';
 import { profileSchema } from '../domain/personalization';
+import { prepareResponseChecks } from '../domain/response-checks';
 import { z } from 'zod';
-import { demoIds, seedCommunities, seedPetitions, seedProfiles } from './seed';
+import { demoIds, petitionId, seedCommunities, seedPetitions, seedProfiles } from './seed';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -93,8 +94,8 @@ const initial = (): LocalState => ({
   communities: seedCommunities(),
   petitions: seedPetitions(),
   signatures: [],
-  saves: {},
-  follows: {},
+  saves: { [demoIds.maya]: [petitionId(2)] },
+  follows: { [demoIds.maya]: [petitionId(1)] },
   volunteers: [],
   reports: [],
   requests: [],
@@ -120,6 +121,20 @@ export class LocalAdapter implements Adapter {
         const parsed: LocalState = JSON.parse(raw);
         if (parsed.version !== 1)
           throw new Error('Saved demo uses an unsupported version. Reset the demo.');
+        // Add only the new comparison to an untouched legacy flagship. Keep every saved petition,
+        // response, edit and signature as the participant left it.
+        const flagship = parsed.petitions.find((petition) => petition.id === petitionId(1));
+        if (
+          flagship &&
+          !flagship.responseChecks &&
+          flagship.action ===
+            'Assess the Eastbridge campus-to-bus path and publish a pedestrian-lighting installation plan before the winter evening semester.' &&
+          flagship.responses.some(
+            (response) =>
+              response.id === 'r1' && response.verification === 'verified' && !response.removed,
+          )
+        )
+          flagship.responseChecks = seedPetitions()[0].responseChecks;
         this.state = parsed;
       } else this.state = initial();
     }
@@ -654,6 +669,7 @@ export class LocalAdapter implements Adapter {
           endorsements: [],
           discussion: [],
           responses: [],
+          responseChecks: [{ ask: d.action, status: 'not_reviewed', note: '' }],
         });
         if (c.draftId)
           s.drafts = (s.drafts ?? []).filter((d) => d.id !== c.draftId || d.userId !== user.id);
@@ -938,6 +954,19 @@ export class LocalAdapter implements Adapter {
           ),
         );
         Object.assign(p, Object.fromEntries(changed.map((f) => [f, next[f]])));
+        if (changed.includes('action')) {
+          const previousChecks = (p.responseChecks ?? []).map(
+            (check) => `${check.ask} (${check.status})`,
+          );
+          p.responseChecks = [{ ask: p.action.slice(0, 240), status: 'not_reviewed', note: '' }];
+          p.edits.unshift(
+            entry(
+              `Response comparison reset because the requested action changed. Previous: ${previousChecks.join('; ') || 'not configured'}.`,
+              'response comparison',
+              true,
+            ),
+          );
+        }
         notify(
           followers(p),
           `“${p.title}” was revised by the organizer: ${changed.map((f) => fieldLabels[f]).join(', ')}. The previous wording is in its public history.`,
@@ -989,6 +1018,19 @@ export class LocalAdapter implements Adapter {
           `An unverified response from ${postSchema.parse(c.organization)} was recorded on “${p.title}”. Swipe4Change has not verified the respondent.`,
           'response',
         );
+        return;
+      }
+      if (c.type === 'responseChecks') {
+        const previous = p.responseChecks ?? [];
+        p.responseChecks = prepareResponseChecks(p, c.checks, user.name, new Date().toISOString());
+        p.edits.unshift(
+          entry(
+            `Organizer revised the request-to-response comparison. Previous checks: ${previous.length ? previous.map((check) => `${check.ask} (${check.status})`).join('; ') : 'none recorded'}. This is the organizer's reading of a response, not proof that work was completed.`,
+            'response comparison',
+            true,
+          ),
+        );
+        notify(followers(p), `The response comparison on “${p.title}” was updated.`, 'edit');
         return;
       }
       if (c.type === 'close') {

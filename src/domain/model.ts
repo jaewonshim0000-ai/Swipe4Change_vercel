@@ -96,6 +96,15 @@ export interface Response extends Entry {
   /** The delivery this answers, when the organizer recorded one. */
   deliveryId?: string;
 }
+/** An organizer's reading of what a recorded response actually says, not proof of implementation. */
+export interface ResponseCheck {
+  ask: string;
+  status: 'not_reviewed' | 'answered' | 'partial' | 'unanswered';
+  note: string;
+  responseId?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+}
 export const deliveryMethods = ['email', 'portal', 'in_person', 'mail'] as const;
 export type DeliveryMethod = (typeof deliveryMethods)[number];
 export const deliveryMethodLabels: Record<DeliveryMethod, string> = {
@@ -169,6 +178,8 @@ export interface Petition {
   endorsements: Entry[];
   discussion: Entry[];
   responses: Response[];
+  /** Optional for petitions saved before response checks were introduced. */
+  responseChecks?: ResponseCheck[];
 }
 export interface PublicSignature {
   id: string;
@@ -410,6 +421,7 @@ export type Command =
   | { type: 'report'; petitionId: string; reason: string }
   | { type: 'appeal'; reportId: string; body: string }
   | { type: 'deliver'; petitionId: string; method: DeliveryMethod; note: string }
+  | { type: 'responseChecks'; petitionId: string; checks: ResponseCheck[] }
   | {
       type: 'response';
       petitionId: string;

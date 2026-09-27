@@ -5,7 +5,7 @@ import { useCommand, useSnapshot } from '../../src/data/provider';
 import { Topic, topics } from '../../src/domain/model';
 import { communitySchema } from '../../src/domain/rules';
 import { Button, Chip, Field, Loading, Notice, Page, Panel, styles } from '../../src/components/ui';
-import { ListCard } from '../../src/components/design-system';
+import { CommunityCard, SectionHeader } from '../../src/components/civic-journey';
 export default function Communities() {
   const q = useSnapshot();
   const m = useCommand();
@@ -49,6 +49,43 @@ export default function Communities() {
       subtitle="Find a community, trade ideas, and make the next step together."
       eyebrow="YOU DON’T HAVE TO DO IT ALONE"
     >
+      {[true, false].map((joined) => {
+        const communities = s.communities.filter(
+          (c) => !!s.profile?.joined.includes(c.id) === joined,
+        );
+        if (!communities.length) return null;
+        return (
+          <View key={String(joined)} style={{ gap: 16 }}>
+            <SectionHeader
+              title={joined ? 'Your communities' : 'Discover a shared purpose'}
+              note={
+                joined
+                  ? 'Pick up the conversation where you left it.'
+                  : 'Find the people working on the places you care about.'
+              }
+            />
+            {communities.map((c) => (
+              <CommunityCard
+                key={c.id}
+                community={c}
+                snapshot={s}
+                action={
+                  <Button
+                    title={joined ? 'Joined' : 'Join'}
+                    variant="secondary"
+                    disabled={m.isPending}
+                    onPress={() =>
+                      s.profile
+                        ? m.mutate({ type: 'join', communityId: c.id })
+                        : router.push('/(auth)/sign-in')
+                    }
+                  />
+                }
+              />
+            ))}
+          </View>
+        );
+      })}
       <Panel>
         <View style={styles.between}>
           <Text style={styles.h2}>Start your own</Text>
@@ -85,33 +122,6 @@ export default function Communities() {
           </Text>
         )}
       </Panel>
-      {s.communities.map((c) => (
-        <ListCard
-          key={c.id}
-          eyebrow={c.topic}
-          title={c.name}
-          body={c.description}
-          meta={`${c.city} · ${c.members} members${
-            c.sampleMembers > 0 ? ` (${c.sampleMembers} fictional sample)` : ''
-          }${c.ownerId === s.profile?.id ? ' · you own this community' : ''}`}
-          onPress={() => router.push(`/community/${c.id}`)}
-          action={
-            <Button
-              title={s.profile?.joined.includes(c.id) ? 'Joined' : 'Join'}
-              variant={s.profile?.joined.includes(c.id) ? 'secondary' : 'primary'}
-              disabled={m.isPending}
-              onPress={() =>
-                s.profile
-                  ? m.mutate({ type: 'join', communityId: c.id })
-                  : router.push('/(auth)/sign-in')
-              }
-            />
-          }
-        />
-      ))}
-      <Text style={[styles.micro, { textAlign: 'center' }]}>
-        Fictional seed headcounts. A community you create starts at one member — yours.
-      </Text>
       {m.error && !creating && <Notice error text={m.error.message} />}
     </Page>
   );

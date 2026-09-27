@@ -241,12 +241,13 @@ export function SummaryRows({ rows }: { rows: { label: string; value: string }[]
 /** A row of figures: big serif number over a small caption. */
 export function Stats({ items }: { items: { value: string | number; label: string }[] }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 10 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
       {items.map((s) => (
         <View
           key={s.label}
           style={{
             flex: 1,
+            minWidth: 110,
             borderWidth: 1,
             borderColor: colors.line,
             borderRadius: tokens.radius,
@@ -339,10 +340,17 @@ export function SettingsRow({
 
 /** The small uppercase tag saying what kind of thing an entry is. */
 export function KindBadge({ label }: { label: string }) {
+  const tone = /question|poll/i.test(label)
+    ? { bg: '#E6EDF7', ink: '#405E82' }
+    : /event|task|volunteer/i.test(label)
+      ? { bg: '#F5EBD9', ink: '#755329' }
+      : /document|resource|proposal/i.test(label)
+        ? { bg: '#EDE6F4', ink: '#66517C' }
+        : { bg: colors.primarySoft, ink: colors.primary };
   return (
     <View
       style={{
-        backgroundColor: colors.pale,
+        backgroundColor: tone.bg,
         borderRadius: 4,
         paddingHorizontal: 6,
         paddingVertical: 3,
@@ -351,10 +359,10 @@ export function KindBadge({ label }: { label: string }) {
       <Text
         style={{
           fontFamily: fonts.semibold,
-          fontSize: 9.5,
+          fontSize: 11,
           letterSpacing: 0.8,
           textTransform: 'uppercase',
-          color: colors.accent,
+          color: tone.ink,
         }}
       >
         {label}

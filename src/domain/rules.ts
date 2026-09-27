@@ -195,12 +195,32 @@ export function signingError(
   if (p.verification === 'community' && !s.profile.joined.includes(p.communityId))
     return 'Join this community before signing.';
   if (p.verification === 'location' && !s.profile.locationApproved)
-    return 'Location approval is required. This demo does not collect addresses; use the approved Sam account.';
-  if (p.verification === 'custom' && !s.customApprovals.includes(p.id))
+    return 'Location verification requires an approved attestation. An approximate city alone does not establish eligibility.';
+  if (s.profile && p.verification === 'custom' && !s.customApprovals.includes(p.id))
     return 'Request eligibility review below. The organizer must approve it before you sign.';
   if (!p.qualification?.details)
     return 'The organizer must configure all four legal requirements before signatures can be recorded.';
   return null;
+}
+/** Presentation state derived from the same rules that reject an invalid signature. */
+export function signingStatus(
+  p: Petition,
+  s: Snapshot,
+  identity: Identity,
+  now = Date.now(),
+): { state: 'eligible' | 'additional' | 'pending' | 'ineligible'; message: string | null } {
+  const message = signingError(p, s, identity, now);
+  if (!message) return { state: 'eligible', message: null };
+  if (
+    p.status !== 'active' ||
+    Date.parse(p.deadline) < now ||
+    s.signed.includes(p.id) ||
+    !p.identities.includes(identity)
+  )
+    return { state: 'ineligible', message };
+  if (s.profile && p.verification === 'custom' && !s.customApprovals.includes(p.id))
+    return { state: 'pending', message };
+  return { state: 'additional', message };
 }
 export function publicName(name: string, identity: Identity) {
   const words = name.trim().split(/\s+/);
