@@ -7,3 +7,10 @@ dist-*/
 .env.local
 
 dist-refinement/
+
+# Local browser automation and generated exports
+/.playwright-cli/
+/output/
+
+# macOS metadata
+.DS_Store
