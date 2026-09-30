@@ -1,3 +1,4 @@
+import { readingFrame } from '../../src/components/responsive';
 import { useEffect, useRef, useState } from 'react';
 import { Image, Linking, Pressable, Text, View } from 'react-native';
 import Animated, {
@@ -238,7 +239,9 @@ function PetitionPage({
     },
   ];
   return (
-    <Animated.View style={[{ flex: 1, backgroundColor: colors.canvas }, anim(kf.slide, 420)]}>
+    <Animated.View
+      style={[readingFrame, { flex: 1, backgroundColor: colors.canvas }, anim(kf.slide, 420)]}
+    >
       <StatusBar style="light" />
       <Animated.ScrollView
         onScroll={onScroll}

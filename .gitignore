@@ -14,3 +14,8 @@ dist-refinement/
 
 # macOS metadata
 .DS_Store
+
+# Supabase CLI machine-local state
+supabase/.temp/
+supabase/.branches/
+supabase/.env*

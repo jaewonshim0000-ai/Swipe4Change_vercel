@@ -1,3 +1,4 @@
+import { ResponsiveGrid } from '../../src/components/responsive';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -66,7 +67,7 @@ export default function Communities() {
     );
   }
   return (
-    <Screen>
+    <Screen wide>
       <Text style={styles.label}>Communities</Text>
       <Text accessibilityRole="header" style={[styles.title, { marginTop: 8, marginBottom: 6 }]}>
         Your people, nearby.
@@ -75,112 +76,116 @@ export default function Communities() {
         Local groups in a fictional town. Owners endorse petitions and moderate their own space.
       </Text>
       <View style={{ gap: 14 }}>
-        {s.communities.map((c, i) => {
-          const on = !!s.profile?.joined.includes(c.id);
-          const campaigns = s.petitions.filter(
-            (p) => p.communityId === c.id && p.status === 'active',
-          ).length;
-          return (
-            <Animated.View key={c.id} style={stag(i)}>
-              <View
-                style={{
-                  backgroundColor: colors.white,
-                  borderRadius: 28,
-                  overflow: 'hidden',
-                  boxShadow: '0px 12px 28px -18px rgba(32,38,26,0.4)',
-                }}
-              >
-                <Pressable
-                  accessibilityRole="link"
-                  accessibilityLabel={`Open ${c.name}`}
-                  onPress={() => router.push(`/community/${c.id}`)}
-                  style={{ height: 120 }}
+        <ResponsiveGrid>
+          {s.communities.map((c, i) => {
+            const on = !!s.profile?.joined.includes(c.id);
+            const campaigns = s.petitions.filter(
+              (p) => p.communityId === c.id && p.status === 'active',
+            ).length;
+            return (
+              <Animated.View key={c.id} style={stag(i)}>
+                <View
+                  style={{
+                    backgroundColor: colors.white,
+                    borderRadius: 28,
+                    overflow: 'hidden',
+                    boxShadow: '0px 12px 28px -18px rgba(32,38,26,0.4)',
+                  }}
                 >
-                  <Cover source={topicImage(c.topic)} style={{ width: '100%', height: '100%' }} />
-                  <Scrim stops="rgba(18,20,15,0) 20%, rgba(18,20,15,0.75) 100%" />
-                  <Text
-                    style={{
-                      position: 'absolute',
-                      left: 16,
-                      right: 16,
-                      bottom: 12,
-                      fontFamily: fonts.heading,
-                      fontSize: 20,
-                      lineHeight: 24,
-                      letterSpacing: -0.5,
-                      color: colors.white,
-                    }}
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Open ${c.name}`}
+                    onPress={() => router.push(`/community/${c.id}`)}
+                    style={{ height: 120 }}
                   >
-                    {c.name}
-                  </Text>
-                </Pressable>
-                <View style={{ paddingTop: 14, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
-                  <Text
-                    style={{
-                      fontFamily: fonts.body,
-                      fontSize: 13,
-                      lineHeight: 19.5,
-                      color: colors.muted,
-                    }}
-                  >
-                    {c.description}
-                  </Text>
+                    <Cover source={topicImage(c.topic)} style={{ width: '100%', height: '100%' }} />
+                    <Scrim stops="rgba(18,20,15,0) 20%, rgba(18,20,15,0.75) 100%" />
+                    <Text
+                      style={{
+                        position: 'absolute',
+                        left: 16,
+                        right: 16,
+                        bottom: 12,
+                        fontFamily: fonts.heading,
+                        fontSize: 20,
+                        lineHeight: 24,
+                        letterSpacing: -0.5,
+                        color: colors.white,
+                      }}
+                    >
+                      {c.name}
+                    </Text>
+                  </Pressable>
                   <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 10,
-                    }}
+                    style={{ paddingTop: 14, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}
                   >
                     <Text
                       style={{
-                        flexShrink: 1,
-                        fontFamily: fonts.medium,
-                        fontSize: 12,
-                        color: colors.secondary,
+                        fontFamily: fonts.body,
+                        fontSize: 13,
+                        lineHeight: 19.5,
+                        color: colors.muted,
                       }}
                     >
-                      {c.members} members · {campaigns} campaigns
+                      {c.description}
                     </Text>
-                    <Press
-                      accessibilityLabel={on ? `Leave ${c.name}` : `Join ${c.name}`}
-                      disabled={m.isPending}
-                      onPress={() =>
-                        s.profile
-                          ? m.mutate(
-                              { type: 'join', communityId: c.id },
-                              {
-                                onSuccess: () =>
-                                  toast(on ? `Left ${c.name}.` : `Welcome to ${c.name}!`),
-                              },
-                            )
-                          : router.push('/(auth)/sign-in')
-                      }
+                    <View
                       style={{
-                        minHeight: 40,
-                        paddingHorizontal: 18,
-                        borderRadius: 999,
-                        justifyContent: 'center',
-                        backgroundColor: on ? colors.soft : colors.dark,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 10,
                       }}
                     >
                       <Text
                         style={{
-                          fontFamily: fonts.semibold,
-                          fontSize: 12.5,
-                          color: on ? colors.accent : colors.white,
+                          flexShrink: 1,
+                          fontFamily: fonts.medium,
+                          fontSize: 12,
+                          color: colors.secondary,
                         }}
                       >
-                        {on ? '✓ Joined' : 'Join'}
+                        {c.members} members · {campaigns} campaigns
                       </Text>
-                    </Press>
+                      <Press
+                        accessibilityLabel={on ? `Leave ${c.name}` : `Join ${c.name}`}
+                        disabled={m.isPending}
+                        onPress={() =>
+                          s.profile
+                            ? m.mutate(
+                                { type: 'join', communityId: c.id },
+                                {
+                                  onSuccess: () =>
+                                    toast(on ? `Left ${c.name}.` : `Welcome to ${c.name}!`),
+                                },
+                              )
+                            : router.push('/(auth)/sign-in')
+                        }
+                        style={{
+                          minHeight: 40,
+                          paddingHorizontal: 18,
+                          borderRadius: 999,
+                          justifyContent: 'center',
+                          backgroundColor: on ? colors.soft : colors.dark,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: fonts.semibold,
+                            fontSize: 12.5,
+                            color: on ? colors.accent : colors.white,
+                          }}
+                        >
+                          {on ? '✓ Joined' : 'Join'}
+                        </Text>
+                      </Press>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </Animated.View>
-          );
-        })}
+              </Animated.View>
+            );
+          })}
+        </ResponsiveGrid>
         {m.error && !creating && <Notice error text={m.error.message} />}
         <Pressable
           accessibilityRole="button"

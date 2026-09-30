@@ -10,9 +10,17 @@ The app implements the **Swipe4Change v2** Claude Design handoff in [`design/pet
 
 Motion is ported one-to-one: the design's CSS keyframes (`s4In`, `s4Slide`, `s4Sheet`, `s4Ken`, `s4Ring`, `s4Pop`, `s4Toast`, …) live in `src/components/motion.ts` as Reanimated 4 CSS animations with the same durations, delays and `cubic-bezier(.2,.8,.2,1)` easing, and run on iOS, Android and web. The swipe deck, parallax and score ring use Reanimated shared values. Everything respects the system reduced-motion setting. Features the design does not show (manager tools, delivery packets, volunteering roles, reports and appeals, drafts, moderation) keep working and use the same components, sheets and tokens.
 
-**The default app is a complete, persistent local demo. No credentials are required.** Every account, community, organization, official response, source, and seed signature is fictional. The local adapter simulates eligibility; it does not verify real people. This is a competition prototype, not a deployed civic service.
+**The app defaults to hosted Supabase with Clerk authentication. No Docker is required.** An offline fictional demo is available by explicitly setting `EXPO_PUBLIC_BACKEND=demo`. Every seeded account, community, organization, official response, source, and signature is fictional. The local adapter simulates eligibility; it does not verify real people. This is a competition prototype, not a deployed civic service.
 
 The public app name is **Swipe4Change**. New native links use `swipe4change://`; the original `lookaware://` scheme remains an alias for existing links. Bundle/package IDs (`org.lookaware.app`), local storage/draft keys, and the existing migration/RPC names remain stable to preserve installed-app identity, saved demo data, and backend compatibility. Register `swipe4change://auth-callback` in Clerk before using native hosted sign-in with the renamed build. Rebuild native apps to pick up the display name and URL scheme.
+
+## Adaptive web layout
+
+Run `npm run web` to use the same app in a browser. Below 900px, web keeps the mobile navigation and single-column discovery. At 900px and above, navigation stays fixed at the bottom with every destination labeled; Home, Explore, and Communities use a centered canvas up to 1200px wide with two-column results. Home initially selects Cards on desktop; Swipe remains available. Resizing preserves search, filters, and draft state.
+
+Forms, profiles, onboarding, and detail pages stay within a 760px reading width. Desktop confirmation/filter sheets are centered dialogs; narrow screens retain bottom sheets. Native iOS/Android retain their existing mobile layout. Breakpoints and width limits live in `src/components/responsive.tsx`.
+
+Responsive smoke checks: resize between 390px, 768px, 900px, and 1440px; navigate all five tabs, search/filter Explore, switch Cards/Swipe, open a petition and its signing sheet, and enter a Create draft before resizing. Check that navigation and form actions remain visible and no page scrolls horizontally.
 
 ## The Eastbridge journey
 
@@ -26,7 +34,7 @@ Create uses **Define the change / Build the case / Configure participation / Rev
 
 Fresh local data includes Maya's saved shade-tree petition, plus a fictional delivery linked to the lighting response. All twelve sample petitions have distinct local problems and a fictional responsible office matched to the request. Existing on-device work is never reset automatically. To see fresh sample content, use the existing confirmed **Profile → Reset all local demo data** action after preserving any demo work you want to keep. `npm run seed` regenerates the equivalent SQL fixture; run it only in a development database.
 
-The no-network demonstration remains the default local adapter. Hosted failures show an error and retry; the app does not silently turn a rejected Supabase signature into a successful local signature. For an offline presentation, start with the default local backend. No dependencies or backend migrations were needed for this refinement.
+The no-network demonstration uses the optional local demo adapter. Hosted failures show an error and retry; the app does not silently turn a rejected Supabase signature into a successful local signature. For an offline presentation, set `EXPO_PUBLIC_BACKEND=demo`. No dependencies or backend migrations were needed for this refinement.
 
 Validation for this version: typecheck, lint and Prettier pass; all 109 Jest tests in 19 suites pass; PostgreSQL integration passes with 23 RLS-protected tables and repeatable seed execution; Expo exports the web bundle. Browser checks at 375px cover the three-step signing flow with a drawn signature, sharing a ripple link, signing through it as another account, the referrer's notification, and the ripple on the petition page, profile and organizer dashboard. Physical-device builds and live Clerk/Supabase authentication were not exercised in this local environment.
 
@@ -49,12 +57,13 @@ Use Node 22 LTS or newer (Node 26 also tested) and npm.
 
 ```sh
 npm ci
+# Configure hosted Supabase and apply migrations as described below.
 npm run web
 # Or run Metro for iOS / Android:
 npm start
 ```
 
-**Turn on the AI model (optional).** Report review and the hidden For You tags use Claude. Copy `.env.example` to `.env`, set `ANTHROPIC_API_KEY` (from console.anthropic.com), and restart `npm run web`. The key is read only by the dev server's `/api/ai` route (`app/api/ai+api.ts`) and never bundled into the app. Without a key the app still works: reports use keyword rules and tags come from word matching. On first launch with a key, the seed petitions are tagged in the background (one request each).
+**Turn on the AI model for the offline demo (optional).** Report review and the hidden For You tags use Claude. Copy `.env.example` to `.env`, set `ANTHROPIC_API_KEY` (from console.anthropic.com), and restart `npm run web`. The key is read only by the dev server's `/api/ai` route (`app/api/ai+api.ts`) and never bundled into the app. Without a key the app still works: reports use keyword rules and tags come from word matching. On first launch with a key, the seed petitions are tagged in the background (one request each).
 
 Choose Maya on the welcome screen, select at least three interests (or skip), enter a city/state, and continue. Data persists in AsyncStorage (browser local storage on web). Use Profile → Reset all local demo data to restore the community. No actual authentication secrets are stored in the demo.
 
@@ -214,9 +223,39 @@ There is one `Adapter` boundary for queries and typed commands. Screens never wr
 
 See [DECISIONS.md](DECISIONS.md) for privacy and engineering tradeoffs.
 
-## Switch to Supabase + Clerk
+## Hosted Supabase + Clerk
 
-1. Create Supabase and Clerk development projects. Enable the **Clerk third-party authentication integration** in Supabase. The RPCs use the signed JWT `sub`; they do not assume Clerk IDs are Supabase UUIDs. See [Supabase Clerk integration](https://supabase.com/docs/guides/auth/third-party/clerk).
+Browsing is public: opening `/` lands on Home without requiring login. Guests have separate **Log in** and **Sign up** buttons across the five tabs. Authentication uses a fluid two-column layout on desktop (900px and wider) and a full-width, stacked, scrollable layout on smaller screens, without a fixed page-width cap; signing, saving, publishing, and membership still require an account. The registration button opens Clerk’s sign-up flow directly, and **Back to browsing** returns to Home.
+
+The app keeps Clerk for authentication and uses Supabase for persistent data through the existing typed RPC adapter. There is no second Supabase Auth session. Setup errors render an actionable screen instead of silently switching to fictional data. Queries wait for Clerk hydration, and every Clerk session owns a separate TanStack Query cache, including private manager queries.
+
+The installed Clerk CLI is linked to the existing **Swipe4Change** development application. Its Native API is enabled, with email/password, email codes, and Google available. The native callback `swipe4change://auth-callback` is registered, and signed session tokens include `role: authenticated`. The app includes Clerk's Expo config plugin and secure token cache; native sign-in handles cancellation and errors before navigating. These follow the [Clerk Expo quickstart](https://clerk.com/docs/expo/getting-started/quickstart).
+
+Clerk setup verification (September 30, 2026): CLI 3.4.0 confirmed authentication, the link to `app_3K3QOcSMAc823cnBsiIv8R9ihB2`, application reachability, and development environment configuration. The existing provider in `src/data/provider.tsx` was preserved instead of accepting a duplicate provider from the initializer. Typecheck, lint, all 133 tests across 23 suites, and web export passed. The live browser rendered authentication with Google and email options. A real account sign-in, authenticated Supabase access, session persistence after restart, and native-device authentication still require end-to-end verification.
+
+When `EXPO_PUBLIC_BACKEND` is unset, the app selects hosted mode. Missing Supabase settings then show a setup message; they do not silently log you into a fictional account. Choose `EXPO_PUBLIC_BACKEND=demo` explicitly for the offline demo. Clerk keys are already in the ignored `.env.local`; do not replace them or run `clerk init` again. The Clerk secret key is CLI/server-only and must never be imported into app code.
+
+The September 30 configuration pass verified Clerk's development settings, registered the callback, and applied all nine migrations to hosted Supabase project `npxjyqihefyyejeeegld`. Remote migration history matches the checkout, all 23 public tables have RLS enabled, and the public `lookaware_snapshot` RPC succeeds. The supplied Supabase URL/public key remain in ignored local configuration. No fictional seed was imported, so the hosted petition feed is initially empty. Real browser/device sign-in and session persistence remain to be exercised after the hosted Clerk connection is enabled.
+
+### Project configuration
+
+The existing ignored `.env.local` selects `supabase` and points to the hosted project `npxjyqihefyyejeeegld.supabase.co`. Preserve its installed public keys. For a fresh checkout, copy `.env.example` to `.env` and enter the hosted project URL, Supabase publishable key, and Clerk publishable key. Existing `.env.local` values override `.env`. Restart Expo after changing configuration.
+
+`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is preferred; an empty value falls back to `EXPO_PUBLIC_SUPABASE_ANON_KEY` for legacy anon JWTs. Never put a service-role key in the app. Enable Clerk third-party authentication in the **hosted Supabase dashboard**, trusting `elegant-kodiak-6215.clerk.accounts.dev` for this development application. The CLI config file does not configure hosted authentication.
+
+### Hosted database
+
+```sh
+npx supabase login
+npx supabase link --project-ref npxjyqihefyyejeeegld
+npm run supabase:push:preview
+npm run supabase:push
+```
+
+`supabase login` requires your Supabase account; the app’s public key cannot authorize database deployment. No Docker is needed for linking or pushing migrations. The preview lists pending migrations; push applies them to the linked project. Seed data is not pushed by default. To include fictional data in a development project only, run `npx supabase db push --include-seed`. Never reset a hosted database to install this integration.
+
+
+1. Use the existing Supabase and Clerk development projects (or create your own for a separate deployment). Enable the **Clerk third-party authentication integration** in Supabase. The RPCs use the signed JWT `sub`; they do not assume Clerk IDs are Supabase UUIDs. See [Supabase Clerk integration](https://supabase.com/docs/guides/auth/third-party/clerk).
 2. Apply every SQL file in `supabase/migrations/` in filename order with the Supabase CLI or SQL editor, then optionally apply `supabase/seed.sql` to a **development** database. Seed accounts have no Clerk mapping and cannot be logged into remotely.
 3. Copy `.env.example` to `.env`. Set `EXPO_PUBLIC_BACKEND=supabase`, your public project URL, public anon/publishable key, and Clerk publishable key. Never use a service-role key or Clerk secret key in Expo configuration.
    - **AI review:** deploy the Edge Function and give it the key: `supabase functions deploy ai-review --no-verify-jwt` and `supabase secrets set ANTHROPIC_API_KEY=...`. It takes no input and only processes the database's queue (pending reports, untagged petitions) through service-role-only SQL functions, so it needs no user token (Clerk tokens are not Supabase JWTs). Without it, reports stay **pending** for a person and the feed ranks from petition wording.

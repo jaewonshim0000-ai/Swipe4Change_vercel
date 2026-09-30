@@ -1,3 +1,4 @@
+import { AuthButtons } from '../../src/components/auth-buttons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -60,10 +61,10 @@ export default function Profile() {
   if (!q.data?.profile)
     return (
       <Page title="Your voice has a home here." eyebrow="Profile">
-        <Button
-          title="Sign in or choose a demo account"
-          onPress={() => router.push('/(auth)/sign-in')}
-        />
+        <Text style={styles.body}>
+          Save causes, follow your signatures, and manage your petitions with an account.
+        </Text>
+        <AuthButtons />
       </Page>
     );
   const s = q.data;

@@ -46,6 +46,7 @@
     "jest": "~29.7.0",
     "jest-expo": "~57.0.5",
     "prettier": "^3.9.6",
+    "supabase": "^2.118.0",
     "tsx": "^4.23.13",
     "typescript": "~6.0.3"
   },
@@ -62,7 +63,11 @@
     "export:web": "expo export --platform web",
     "seed": "tsx scripts/seed.ts",
     "test:db": "tsx scripts/test-database.ts",
-    "types:db": "tsx scripts/generate-types.ts"
+    "types:db": "tsx scripts/generate-types.ts",
+    "supabase:push:preview": "supabase db push --dry-run",
+    "supabase:push": "supabase db push",
+    "supabase:login": "supabase login",
+    "supabase:link": "supabase link"
   },
   "private": true
 }

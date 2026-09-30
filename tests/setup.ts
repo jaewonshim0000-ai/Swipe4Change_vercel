@@ -1,3 +1,6 @@
+// Offline UI tests explicitly opt into the fictional adapter.
+process.env.EXPO_PUBLIC_BACKEND = 'demo';
+
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), replace: jest.fn() } }));
 jest.mock('@react-native-async-storage/async-storage', () => {
   const data = new Map<string, string>();

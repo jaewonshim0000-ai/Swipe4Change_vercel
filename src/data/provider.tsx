@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
+import { getBackendConfig } from './config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { ClerkProvider, useAuth } from '@clerk/expo';
@@ -15,18 +17,39 @@ import { optimisticSnapshot } from '../domain/rules';
 import { LocalAdapter } from './local';
 import { demoAi } from './ai';
 import { createSupabaseAdapter } from './supabase';
-export const isDemo = process.env.EXPO_PUBLIC_BACKEND !== 'supabase';
+export const isDemo = process.env.EXPO_PUBLIC_BACKEND === 'demo';
 export const localAdapter = new LocalAdapter(AsyncStorage, Crypto.randomUUID, demoAi);
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 15000 }, mutations: { retry: false } },
-});
+const createQueryClient = () =>
+  new QueryClient({
+    defaultOptions: { queries: { retry: 1, staleTime: 15000 }, mutations: { retry: false } },
+  });
 const Context = createContext<{
   adapter: Adapter;
   sessionKey: string;
   signOut: () => Promise<void>;
 }>({ adapter: localAdapter, sessionKey: 'demo', signOut: () => localAdapter.signOut() });
+function SessionQueries({ children }: React.PropsWithChildren) {
+  const [client] = useState(createQueryClient);
+  useEffect(
+    () => () => {
+      client.clear();
+    },
+    [client],
+  );
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
 function CloudProvider({ children }: React.PropsWithChildren) {
+  const { isLoaded, userId, sessionId } = useAuth();
+  if (!isLoaded) return <ActivityIndicator accessibilityLabel="Loading your account" />;
+  return (
+    <SessionQueries key={sessionId ?? userId ?? 'guest'}>
+      <CloudSession>{children}</CloudSession>
+    </SessionQueries>
+  );
+}
+function CloudSession({ children }: React.PropsWithChildren) {
   const { getToken, userId, signOut } = useAuth();
+  const queryClient = useQueryClient();
   const adapter = useMemo(() => createSupabaseAdapter(() => getToken()), [getToken]);
   return (
     <Context.Provider
@@ -43,27 +66,42 @@ function CloudProvider({ children }: React.PropsWithChildren) {
     </Context.Provider>
   );
 }
-export function Providers({ children }: React.PropsWithChildren) {
-  // The demo's seed petitions start untagged; ask the AI model once per launch, then refresh.
+function DemoProvider({ children }: React.PropsWithChildren) {
+  const queryClient = useQueryClient();
   useEffect(() => {
-    if (isDemo)
-      void localAdapter.backfillTags().then((tagged) => {
-        if (tagged) void queryClient.invalidateQueries({ queryKey: ['snapshot'] });
-      });
-  }, []);
+    void localAdapter.backfillTags().then((tagged) => {
+      if (tagged) void queryClient.invalidateQueries({ queryKey: ['snapshot'] });
+    });
+  }, [queryClient]);
+  return children;
+}
+export function Providers({ children }: React.PropsWithChildren) {
+  let config;
+  try {
+    config = getBackendConfig();
+  } catch (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+        <Text accessibilityRole="header" style={{ fontSize: 24 }}>
+          Connection setup needed
+        </Text>
+        <Text accessibilityRole="alert">
+          {error instanceof Error ? error.message : 'Check your public backend configuration.'}
+        </Text>
+        <Text>Update your .env configuration and restart Expo.</Text>
+      </View>
+    );
+  }
+  if (config.backend === 'demo')
+    return (
+      <SessionQueries>
+        <DemoProvider>{children}</DemoProvider>
+      </SessionQueries>
+    );
   return (
-    <QueryClientProvider client={queryClient}>
-      {isDemo ? (
-        children
-      ) : (
-        <ClerkProvider
-          publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!}
-          tokenCache={tokenCache}
-        >
-          <CloudProvider>{children}</CloudProvider>
-        </ClerkProvider>
-      )}
-    </QueryClientProvider>
+    <ClerkProvider publishableKey={config.clerkKey} tokenCache={tokenCache}>
+      <CloudProvider>{children}</CloudProvider>
+    </ClerkProvider>
   );
 }
 export const useBackend = () => useContext(Context);

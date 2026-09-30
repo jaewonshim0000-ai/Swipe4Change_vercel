@@ -27,6 +27,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "@clerk/expo",
       "expo-notifications",
       "expo-web-browser",
       "expo-font"

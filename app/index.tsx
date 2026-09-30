@@ -1,8 +1,11 @@
 import { Redirect } from 'expo-router';
-import { useSnapshot } from '../src/data/provider';
+import { isDemo, useBackend, useSnapshot } from '../src/data/provider';
 import { Button, Loading, Notice, Page } from '../src/components/ui';
 export default function Index() {
+  const { sessionKey } = useBackend();
   const q = useSnapshot();
+  // Guests land directly in discovery without waiting for a profile request.
+  if (!isDemo && sessionKey === 'guest') return <Redirect href="/(tabs)" />;
   if (q.isPending) return <Loading />;
   if (q.error)
     return (
@@ -18,9 +21,7 @@ export default function Index() {
     );
   return (
     <Redirect
-      href={
-        !q.data.profile ? '/(auth)/sign-in' : !q.data.profile.onboarded ? '/onboarding' : '/(tabs)'
-      }
+      href={!q.data.profile ? '/(tabs)' : !q.data.profile.onboarded ? '/onboarding' : '/(tabs)'}
     />
   );
 }

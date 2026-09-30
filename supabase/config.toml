@@ -1,0 +1,18 @@
+# Hosted Supabase CLI deployment settings. No local services are required.
+# project_id is a CLI workspace label; `supabase link` selects the remote project.
+project_id = "swipe4change"
+
+[db.migrations]
+enabled = true
+
+# Loaded only when explicitly pushing with --include-seed to a development project.
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+# Configure Clerk in the HOSTED dashboard, not via local auth settings here.
+# Existing Clerk development issuer: elegant-kodiak-6215.clerk.accounts.dev
+
+# This existing queue-only worker accepts no caller-selected data.
+[functions.ai-review]
+verify_jwt = false

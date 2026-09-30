@@ -1,3 +1,4 @@
+import { readingFrame } from '../../src/components/responsive';
 import { Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,7 +50,9 @@ export default function Community() {
   const completed = petitions.filter((p) => p.status === 'closed' || p.status === 'successful');
   const events = (posts.data ?? []).filter((p) => p.kind === 'event' && !p.removed).length;
   return (
-    <Animated.View style={[{ flex: 1, backgroundColor: colors.canvas }, anim(kf.slide, 420)]}>
+    <Animated.View
+      style={[readingFrame, { flex: 1, backgroundColor: colors.canvas }, anim(kf.slide, 420)]}
+    >
       <StatusBar style="light" />
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}

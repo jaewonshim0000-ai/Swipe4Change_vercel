@@ -28,6 +28,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname } from 'expo-router';
 import type { Topic } from '../domain/model';
+import { useResponsiveLayout, webLayout } from './responsive';
 import { colors, fonts, frost, gradient, topicColors } from './theme';
 import { EASE_IN_OUT, anim, kf, reducedMotion, transition } from './motion';
 
@@ -607,6 +608,7 @@ export function Sheet({
   locked?: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const { wide } = useResponsiveLayout();
   return (
     <Modal
       visible={visible}
@@ -619,7 +621,7 @@ export function Sheet({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}
+        style={{ flex: 1, justifyContent: wide ? 'center' : 'flex-end', alignItems: 'center' }}
       >
         <Animated.View
           style={[
@@ -641,7 +643,8 @@ export function Sheet({
           style={[
             {
               width: '100%',
-              maxWidth: 480,
+              maxWidth: wide ? 560 : 480,
+              borderRadius: wide ? 30 : undefined,
               maxHeight: '88%',
               backgroundColor: colors.sheet,
               borderTopLeftRadius: 30,
@@ -683,8 +686,11 @@ export function Screen({
   top = true,
   onScroll,
   footer,
+  wide = false,
 }: {
   children: React.ReactNode;
+  /** Wider canvas for discovery grids on desktop browsers. */
+  wide?: boolean;
   /** Leaves room for the floating tab bar (or a floating action bar). */
   tabs?: boolean;
   gutter?: number;
@@ -696,10 +702,22 @@ export function Screen({
   footer?: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const { wide: desktop } = useResponsiveLayout();
   return (
     <Animated.View
       style={[
-        { flex: 1, backgroundColor: colors.canvas },
+        {
+          flex: 1,
+          width: '100%',
+          alignSelf: 'center',
+          maxWidth:
+            Platform.OS === 'web'
+              ? wide
+                ? webLayout.browseWidth
+                : webLayout.readingWidth
+              : undefined,
+          backgroundColor: colors.canvas,
+        },
         enter === 'slide' ? anim(kf.slide, 420) : anim(kf.fade, 350, { ease: 'ease' }),
       ]}
     >
@@ -711,7 +729,7 @@ export function Screen({
         contentContainerStyle={{
           paddingTop: top ? (insets.top > 0 ? insets.top + 6 : 28) : 0,
           paddingBottom: (tabs ? 120 : 60) + insets.bottom,
-          paddingHorizontal: gutter,
+          paddingHorizontal: desktop && gutter > 0 ? 32 : gutter,
         }}
       >
         {children}
@@ -760,8 +778,9 @@ export function ToastHost() {
       style={[
         {
           position: 'absolute',
-          left: 18,
-          right: 18,
+          alignSelf: 'center',
+          width: '90%',
+          maxWidth: 520,
           bottom: (aboveBar ? 108 : 34) + insets.bottom,
           zIndex: 90,
           backgroundColor: colors.dark,

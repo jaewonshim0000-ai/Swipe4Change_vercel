@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { Adapter, Command } from '../domain/model';
 import { Database } from './database.types';
+import { getBackendConfig } from './config';
 /** Clerk's Supabase third-party integration validates tokens; no service credential enters the client. */
 export function createSupabaseAdapter(getToken: () => Promise<string | null>): Adapter {
-  const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key)
-    throw new Error('Set the public Supabase URL and anonymous key before selecting Supabase.');
-  const db = createClient<Database>(url, key, {
+  const config = getBackendConfig();
+  if (config.backend !== 'supabase')
+    throw new Error('Select the Supabase backend before connecting.');
+  const db = createClient<Database>(config.url, config.publicKey, {
     accessToken: getToken,
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });

@@ -12,6 +12,7 @@ import { WorkSans_700Bold } from '@expo-google-fonts/work-sans/700Bold';
 import { Providers } from '../src/data/provider';
 import { colors } from '../src/components/theme';
 import { ToastHost } from '../src/components/kit';
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     Newsreader_600SemiBold,
@@ -31,16 +32,21 @@ export default function RootLayout() {
   return (
     <Providers>
       <StatusBar style="dark" />
-      {/* The design is a phone app. On wide web windows it keeps its phone column, centred on the
-          design canvas colour, rather than stretching cards across a desktop. */}
       <View
         style={{
           flex: 1,
           alignItems: 'center',
-          backgroundColor: Platform.OS === 'web' ? '#DCDFD6' : colors.canvas,
+          backgroundColor: colors.canvas,
         }}
       >
-        <View style={{ flex: 1, width: '100%', maxWidth: 480, overflow: 'hidden' }}>
+        <View
+          style={{
+            flex: 1,
+            width: '100%',
+            maxWidth: Platform.OS === 'web' ? undefined : 480,
+            overflow: 'hidden',
+          }}
+        >
           {/* Screens run their own entrance animations from the design (slide or fade). */}
           <Stack
             screenOptions={{

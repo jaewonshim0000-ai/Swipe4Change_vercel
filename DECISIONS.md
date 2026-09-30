@@ -1,6 +1,6 @@
 # Engineering decisions
 
-1. **A typed local adapter is the credential-free default.** It provides the full demo, persists per device, and serializes transactions. It contains only fictional accounts. Supabase implements the same command contract so UI behavior does not depend on the backend.
+1. **A typed local adapter is the optional credential-free demo.** It provides the full demo, persists per device, and serializes transactions. It contains only fictional accounts. Supabase implements the same command contract so UI behavior does not depend on the backend.
 2. **Eligibility and visibility are independent.** A signature stores an allowed public display name, while the private account relationship stays behind authorization. Neither the organizer nor the public receives email, phone, address, Clerk subject, or verification evidence. The public display name is captured at signing time so subsequent profile changes cannot silently rewrite historical signatures.
 3. **Rules lock after the first signature.** The specification permits warned material edits. We choose a stricter invariant for signing requirements, allowed identities, community eligibility, and custom rules: create a new petition to change them after signatures exist. Title/action changes preserve previous content and a public explanation. The database enforces the lock even for direct administrative updates.
 4. **Supabase uses narrow command RPCs plus RLS.** No direct client INSERT/UPDATE/DELETE grants. Every write obtains the actor from the validated Clerk JWT mapping and checks resource authorization. Signature writes and edits acquire the same row lock, and the unique signature constraint is the final duplicate barrier. Public snapshots are constructed from explicit fields; authentication mappings and approvals live in an unexposed private schema.
@@ -27,7 +27,7 @@ Every petition has four mandatory qualification checks. Missing setup blocks new
 
 Circulator affidavits bind the collector's encrypted signature and private document references to an exact declaration and list of receipt IDs. They require a witnessing attestation and a notarial reference when configured, without claiming those assertions are verified. Only database-owner review functions can accept requirements, affidavits and signatures. Acceptance requires reviewed official text, a registration match, valid signature and accepted covering affidavit; notarization is required when the configured rule says so. Reviews append audit rows; dependent acceptance must be revoked first when invalidating prerequisites.
 
-The default local demo cannot award legal acceptance. Real verification and document exchange must use the authority's approved process. This prototype does not validate voter rolls, operate as a notary, or guarantee jurisdictional recognition of a reused digital signature. Encryption is owner-controlled, so reviewers do not receive automatic access to private signatory data.
+The optional local demo cannot award legal acceptance. Real verification and document exchange must use the authority's approved process. This prototype does not validate voter rolls, operate as a notary, or guarantee jurisdictional recognition of a reused digital signature. Encryption is owner-controlled, so reviewers do not receive automatic access to private signatory data.
 
 ## Closing the feedback loop (September 12)
 
@@ -136,7 +136,7 @@ Keep Expo Router, the existing query/provider boundary, local persistence keys, 
 
 Use three petition sections and progressive disclosure for advanced legal information. A right swipe expresses interest and opens review; it does not sign. The four-step signing sheet previews the actual `publicName` output, requires explicit consent, and displays a receipt only after the mutation resolves. Only this confirmed receipt animates signature progress. Persistent swipe guidance is a small per-account local UI preference, separate from server-owned participation.
 
-Preserve hosted failure semantics: a failed remote write never falls back to a successful local write. The default local demo is the explicit offline presentation path. Updated seed content applies to fresh/reset demo state and repeatable development SQL, without rewriting saved user petitions. Existing draft step indices remain valid; users are asked to review regrouped fields before publishing.
+Preserve hosted failure semantics: a failed remote write never falls back to a successful local write. The optional local demo is the explicit offline presentation path. Updated seed content applies to fresh/reset demo state and repeatable development SQL, without rewriting saved user petitions. Existing draft step indices remain valid; users are asked to review regrouped fields before publishing.
 
 ## 2026-09-22 — Make sample cases and recipient guidance specific
 
@@ -234,3 +234,12 @@ An organizer may split a requested action into one to three asks and compare eac
     report, publish), the flow keeps its confirmations and validation and is presented in the design's
     sheets instead of being cut. The design's sample ticker and supporter lines are rebuilt from real
     snapshot data rather than hard-coded, and notification read state is kept per device.
+
+## Supabase connection lifecycle (September 30)
+
+- Reuse the linked Swipe4Change Clerk development application and installed keys. Register the existing native callback and add only the signed authenticated role claim; preserve enabled login factors. Clerk sign-in remains accessible before the Supabase schema is installed. Hosted Supabase is the default; offline fictional accounts require explicit demo mode. Email eligibility remains denied without its trusted verification claim.
+
+- Retain the existing Clerk-token RPC contract, migrations, and RLS rather than introducing a second authentication system or direct client writes.
+- Validate public backend configuration before mounting Clerk. Prefer Supabase publishable keys while retaining legacy anon-key support; never fall back to demo after a hosted configuration error.
+- Wait for Clerk to finish loading, then give each Clerk session its own QueryClient. Session changes unmount and clear all old queries, including manager queries whose keys do not contain a user ID. Late results and mutations remain attached to the discarded client.
+- Use hosted Supabase only in the setup workflow, with CLI login, linking, and migration-preview scripts. Remove local-service settings and Docker commands; retain the offline demo only as an explicit choice. Fictional seeding remains opt-in for hosted development databases. Live JWT validation still requires a configured Clerk/Supabase project and staging smoke testing.

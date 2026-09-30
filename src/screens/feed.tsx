@@ -17,6 +17,7 @@ import {
   nextMilestone,
 } from '../domain/discovery';
 import { governmentLevels, levelLabels } from '../domain/recipients';
+import { ResponsiveGrid, useResponsiveLayout } from '../components/responsive';
 import { SwipeDeck } from '../components/swipe-deck';
 import { CollectionCard, PetitionRow, useSave } from '../components/petition-card';
 import {
@@ -347,9 +348,10 @@ function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void 
 }
 
 function Home({ snapshot: s }: { snapshot: Snapshot }) {
+  const { wide } = useResponsiveLayout();
   const [now] = useState(Date.now);
   const [why, setWhy] = useState(false);
-  const [cards, setCards] = useState(false);
+  const [cards, setCards] = useState(wide);
   const { read } = useReads(s.profile?.id);
   const feed = forYou(s, useSignals(s.profile), now);
   const ranked = feed.map((r) => r.petition);
@@ -385,7 +387,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
   ];
   const remaining = ranked.filter((p) => !s.signed.includes(p.id));
   return (
-    <Screen>
+    <Screen wide>
       <Animated.View
         style={[{ flexDirection: 'row', alignItems: 'center', gap: 12 }, anim(kf.in, 500)]}
       >
@@ -527,13 +529,15 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
         />
       </View>
       {cards ? (
-        <View style={{ gap: 12 }}>
+        <ResponsiveGrid>
           {remaining.slice(0, 6).map((p, i) => (
             <PetitionRow key={p.id} petition={p} snapshot={s} index={i} />
           ))}
-        </View>
+        </ResponsiveGrid>
       ) : (
-        <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
+        <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
+          <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
+        </View>
       )}
       {collections.map(
         (c) =>
@@ -717,7 +721,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
   ];
   const q = search.trim();
   return (
-    <Screen>
+    <Screen wide>
       <Text style={styles.label}>Explore</Text>
       <Text accessibilityRole="header" style={[styles.title, { marginTop: 8, marginBottom: 14 }]}>
         Find your next cause.
@@ -841,7 +845,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
       >
         {list.length} matching petition{list.length === 1 ? '' : 's'}
       </Text>
-      <View style={{ gap: 12 }}>
+      <ResponsiveGrid>
         {list.map((p, i) => (
           <PetitionRow
             key={p.id}
@@ -874,7 +878,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
             />
           </View>
         )}
-      </View>
+      </ResponsiveGrid>
       <View style={{ paddingTop: 26 }}>
         <Text accessibilityRole="header" style={[sectionTitle, { marginBottom: 12 }]}>
           Find your people
