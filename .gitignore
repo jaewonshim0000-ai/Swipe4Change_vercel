@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-*/
+.expo/
+*.class
+.env
+.env.local
+
+dist-refinement/
