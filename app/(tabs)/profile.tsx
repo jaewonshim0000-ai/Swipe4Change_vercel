@@ -46,13 +46,16 @@ type SheetName = 'drafts' | 'reports' | 'ripple' | 'profile' | null;
 
 export default function Profile() {
   const q = useSnapshot();
-  const { adapter, signOut } = useBackend();
+  const { adapter, signOut, deleteAccount } = useBackend();
   const client = useQueryClient();
   const m = useCommand();
   const { read } = useReads(q.data?.profile?.id);
   const [part, setPart] = useState('Created');
   const [panel, setPanel] = useState<SheetName>(null);
   const [reset, setReset] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingNow, setDeletingNow] = useState(false);
+  const [typed, setTyped] = useState('');
   const [failing, setFailing] = useState(() => isDemo && localAdapter.failing);
   const [appeal, setAppeal] = useState('');
   const [withdrawReport, setWithdrawReport] = useState<string | null>(null);
@@ -504,6 +507,14 @@ export default function Profile() {
         onPress={() => void logout()}
         style={{ marginTop: 10 }}
       />
+      {deleteAccount && (
+        <Button
+          title="Delete account"
+          variant="danger"
+          onPress={() => setDeleting(true)}
+          style={{ marginTop: 10, borderRadius: 22 }}
+        />
+      )}
 
       <Sheet visible={panel === 'profile'} onClose={() => setPanel(null)} locked={m.isPending}>
         <ProfileEditor key={p.id} snapshot={s} onDone={() => setPanel(null)} />
@@ -654,6 +665,42 @@ export default function Profile() {
       >
         {m.error && <Notice error text={m.error.message} />}
       </Confirm>
+      {deleteAccount && (
+        <Confirm
+          visible={deleting}
+          title="Delete your account?"
+          body="Your signatures, saves, memberships, drafts, notifications and photos are deleted, and your petitions leave public view. Updates and posts you wrote stay public as “Deleted account”. This can’t be undone."
+          pending={deletingNow}
+          confirmLabel="Delete account"
+          confirmDisabled={typed.trim() !== 'DELETE'}
+          onCancel={() => {
+            setDeleting(false);
+            setTyped('');
+          }}
+          onConfirm={() => {
+            setDeletingNow(true);
+            void deleteAccount()
+              .then(() => {
+                client.clear();
+                router.replace('/(tabs)');
+                toast('Your account was deleted.');
+              })
+              .catch((e) => toast(e instanceof Error ? e.message : 'Deletion failed. Try again.'))
+              .finally(() => {
+                setDeletingNow(false);
+                setDeleting(false);
+                setTyped('');
+              });
+          }}
+        >
+          <Field
+            label="Type DELETE to confirm"
+            value={typed}
+            onChangeText={setTyped}
+            autoCapitalize="characters"
+          />
+        </Confirm>
+      )}
       <Confirm
         visible={reset}
         title="Reset this fictional community?"

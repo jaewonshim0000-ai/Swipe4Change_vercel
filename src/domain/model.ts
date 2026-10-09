@@ -439,6 +439,8 @@ export interface Adapter {
   signIn(account: string): Promise<void>;
   signOut(): Promise<void>;
   reset(): Promise<void>;
+  /** Live accounts only: removes personal records and photos; public writing stays unattributed. */
+  deleteAccount(): Promise<void>;
   requests(petitionId: string): Promise<EligibilityRequest[]>;
   volunteers(petitionId: string): Promise<Volunteer[]>;
   communityPosts(communityId: string): Promise<CommunityPost[]>;

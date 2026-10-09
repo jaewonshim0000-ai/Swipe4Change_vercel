@@ -3,7 +3,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { getBackendConfig } from './config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
-import { ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider, useAuth, useUser } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import {
   QueryClient,
@@ -31,6 +31,8 @@ const Context = createContext<{
   adapter: Adapter;
   sessionKey: string;
   signOut: () => Promise<void>;
+  /** Live accounts only; the demo resets instead. */
+  deleteAccount?: () => Promise<void>;
 }>({ adapter: localAdapter, sessionKey: 'demo', signOut: () => localAdapter.signOut() });
 function SessionQueries({ children }: React.PropsWithChildren) {
   const [client] = useState(createQueryClient);
@@ -53,6 +55,7 @@ function CloudProvider({ children }: React.PropsWithChildren) {
 }
 function CloudSession({ children }: React.PropsWithChildren) {
   const { getToken, userId, signOut } = useAuth();
+  const { user } = useUser();
   const queryClient = useQueryClient();
   const adapter = useMemo(() => createSupabaseAdapter(() => getToken()), [getToken]);
   return (
@@ -62,6 +65,12 @@ function CloudSession({ children }: React.PropsWithChildren) {
         sessionKey: userId ?? 'guest',
         signOut: async () => {
           await signOut();
+          queryClient.clear();
+        },
+        deleteAccount: async () => {
+          await adapter.deleteAccount();
+          // Removing the Clerk user also ends the session.
+          await user?.delete();
           queryClient.clear();
         },
       }}

@@ -265,6 +265,9 @@ export class LocalAdapter implements Adapter {
       s.session = null;
     });
   }
+  async deleteAccount() {
+    throw new Error('The demo has no real accounts. Use Reset all local demo data instead.');
+  }
   async reset() {
     const next = initial();
     for (const id of [...next.profiles.map((p) => p.id), 'guest'])
