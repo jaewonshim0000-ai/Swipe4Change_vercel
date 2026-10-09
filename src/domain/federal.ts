@@ -134,6 +134,9 @@ export function rankFederalRules(rules: FederalRule[], interests: Topic[], topic
     .sort((a, b) => interested(a) - interested(b) || a.closesOn.localeCompare(b.closesOn));
 }
 
+/** Calendar days from the viewer's local date to the closing date. */
 export function daysLeft(closesOn: string, now: number) {
-  return Math.max(0, Math.ceil((Date.parse(`${closesOn}T00:00:00Z`) - now) / 86_400_000));
+  const today = new Date(now);
+  const start = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.max(0, Math.round((Date.parse(`${closesOn}T00:00:00Z`) - start) / 86_400_000));
 }

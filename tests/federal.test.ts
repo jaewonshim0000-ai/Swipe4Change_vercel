@@ -138,6 +138,9 @@ test('ranks the viewer’s interests first, then the soonest deadline, and filte
 test('counts whole days left until comments close', () => {
   expect(daysLeft('2026-10-20', Date.parse('2026-10-08T12:00:00Z'))).toBe(12);
   expect(daysLeft('2026-10-01', Date.parse('2026-10-08T12:00:00Z'))).toBe(0);
+  // Late evening is still today where the person is, even when it is already tomorrow in UTC.
+  expect(daysLeft('2026-10-09', new Date(2026, 9, 8, 23, 30).getTime())).toBe(1);
+  expect(daysLeft('2026-10-09', new Date(2026, 9, 9, 0, 30).getTime())).toBe(0);
 });
 
 test('asks the Federal Register only for proposed rules still open for comment', () => {

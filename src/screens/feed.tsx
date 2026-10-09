@@ -5,7 +5,10 @@ import { router } from 'expo-router';
 import { isDemo, offeredVerifications, useCommand, useSnapshot } from '../data/provider';
 import { useReads } from '../data/reads';
 import { useSignals } from '../data/signals';
-import { Petition, Snapshot, topics, verificationLabels } from '../domain/model';
+import { useFederalRules } from '../data/federal';
+import { rankFederalRules } from '../domain/federal';
+import { FederalCard } from '../components/federal-card';
+import { Petition, Snapshot, Topic, topics, verificationLabels } from '../domain/model';
 import { trendingScore } from '../domain/rules';
 import { forYou } from '../domain/for-you';
 import { sameCity } from '../domain/location';
@@ -75,6 +78,27 @@ const note = {
   marginTop: 3,
 };
 const shortTitle = (t: string) => t.split(' ').slice(0, 4).join(' ');
+
+/** Real federal proposals open for comment. Hidden while loading, offline, or when none match. */
+function FederalSection({ interests, limit }: { interests: Topic[]; limit: number }) {
+  const q = useFederalRules();
+  const [now] = useState(Date.now);
+  const rules = rankFederalRules(q.data ?? [], interests).slice(0, limit);
+  if (!rules.length) return null;
+  return (
+    <View style={{ paddingTop: 28 }}>
+      <Text accessibilityRole="header" style={sectionTitle}>
+        Federal rules open for comment
+      </Text>
+      <Text style={note}>Real proposals from U.S. agencies. You comment on the official site.</Text>
+      <Rail gap={12} style={{ paddingTop: 12, paddingBottom: 12 }}>
+        {rules.map((r) => (
+          <FederalCard key={r.id} rule={r} now={now} />
+        ))}
+      </Rail>
+    </View>
+  );
+}
 
 /** Real, recent activity for the live ticker: endorsements, discussion, signatures, milestones. */
 function tickerLines(s: Snapshot, now: number) {
@@ -493,6 +517,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
       <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
         <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
       </View>
+      <FederalSection interests={s.profile?.interests ?? []} limit={3} />
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>
         {isDemo
           ? 'Fictional sample data. Nothing here establishes legal validity.'
@@ -842,6 +867,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                 </View>
               ),
           )}
+          <FederalSection interests={s.profile?.interests ?? []} limit={12} />
           <Text accessibilityRole="header" style={[sectionTitle, { paddingTop: 22 }]}>
             All petitions
           </Text>
