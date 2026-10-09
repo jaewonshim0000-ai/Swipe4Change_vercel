@@ -171,6 +171,15 @@ test('the packet carries public names only, and never private data', async () =>
   expect(text).toContain('Sam Rivera');
   expect(text).toContain('Anonymous supporter');
   expect(text).toContain('FICTIONAL');
+  // A real petition to a real office is not labelled fictional, and still makes no legal claim.
+  const real = packetText(
+    { ...p, sampleCount: 0, recipient: 'Seattle Department of Transportation' },
+    null,
+    [],
+    'Riverton students',
+  );
+  expect(real).not.toContain('FICTIONAL');
+  expect(real).toContain('not a legal ballot petition');
   // Nothing that identifies an account, and no contact channel of any kind.
   expect(text).not.toContain(demoIds.sam);
   expect(text).not.toContain(demoIds.jordan);

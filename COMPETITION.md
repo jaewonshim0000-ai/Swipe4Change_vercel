@@ -14,13 +14,13 @@
 
 Target: **2 minutes 50 seconds**. Start in the local demo as Maya with onboarding completed. Keep a short original request ready to enter. All names, evidence, signatures, deliveries, and official responses are fictional.
 
-**0:00–0:25 — A familiar local problem.** Show Home's Riverton welcome and Eastbridge spotlight. Tap **Understand this petition**. Explain the dark campus-to-bus path, the requested lighting plan, the responsible Public Works recipient, and the sample audit.
+**0:00–0:25 — A familiar local problem.** Show Home's Riverton welcome and the swipe deck, led by the Eastbridge lighting petition. Swipe up (or tap **Read**) to open it. Explain the dark campus-to-bus path, the requested lighting plan, the responsible Public Works recipient, and the sample audit.
 
 **0:25–1:00 — Deliberate participation.** Tap **Review and sign**. Read the exact text and the eligibility check, choose **Anonymous supporter** from the exact name previews, then draw a signature and tick the consent box. The confirmation appears only after the write succeeds. Point out that only Maya can open her drawing, and that the database rejects a duplicate. Tap **Share my link**.
 
 **1:00–1:35 — Ripple.** Switch to Sam and open the copied link: “Shared with you by someone who signed it.” Sign as Sam. Switch back to Maya and open the bell: **Your ripple grew** — someone signed, never who. Show the rings on the petition page and on Profile, and the line “1 signed because a supporter shared it.” Say: “Only people who signed can earn a ripple, and nobody is ever named.”
 
-**1:35–2:15 — Turn a concern into a clear request.** Open Create. Enter a specific problem, requested action, recipient, and city. Show the completeness rubric, the readability check and an editable, reversible suggestion. Say: “This writing assistant uses local rules, not generative AI.” Publish through the final confirmation; it can be signed straight away.
+**1:35–2:15 — Turn a concern into a clear request.** Open Create. In **Write it for me ✦**, describe the problem in plain words and let the AI draft the petition (with an API key; otherwise type the fields). Point out that it asks questions instead of inventing facts, and that every field stays editable. Pick the city and an elected official or use **Find the right recipient ✦**. Show the writing check and readability score. Publish through the final confirmation: the spam filter checks it, and it can be signed straight away. Say: “Anyone can start a petition, whatever their writing skills, and spam never reaches the feed.”
 
 **2:15–2:35 — Follow-through.** Back on Eastbridge, open **Progress**: the delivery packet sent at 500 signatures and the verified fictional response recorded against it. In **Activity**, show the organizer update, student question, endorsement and public edit history.
 

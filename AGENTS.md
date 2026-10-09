@@ -76,7 +76,7 @@ Finish P0 before investing in P1 or P2.
 - No advanced bot-detection system.
 - No platform-authored fact-checking notes.
 - No full petition impact timeline.
-- No generative AI in the petition writing assistant, which stays deterministic. Report review and hidden For You tags use Claude (Anthropic API) from server-side code only (`supabase/functions/`), with keyword rules as the offline fallback. Never put `ANTHROPIC_API_KEY` in client code or an `EXPO_PUBLIC_` variable.
+- The writing assistant's score, flags and suggestions stay deterministic. Claude (Anthropic API) is used from server-side code only (`supabase/functions/`) for report review, the publication spam check, hidden For You tags, the AI recipient finder and the AI petition writer. The writer drafts wording only from the creator's own description, never invents facts, numbers, names, sources or officials, and every field stays editable and is reviewed before publishing. The recipient finder must cite pages its web search actually returned, or name an official from the public officials lookup; it suggests and never fills the recipient on its own. Never put `ANTHROPIC_API_KEY` or `OPENSTATES_API_KEY` in client code or an `EXPO_PUBLIC_` variable.
 - No claim that an official, organization, residence, or signature is verified unless the underlying verification exists.
 - No in-app payment processing, political fundraising, or candidate-campaign functionality. Donations are only an organizer-supplied external HTTPS link that the app opens after a leaving-the-app warning.
 

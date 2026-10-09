@@ -16,3 +16,7 @@ sql_paths = ["./seed.sql"]
 # This existing queue-only worker accepts no caller-selected data.
 [functions.ai-review]
 verify_jwt = false
+
+# Officials lookups and the AI recipient finder; the AI path checks the caller in the database.
+[functions.civic-lookup]
+verify_jwt = false

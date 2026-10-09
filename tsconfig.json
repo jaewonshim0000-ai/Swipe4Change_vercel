@@ -5,5 +5,11 @@
     "types": ["jest", "node"],
     "allowImportingTsExtensions": true
   },
-  "exclude": ["node_modules", "dist", "dist-*", "supabase/functions/ai-review"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-*",
+    "supabase/functions/ai-review",
+    "supabase/functions/civic-lookup"
+  ]
 }

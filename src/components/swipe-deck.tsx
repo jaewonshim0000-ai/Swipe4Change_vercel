@@ -21,7 +21,7 @@ import { Petition, Snapshot, verificationLabels } from '../domain/model';
 import { daysLeft, milestoneLabel } from '../domain/discovery';
 import { recordSignal } from '../data/signals';
 import { useSave } from './petition-card';
-import { Bar, GlassPill, Heart, Press, Scrim, TopicPill, toast, topicImage } from './kit';
+import { Bar, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
 import { Glyph } from './glyph';
 import { anim, kf } from './motion';
 import { colors, fonts } from './theme';
@@ -123,7 +123,7 @@ function Behind({
       ]}
     >
       <Image
-        source={topicImage(petition.topic)}
+        source={petitionImage(petition)}
         resizeMode="cover"
         style={{ width: '100%', height: '100%' }}
       />
@@ -247,7 +247,7 @@ export function SwipeDeck({
       <Animated.View
         style={[
           {
-            height: 300,
+            minHeight: 300,
             borderRadius: 30,
             backgroundColor: colors.white,
             alignItems: 'center',
@@ -293,6 +293,22 @@ export function SwipeDeck({
             </Text>
           </Press>
         )}
+        <Press
+          accessibilityRole="link"
+          accessibilityLabel="Explore more petitions"
+          onPress={() => router.push('/(tabs)/explore')}
+          style={{
+            backgroundColor: colors.soft,
+            minHeight: 46,
+            paddingHorizontal: 20,
+            borderRadius: 999,
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+            Explore more →
+          </Text>
+        </Press>
       </Animated.View>
     );
   const saved = snapshot.saved.includes(current.id);
@@ -347,7 +363,7 @@ export function SwipeDeck({
             ]}
           >
             <Image
-              source={topicImage(current.topic)}
+              source={petitionImage(current)}
               resizeMode="cover"
               accessibilityLabel="Illustrative theme image, not petition evidence"
               style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}

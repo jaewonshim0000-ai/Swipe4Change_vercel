@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Pressable, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { Topic, topics } from '../../src/domain/model';
@@ -7,17 +7,23 @@ import { useCommand, useSnapshot } from '../../src/data/provider';
 import { Button, Notice, colors, fonts, styles } from '../../src/components/ui';
 import { Press, Scrim, Screen, StepBars, toast, topicImage } from '../../src/components/kit';
 import { Glyph } from '../../src/components/glyph';
+import { CitySheet } from '../../src/components/city-picker';
 import { stag, transition } from '../../src/components/motion';
 
 export default function Onboarding() {
   const q = useSnapshot();
   const command = useCommand();
   const [selected, setSelected] = useState<Topic[]>(q.data?.profile?.interests ?? []);
-  const [city, setCity] = useState(q.data?.profile?.city ?? 'Riverton, CA');
+  const [city, setCity] = useState(q.data?.profile?.city ?? '');
+  const [picking, setPicking] = useState(false);
   const first = q.data?.profile?.name.split(' ')[0];
   function complete(skip = false) {
     if (!skip && selected.length < 3) {
       toast('Choose at least three interests, or skip.');
+      return;
+    }
+    if (!city) {
+      setPicking(true);
       return;
     }
     command.mutate(
@@ -134,7 +140,10 @@ export default function Onboarding() {
           );
         })}
       </View>
-      <View
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Approximate city and state: ${city || 'not chosen'}. Change`}
+        onPress={() => setPicking(true)}
         style={{
           marginTop: 18,
           backgroundColor: colors.white,
@@ -152,23 +161,25 @@ export default function Onboarding() {
           <Text style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted }}>
             Approximate city and state
           </Text>
-          <TextInput
-            accessibilityLabel="Approximate city and state"
-            value={city}
-            onChangeText={setCity}
+          <Text
             style={{
               fontFamily: fonts.semibold,
               fontSize: 15,
-              color: colors.ink,
+              color: city ? colors.ink : colors.muted,
               paddingTop: 3,
-              paddingBottom: 0,
             }}
-          />
+          >
+            {city || 'Choose your city'}
+          </Text>
         </View>
-      </View>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
+          Change
+        </Text>
+      </Pressable>
       <Text style={[styles.micro, { fontSize: 11.5, paddingHorizontal: 6, paddingTop: 10 }]}>
-        City-level only. Never a street address, GPS fix, or political affiliation.
+        Only your city and state are saved — never your exact location or political affiliation.
       </Text>
+      <CitySheet visible={picking} onClose={() => setPicking(false)} onPick={setCity} />
       <Press
         accessibilityLabel={
           selected.length < 3 ? `Pick ${3 - selected.length} more` : 'Find my community'

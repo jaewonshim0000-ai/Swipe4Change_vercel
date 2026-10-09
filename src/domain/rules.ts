@@ -17,6 +17,7 @@ import {
   deliveryMethods,
   postKinds,
 } from './model';
+import { sameCity } from './location';
 export const evidenceSchema = z.array(
   z.object({
     label: z.string().trim().min(3),
@@ -35,6 +36,23 @@ export const donationUrlSchema = z
     (v) => v === '' || (z.string().url().safeParse(v).success && v.startsWith('https://')),
     'Use an HTTPS link to your fundraising page.',
   );
+/** Demo photos are stored inline; hosted ones live in the public petition-photos bucket. */
+export const photoSchema = z.object({
+  url: z
+    .string()
+    .refine(
+      (v) =>
+        (v.startsWith('data:image/jpeg;base64,') && v.length <= 700000) ||
+        (/^https:\/\/[^/\s]+\/storage\/v1\/object\/public\/petition-photos\/[\w-]+\.jpg$/.test(v) &&
+          v.length <= 500),
+      'Upload the photo through the app.',
+    ),
+  alt: z
+    .string()
+    .trim()
+    .min(5, 'Describe the photo in a few words for people using screen readers.')
+    .max(200),
+});
 const draftObject = z.object({
   title: z.string().trim().min(12, 'Use at least 12 characters.').max(120),
   summary: z.string().trim().min(20).max(240),
@@ -260,7 +278,7 @@ export function analyzeDraft(d: Partial<Draft>) {
 export function scorePetition(p: Petition, profile: Profile | null, now = Date.now()) {
   const factors = {
     interests: profile?.interests.includes(p.topic) ? 35 : 0,
-    location: profile?.city.toLowerCase() === p.city.toLowerCase() ? 30 : 0,
+    location: sameCity(profile?.city, p.city) ? 30 : 0,
     community: profile?.joined.includes(p.communityId) ? 20 : 0,
     activity: 10 * Math.max(0, 1 - (now - Date.parse(p.createdAt)) / (30 * 86400000)),
     endorsements: 5 * Math.min(1, p.endorsements.length / 3),

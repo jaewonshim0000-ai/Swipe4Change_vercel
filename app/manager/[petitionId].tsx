@@ -40,6 +40,10 @@ import {
 import { Entries } from '../../src/components/entries';
 import { SummaryRows } from '../../src/components/design-system';
 import { Progress } from '../../src/components/petition-card';
+import { CityField } from '../../src/components/city-picker';
+import { SendPacket } from '../../src/components/send-packet';
+import { ManagePhoto } from '../../src/components/photo-field';
+import { HeldNotice } from '../../src/components/held-notice';
 export default function Manager() {
   const { petitionId } = useLocalSearchParams<{ petitionId: string }>();
   const q = useSnapshot();
@@ -146,12 +150,7 @@ export default function Manager() {
         {p.status === 'draft' && (
           <Button title="Publish saved draft" onPress={() => setConfirm('publish')} />
         )}
-        {p.hidden && (
-          <Notice
-            error
-            text="Hidden from the public. After a report, the automatic review flagged this petition’s wording. A trusted reviewer decides whether it returns."
-          />
-        )}
+        <HeldNotice petition={p} />
       </Panel>
       <Panel>
         <Text style={styles.h2}>Send it to the recipient</Text>
@@ -192,6 +191,15 @@ export default function Manager() {
           <Notice text="Publish the petition before recording a delivery." />
         ) : (
           <>
+            <SendPacket
+              petition={p}
+              snapshot={q.data!}
+              onSent={(how, note) => {
+                setMethod(how);
+                setDeliveryNote((current) => current || note);
+              }}
+            />
+            <View style={styles.divider} />
             <Text style={styles.label}>HOW DID YOU SEND IT?</Text>
             <View style={styles.row}>
               {deliveryMethods.map((x) => (
@@ -262,6 +270,14 @@ export default function Manager() {
           </Text>
         )}
         <Notice text="Swipe4Change has no volunteer messaging channel. Coordinate through a community post or an organizer update so the conversation stays visible to everyone involved." />
+      </Panel>
+      <Panel>
+        <Text style={styles.h2}>Photo</Text>
+        <Text style={styles.muted}>
+          One photo of the problem appears on the card and the petition page. Changing or removing
+          it is recorded in the public edit history.
+        </Text>
+        <ManagePhoto petition={p} />
       </Panel>
       <Panel>
         <Text style={styles.h2}>Accept donations (optional)</Text>
@@ -377,10 +393,10 @@ export default function Manager() {
           value={value('recipient')}
           onChangeText={(v) => set('recipient', v)}
         />
-        <Field
-          label="Approximate location (city, state)"
+        <CityField
+          label="Approximate location"
           value={value('city')}
-          onChangeText={(v) => set('city', v)}
+          onChange={(v) => set('city', v)}
         />
         <Field
           label="Signature goal"

@@ -41,10 +41,8 @@ test('the reorganized builder validates each step, previews both surfaces, and p
     screen.getByLabelText('Who can make this change?'),
     'Riverton Public Works (fictional)',
   );
-  await fireEvent.changeText(
-    screen.getByLabelText('Where is it happening? City and state'),
-    'Riverton, CA',
-  );
+  // A new draft starts in the creator's own city, chosen through the city picker.
+  expect(screen.getByLabelText('Where is it happening?: Riverton, CA. Change')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Continue'));
   await waitFor(() => expect(screen.getByLabelText('The problem')).toBeTruthy());
   await fireEvent.changeText(
@@ -59,7 +57,7 @@ test('the reorganized builder validates each step, previews both surfaces, and p
   await waitFor(() => expect(screen.getByLabelText('Signature goal')).toBeTruthy());
   await fireEvent.press(screen.getByLabelText('Continue'));
   await waitFor(() => expect(screen.getByLabelText('Card preview')).toBeTruthy());
-  expect(screen.getByText('Simulated AI assistant · local rules')).toBeTruthy();
+  expect(screen.getByText('Writing check · local rules')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Page preview'));
   expect(screen.getByText('Why it matters')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Publish petition'));

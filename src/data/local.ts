@@ -31,6 +31,7 @@ import {
   postSchema,
   deliverySchema,
   donationUrlSchema,
+  photoSchema,
   publicName,
   reportReasonSchema,
   signingError,
@@ -46,6 +47,8 @@ import {
   starterTags,
 } from '../../supabase/functions/_shared/civic-rules';
 import type { CivicAi } from './ai';
+import type { LookupRequest } from '../../supabase/functions/_shared/lookup';
+import { fromBase64, stripJpegMetadata } from '../domain/jpeg';
 import { z } from 'zod';
 import { demoIds, petitionId, seedCommunities, seedPetitions, seedProfiles } from './seed';
 export interface Storage {
@@ -228,6 +231,15 @@ export class LocalAdapter implements Adapter {
         .map((r) => r.petitionId),
     });
   }
+  /** The demo keeps photos inline with its other on-device data. */
+  async uploadPhoto(jpegBase64: string) {
+    stripJpegMetadata(fromBase64(jpegBase64));
+    return `data:image/jpeg;base64,${jpegBase64}`;
+  }
+  async lookup(request: LookupRequest) {
+    if (!this.ai?.lookup) throw new Error('Lookups run on the development server.');
+    return this.ai.lookup(request);
+  }
   async receipt(petitionId: string) {
     const s = await this.read();
     if (!s.session) throw new Error('Sign in to see your signature.');
@@ -325,10 +337,22 @@ export class LocalAdapter implements Adapter {
       const found = await this.ai?.screen(p).catch(() => undefined);
       return { found: found ?? screenPetition(p) };
     }
-    if (c.type === 'create' && draftSchema.safeParse(c.draft).success)
-      return { tags: await this.tagsFor(c.draft, s) };
-    if (c.type === 'edit' && p && textFields.some((f) => f in c.patch))
-      return { tags: await this.tagsFor({ ...p, ...c.patch }, s) };
+    // Every petition is checked as it goes public and whenever its wording changes.
+    const check = async (t: PetitionText) =>
+      (await this.ai?.screen(t).catch(() => undefined)) ?? screenPetition(t);
+    if (c.type === 'create' && draftSchema.safeParse(c.draft).success) {
+      const [tags, found] = await Promise.all([
+        this.tagsFor(c.draft, s),
+        c.publish ? check(c.draft) : undefined,
+      ]);
+      return { tags, found };
+    }
+    if (c.type === 'publish' && p) return { found: await check(p) };
+    if (c.type === 'edit' && p && textFields.some((f) => f in c.patch)) {
+      const next = { ...p, ...c.patch };
+      const [tags, found] = await Promise.all([this.tagsFor(next, s), check(next)]);
+      return { tags, found };
+    }
     return {};
   }
   /**
@@ -602,7 +626,36 @@ export class LocalAdapter implements Adapter {
         r.status = 'appealed';
         return;
       }
+      /**
+       * Applies the automatic check: flagged wording is held out of public view with the reason,
+       * and wording that passes brings a held (or report-hidden) petition back.
+       */
+      const screened = (p: Petition) => {
+        if (!ai.found) return;
+        if (ai.found.length) {
+          p.hidden = true;
+          p.heldFor = ai.found;
+          notify(
+            managers(p),
+            `“${p.title}” is not public yet: the automatic check flagged possible ${ai.found.map((k) => screenLabels[k]).join(', ')}. Edit the wording to fix it, or wait for a reviewer.`,
+            'moderation',
+          );
+        } else if (p.hidden) {
+          p.hidden = false;
+          delete p.heldFor;
+          notify(
+            managers(p),
+            `“${p.title}” passed the automatic check and is public.`,
+            'moderation',
+          );
+        }
+      };
+      const verifiedToPublish = () => {
+        if (!user.emailVerified)
+          throw new Error('Verify your email before publishing. You can save a draft until then.');
+      };
       if (c.type === 'create') {
+        if (c.publish) verifiedToPublish();
         const d = draftSchema.parse(c.draft);
         if (!communities.some((x) => x.id === d.communityId))
           throw new Error('Choose a community.');
@@ -631,6 +684,7 @@ export class LocalAdapter implements Adapter {
           viaShares: 0,
           ...(ai.tags ? { tags: ai.tags } : {}),
         });
+        screened(s.petitions[0]);
         if (c.draftId)
           s.drafts = (s.drafts ?? []).filter((d) => d.id !== c.draftId || d.userId !== user.id);
         if (c.publish && !user.badges.includes('Change starter'))
@@ -855,10 +909,33 @@ export class LocalAdapter implements Adapter {
         else delete p.donationUrl;
         return;
       }
+      if (c.type === 'photo') {
+        const photo = c.photo && photoSchema.parse(c.photo);
+        if (!photo && !p.photo) throw new Error('Nothing changed.');
+        if (photo && photo.url === p.photo?.url && photo.alt === p.photo.alt)
+          throw new Error('Nothing changed.');
+        // The picture shapes how people read the request, so changes are on the public record.
+        p.edits.unshift(
+          entry(
+            !photo
+              ? 'Photo removed.'
+              : p.photo
+                ? `Photo changed: “${photo.alt}”.`
+                : `Photo added: “${photo.alt}”.`,
+            'material edit',
+            true,
+          ),
+        );
+        if (photo) p.photo = photo;
+        else delete p.photo;
+        return;
+      }
       if (c.type === 'publish') {
         if (p.status !== 'draft') throw new Error('Only drafts can be published.');
+        verifiedToPublish();
         draftSchema.parse(p);
         p.status = 'active';
+        screened(p);
         if (!user.badges.includes('Change starter')) user.badges.push('Change starter');
         return;
       }
@@ -884,6 +961,7 @@ export class LocalAdapter implements Adapter {
         if (changed.some((f) => (textFields as readonly string[]).includes(f))) {
           if (ai.tags) p.tags = ai.tags;
           else delete p.tags;
+          screened(p);
         }
         notify(
           followers(p),

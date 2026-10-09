@@ -40,8 +40,20 @@ const offensive = {
   summary: 'The council members are idiots and everyone should know it right now.',
 };
 
+/**
+ * Petitions are checked as they are published, so a report only matters for one the check missed.
+ * This review misses the first petition it sees (at publish) and then reviews like the rules do.
+ */
+function missesFirst(): CivicAi {
+  let calls = 0;
+  return {
+    tags: async () => ['lighting'],
+    screen: async (p) => (calls++ === 0 ? [] : screenPetition(p)),
+  };
+}
+
 test('a flagged report hides the petition from everyone but its organizers', async () => {
-  const a = setup();
+  const a = setup(missesFirst());
   await a.signIn(demoIds.sam);
   const id = await a.execute({ type: 'create', draft: offensive, publish: true });
   if (!id) throw new Error('Missing id');
@@ -107,9 +119,15 @@ test('the AI model decides reports, and the rules step in only when it is unreac
     await a.execute({ type: 'report', petitionId: petitionId(3), reason: 'Looks like a scam.' }),
   ).toBe('flagged');
   expect((await a.load()).petitions.some((p) => p.id === petitionId(3))).toBe(false);
+  // Reachable when the petition was published (and missed it), unreachable for the report.
+  let reachable = true;
   const offline: CivicAi = {
     tags: () => Promise.reject(new Error('offline')),
-    screen: () => Promise.reject(new Error('offline')),
+    screen: async () => {
+      if (!reachable) throw new Error('offline');
+      reachable = false;
+      return [];
+    },
   };
   a = setup(offline);
   await a.signIn(demoIds.sam);

@@ -1,5 +1,6 @@
 import { Petition, Snapshot, Topic, Verification } from './model';
 import { findOffice, GovernmentLevel } from './recipients';
+import { normalizeCity, sameCity } from './location';
 
 export function nextMilestone(p: Pick<Petition, 'count' | 'goal'>) {
   const target = [25, 50, 75, 100]
@@ -52,7 +53,7 @@ export function matchesDiscovery(
     p.status === 'active' &&
     (!query || text.includes(query)) &&
     (!f.topic || p.topic === f.topic) &&
-    (!f.location.trim() || p.city.toLowerCase().includes(f.location.trim().toLowerCase())) &&
+    (!f.location.trim() || normalizeCity(p.city).includes(normalizeCity(f.location))) &&
     (!f.requirement || p.verification === f.requirement) &&
     (!f.level || findOffice(p.recipient)?.level === f.level) &&
     (!f.community || p.communityId === f.community) &&
@@ -65,7 +66,7 @@ export function matchesDiscovery(
 }
 
 export function matchReason(p: Petition, s: Snapshot, topic?: string) {
-  const reasons = [p.city === s.profile?.city ? `Near ${p.city}` : p.city];
+  const reasons = [sameCity(p.city, s.profile?.city) ? `Near ${p.city}` : p.city];
   if (topic === p.topic || s.profile?.interests.includes(p.topic))
     reasons.push(`Matches ${p.topic}`);
   if (s.profile?.joined.includes(p.communityId)) reasons.push('From your community');

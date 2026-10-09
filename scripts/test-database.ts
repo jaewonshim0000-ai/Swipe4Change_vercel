@@ -6,6 +6,7 @@ import { demoIds, petitionId, seedPetitions } from '../src/data/seed';
 import type { CommunityPost, Snapshot } from '../src/domain/model';
 import type Anthropic from '@anthropic-ai/sdk';
 import { ReviewQueue, ReviewStore, runReview } from '../supabase/functions/_shared/review';
+import { PetitionText, petitionBody, screenText } from '../supabase/functions/_shared/civic-rules';
 async function run() {
   const db = new PGlite();
   await db.exec(
@@ -27,18 +28,44 @@ async function run() {
     `insert into private.principals(profile_id,clerk_subject,email_verified,location_approved) values($1,'clerk_maya',true,false),($2,'clerk_sam',true,true),($3,'clerk_jordan',false,false)`,
     [demoIds.maya, demoIds.sam, demoIds.jordan],
   );
+  let current = { subject: '', role: 'anon' };
   const auth = async (subject: string, role = 'authenticated') => {
+    current = { subject, role };
     await db.exec('reset role');
     await db.query(`select set_config('request.jwt.claims',$1,false)`, [
       JSON.stringify(subject ? { sub: subject } : {}),
     ]);
     await db.exec(`set role ${role}`);
   };
+  /**
+   * Published and reworded petitions wait for the ai-review Edge Function's check. Here the check
+   * runs straight after each such command with the keyword rules, as the function does without a
+   * model, unless a section below drives the review itself (autoCheck = false).
+   */
+  let autoCheck = true;
+  const settle = async () => {
+    const back = current;
+    await auth('', 'service_role');
+    const pending = (
+      await db.query<{ v: { id: string; seen: string; petition: PetitionText }[] }>(
+        'select public.ai_publish_queue() as v',
+      )
+    ).rows[0].v;
+    for (const p of pending)
+      await db.query('select public.ai_apply_publish_screening($1,$2,$3)', [
+        p.id,
+        screenText(petitionBody(p.petition)),
+        p.seen,
+      ]);
+    await auth(back.subject, back.role);
+  };
   const command = async (c: unknown) => {
     const r = await db.query<{ value: string }>(
       `select public.lookaware_command($1::jsonb) as value`,
       [JSON.stringify(c)],
     );
+    const type = (c as { type?: string }).type ?? '';
+    if (autoCheck && ['create', 'publish', 'edit'].includes(type)) await settle();
     return r.rows[0].value;
   };
   const snapshot = async () => {
@@ -827,8 +854,8 @@ async function run() {
   // real SQL with a stand-in for the model.
   const offensive = {
     ...seedPetitions()[0],
-    title: 'Get these idiots off our council',
-    summary: 'The council members are idiots and everyone should know it right now.',
+    title: 'Join our investment scheme for the council',
+    summary: 'Every resident should join our investment scheme and send us their savings now.',
   };
   await auth('clerk_sam');
   const flaggedId = await command({ type: 'create', draft: offensive, publish: true });
@@ -871,6 +898,15 @@ async function run() {
     tagged: async (target, tags, seen) => {
       await asService('select public.ai_apply_tags($1,$2,$3)', [target, tags, seen]);
     },
+    publishQueue: async () =>
+      (await asService('select public.ai_publish_queue() as v')) as {
+        id: string;
+        seen: string;
+        petition: PetitionText;
+      }[],
+    checked: async (target, hits, seen) => {
+      await asService('select public.ai_apply_publish_screening($1,$2,$3)', [target, hits, seen]);
+    },
   };
   const model = {
     beta: {
@@ -880,7 +916,11 @@ async function run() {
           parsed_output: params.system.startsWith('You tag')
             ? { tags: ['Lighting', '#students'] }
             : {
-                categories: params.messages[0].content.includes('idiots') ? ['harassment'] : [],
+                categories: params.messages[0].content.includes('investment scheme')
+                  ? ['spam']
+                  : params.messages[0].content.includes('qwfp')
+                    ? ['nonsense']
+                    : [],
                 reason: 'stand-in',
               },
         }),
@@ -888,8 +928,8 @@ async function run() {
     },
   } as unknown as Anthropic;
   // Three petitions: these two plus the one reported near the start of this test.
-  assert.deepEqual(await runReview(store, model), { screened: 3, tagged: 5 });
-  assert.deepEqual(await runReview(store, model), { screened: 0, tagged: 5 });
+  assert.deepEqual(await runReview(store, model), { checked: 0, screened: 3, tagged: 5 });
+  assert.deepEqual(await runReview(store, model), { checked: 0, screened: 0, tagged: 5 });
   await assert.rejects(
     () => asService('select public.ai_apply_screening($1,$2)', [petitionId(2), ['rude']]),
     /Unknown review category/,
@@ -908,7 +948,63 @@ async function run() {
   await auth('clerk_sam');
   s = await snapshot();
   assert.equal(s.petitions.find((p) => p.id === flaggedId)?.hidden, true);
-  assert.match(s.notifications[0].body, /automatic review flagged possible insults or profanity/);
+  assert.match(s.notifications[0].body, /automatic review flagged possible spam/);
+
+  // Publication check: a new petition stays out of public view until the review has read it.
+  // Flagged wording is held with its reasons for the organizer; fixed wording goes public.
+  autoCheck = false;
+  await auth('clerk_jordan');
+  await assert.rejects(
+    () => command({ type: 'create', draft: seedPetitions()[0], publish: true }),
+    /Verify your email/,
+  );
+  await command({ type: 'create', draft: seedPetitions()[0], publish: false });
+  await auth('clerk_maya');
+  const joke = await command({
+    type: 'create',
+    draft: { ...seedPetitions()[0], title: 'qwfp qwfp qwfp the council please' },
+    publish: true,
+  });
+  const fresh = await command({
+    type: 'create',
+    draft: { ...seedPetitions()[0], title: 'A fresh petition waiting for its check' },
+    publish: true,
+  });
+  let held = (await snapshot()).petitions.find((p) => p.id === joke)!;
+  assert.equal(held.hidden, true);
+  assert.equal(held.checking, true);
+  await auth('clerk_sam');
+  assert(!(await snapshot()).petitions.some((p) => [joke, fresh].includes(p.id)), 'unchecked');
+  await assert.rejects(() => db.query('select public.ai_publish_queue()'), /permission denied/);
+  assert.equal((await runReview(store, model, { tags: false })).checked, 2);
+  await auth('clerk_sam');
+  assert(
+    (await snapshot()).petitions.some((p) => p.id === fresh),
+    'clean wording goes public',
+  );
+  assert(!(await snapshot()).petitions.some((p) => p.id === joke), 'flagged wording stays held');
+  await auth('clerk_maya');
+  held = (await snapshot()).petitions.find((p) => p.id === joke)!;
+  assert.deepEqual(held.heldFor, ['nonsense']);
+  assert.equal(held.checking, undefined);
+  await command({
+    type: 'edit',
+    petitionId: joke,
+    patch: { title: 'Light the path between the bus stop and campus' },
+    reason: 'Rewrote the title.',
+  });
+  assert.equal((await snapshot()).petitions.find((p) => p.id === joke)!.checking, true);
+  await runReview(store, model, { tags: false });
+  await auth('clerk_maya');
+  held = (await snapshot()).petitions.find((p) => p.id === joke)!;
+  assert.equal(held.hidden, false);
+  assert.equal(held.heldFor, undefined);
+  await auth('clerk_sam');
+  assert(
+    (await snapshot()).petitions.some((p) => p.id === joke),
+    'public once fixed',
+  );
+  autoCheck = true;
 
   // Donation links are organizer-only, HTTPS-only, and every change is public history.
   await auth('clerk_maya');
@@ -952,9 +1048,53 @@ async function run() {
   await auth('clerk_maya');
   assert.equal((await snapshot()).petitions.find((p) => p.id === giving)!.tags, undefined);
 
+  // Photos: organizer-only, uploaded files with a description only, and every change is public.
+  await auth('clerk_maya');
+  const photoUrl =
+    'https://demo.supabase.co/storage/v1/object/public/petition-photos/0b7c4d2e-91af.jpg';
+  const photo = (url: string, alt: string) => ({
+    type: 'photo',
+    petitionId: giving,
+    photo: { url, alt },
+  });
+  await assert.rejects(
+    () => command(photo('https://example.com/x.jpg', 'A dark path')),
+    /through the app/,
+  );
+  await assert.rejects(() => command(photo(photoUrl, 'x')), /screen readers/);
+  await command(photo(photoUrl, 'The unlit path at night'));
+  given = (await snapshot()).petitions.find((p) => p.id === giving)!;
+  assert.deepEqual(given.photo, { url: photoUrl, alt: 'The unlit path at night' });
+  assert.equal(given.edits[0].body, 'Photo added: “The unlit path at night”.');
+  await assert.rejects(
+    () => command(photo(photoUrl, 'The unlit path at night')),
+    /Nothing changed/,
+  );
+  await auth('clerk_sam');
+  await assert.rejects(
+    () => command({ type: 'photo', petitionId: giving, photo: null }),
+    /owner or an authorized/,
+  );
+  await auth('clerk_maya');
+  await command({ type: 'photo', petitionId: giving, photo: null });
+  given = (await snapshot()).petitions.find((p) => p.id === giving)!;
+  assert.equal(given.photo, undefined);
+  assert.equal(given.edits[0].body, 'Photo removed.');
+
+  // AI helper requests: guests are refused and each person gets twenty an hour.
+  await auth('', 'anon');
+  await assert.rejects(() => db.query('select public.claim_civic_lookup()'));
+  await auth('clerk_unknown');
+  await assert.rejects(() => db.query('select public.claim_civic_lookup()'), /Sign in/);
+  await auth('clerk_maya');
+  for (let i = 0; i < 20; i++) await db.query('select public.claim_civic_lookup()');
+  await assert.rejects(() => db.query('select public.claim_civic_lookup()'), /20 times an hour/);
+  await auth('clerk_sam');
+  await db.query('select public.claim_civic_lookup()');
+
   await db.close();
   console.log(
-    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, hidden AI tags that clear on rewording, and organizer-only donation links on the public record.',
+    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, and organizer-only petition photos on the public record.',
   );
 }
 void run().catch((error) => {

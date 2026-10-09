@@ -25,6 +25,9 @@ import {
 import { milestones, reachedMilestones } from '../../src/domain/rules';
 import { milestoneLabel } from '../../src/domain/discovery';
 import { findOffice, levelLabels } from '../../src/domain/recipients';
+import { officialNamed } from '../../supabase/functions/_shared/officials';
+import { isSampleCity, useOfficials } from '../../src/data/civic-lookup';
+import { HeldNotice } from '../../src/components/held-notice';
 import { MySignature, SignatureConsent } from '../../src/components/signature-consent';
 import { RipplePanel, rememberVia } from '../../src/components/ripple';
 import { Progress, share, useSave } from '../../src/components/petition-card';
@@ -48,7 +51,7 @@ import {
   TopicPill,
   initialsOf,
   toast,
-  topicImage,
+  petitionImage,
 } from '../../src/components/kit';
 import { Glyph } from '../../src/components/glyph';
 import { anim, kf, reducedMotion } from '../../src/components/motion';
@@ -253,9 +256,13 @@ function PetitionPage({
         <View style={{ height: 330, overflow: 'hidden', backgroundColor: colors.dark }}>
           <Animated.View style={[{ width: '100%', height: '100%' }, parallax]}>
             <Image
-              source={topicImage(p.topic)}
+              source={petitionImage(p)}
               resizeMode="cover"
-              accessibilityLabel="Illustrative theme image, not petition evidence"
+              accessibilityLabel={
+                p.photo
+                  ? `Organizer’s photo: ${p.photo.alt}`
+                  : 'Illustrative theme image, not petition evidence'
+              }
               style={{ width: '100%', height: '100%' }}
             />
           </Animated.View>
@@ -275,7 +282,7 @@ function PetitionPage({
               overflow: 'hidden',
             }}
           >
-            Illustrative image
+            {p.photo ? 'Organizer’s photo' : 'Illustrative image'}
           </Text>
           <View
             style={{
@@ -396,12 +403,7 @@ function PetitionPage({
           </Animated.Text>
           <View style={{ gap: 10, marginTop: 10 }}>
             <ManagerControl petition={p} profile={s.profile} />
-            {p.hidden && (
-              <Notice
-                error
-                text="Hidden from the public. After a report, the automatic review flagged this petition’s wording. A trusted reviewer decides whether it returns; until then only its organizers can see it."
-              />
-            )}
+            <HeldNotice petition={p} />
             {!!via && !signed && (
               <Notice text="Shared with you by someone who signed it. If you sign too, you join their ripple." />
             )}
@@ -632,14 +634,19 @@ function PetitionPage({
             >
               {office
                 ? `${office.controls.slice(0, 2).join('; ')}.`
-                : 'Check the recipient directory to see which office controls this.'}
+                : isSampleCity(p.city)
+                  ? 'Check the recipient directory to see which office controls this.'
+                  : 'Named by the organizer as the office that can make this change.'}
             </Text>
-            <Pressable accessibilityRole="link" onPress={() => router.push('/recipients')}>
-              <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
-                {office ? `Usually responds within ${office.responseDays} days · ` : ''}What this
-                office controls ›
-              </Text>
-            </Pressable>
+            <OfficialContact recipient={p.recipient} city={p.city} />
+            {(office || isSampleCity(p.city)) && (
+              <Pressable accessibilityRole="link" onPress={() => router.push('/recipients')}>
+                <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
+                  {office ? `Usually responds within ${office.responseDays} days · ` : ''}What this
+                  office controls ›
+                </Text>
+              </Pressable>
+            )}
           </Animated.View>
 
           <View style={{ marginTop: 20 }}>
@@ -1310,7 +1317,7 @@ function PetitionPage({
       <Confirm
         visible={report}
         title="Report this petition"
-        body="Tell us what is wrong. An AI model reviews the petition’s wording (not your reason). If it finds spam, threats, insults or hateful language, the petition is hidden until a person reviews it. Only you and trusted reviewers see your report."
+        body="Tell us what is wrong. An AI model reviews the petition’s wording (not your reason). If it finds spam, threats, insults, hateful language or text that is not a real request, the petition is hidden until a person reviews it. Only you and trusted reviewers see your report."
         pending={mutation.isPending}
         confirmLabel="Send report"
         confirmDisabled={reason.trim().length < 5}
@@ -1403,5 +1410,31 @@ function PetitionPage({
         {mutation.error && <Notice error text={mutation.error.message} />}
       </Confirm>
     </Animated.View>
+  );
+}
+
+/** A real elected official named as the recipient: their office, district and public contacts. */
+function OfficialContact({ recipient, city }: { recipient: string; city: string }) {
+  const officials = useOfficials(city);
+  const o = officials.data ? officialNamed(recipient, officials.data.officials) : null;
+  if (!o) return null;
+  const link = o.contactForm ?? o.url;
+  return (
+    <View style={{ gap: 2 }}>
+      <Text
+        style={{ fontFamily: fonts.body, fontSize: 12.5, lineHeight: 19, color: colors.onDark }}
+      >
+        {o.office} for {o.district}
+        {o.phone ? ` · ${o.phone}` : ''}
+        {o.email ? ` · ${o.email}` : ''}
+      </Text>
+      {link && (
+        <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(link)}>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
+            {o.contactForm ? 'Contact form' : 'Official website'} ›
+          </Text>
+        </Pressable>
+      )}
+    </View>
   );
 }

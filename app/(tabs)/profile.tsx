@@ -29,7 +29,7 @@ import {
   Switch,
   initialsOf,
   toast,
-  topicImage,
+  petitionImage,
 } from '../../src/components/kit';
 import { anim, kf, stag } from '../../src/components/motion';
 import { ProfileEditor } from '../../src/components/profile-personalization';
@@ -351,7 +351,7 @@ export default function Profile() {
               }}
             >
               <Cover
-                source={topicImage(x.topic)}
+                source={petitionImage(x)}
                 style={{ width: 56, height: 56, borderRadius: 14 }}
               />
               <View style={{ flex: 1, minWidth: 0 }}>

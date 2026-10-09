@@ -27,7 +27,7 @@ import Animated, {
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname } from 'expo-router';
-import type { Topic } from '../domain/model';
+import type { PetitionPhoto, Topic } from '../domain/model';
 import { useResponsiveLayout, webLayout } from './responsive';
 import { colors, fonts, frost, gradient, topicColors } from './theme';
 import { EASE_IN_OUT, anim, kf, reducedMotion, transition } from './motion';
@@ -40,6 +40,9 @@ const images: Record<Topic, ImageProps['source']> = {
   Accessibility: require('../../assets/theme/accessibility.jpg'),
 };
 export const topicImage = (topic: Topic) => images[topic];
+/** The organizer's photo when there is one, otherwise the topic's stock image. */
+export const petitionImage = (p: { topic: Topic; photo?: PetitionPhoto }): ImageProps['source'] =>
+  p.photo ? { uri: p.photo.url } : images[p.topic];
 export const gatheringImage: ImageProps['source'] = require('../../assets/theme/civic-gathering.jpg');
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -449,8 +452,11 @@ export function Rail({
   gutter?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const ref = useRef<ScrollView>(null);
+  useMouseDrag(ref);
   return (
     <ScrollView
+      ref={ref}
       horizontal
       showsHorizontalScrollIndicator={false}
       style={[{ marginHorizontal: -gutter, flexGrow: 0 }, style]}
@@ -459,6 +465,58 @@ export function Rail({
       {children}
     </ScrollView>
   );
+}
+
+/**
+ * Touch screens and trackpads already slide a horizontal rail, but on the web a mouse cannot: the
+ * wheel scrolls the page and dragging does nothing. This lets a mouse drag the rail, and stops a
+ * drag from also opening the card it ends on.
+ */
+function useMouseDrag(ref: React.RefObject<ScrollView | null>) {
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const node = (
+      ref.current as unknown as { getScrollableNode?: () => HTMLElement } | null
+    )?.getScrollableNode?.();
+    if (!node) return;
+    node.style.cursor = 'grab';
+    let start: { x: number; left: number } | null = null;
+    let dragged = false;
+    const down = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      start = { x: e.clientX, left: node.scrollLeft };
+      dragged = false;
+    };
+    const move = (e: PointerEvent) => {
+      if (!start) return;
+      const dx = e.clientX - start.x;
+      if (Math.abs(dx) > 6) dragged = true;
+      if (dragged) node.scrollLeft = start.left - dx;
+    };
+    const up = () => {
+      start = null;
+    };
+    const click = (e: MouseEvent) => {
+      if (!dragged) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragged = false;
+    };
+    // Images are natively draggable in browsers, which would hijack the drag.
+    const nativeDrag = (e: DragEvent) => e.preventDefault();
+    node.addEventListener('pointerdown', down);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    node.addEventListener('click', click, true);
+    node.addEventListener('dragstart', nativeDrag);
+    return () => {
+      node.removeEventListener('pointerdown', down);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      node.removeEventListener('click', click, true);
+      node.removeEventListener('dragstart', nativeDrag);
+    };
+  }, [ref]);
 }
 
 /** Segmented control with a sliding dark knob. */

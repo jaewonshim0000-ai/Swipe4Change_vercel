@@ -203,8 +203,11 @@ test('participation awards are earned by saved actions', async () => {
   const communities = (await a.load()).communities;
   for (const c of communities.slice(0, 2)) await a.execute({ type: 'join', communityId: c.id });
   expect((await a.load()).profile?.badges).toContain('Community builder');
+  // Publishing needs a verified email, which Jordan's sample account lacks; Sam publishes.
+  await a.signIn(demoIds.sam);
   const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: true });
   expect((await a.load()).profile?.badges).toContain('Change starter');
+  await a.signIn(demoIds.jordan);
   await a.execute({
     type: 'discussion',
     petitionId: id!,

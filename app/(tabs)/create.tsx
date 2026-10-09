@@ -24,7 +24,7 @@ import { analyzeDraft, draftSchema, evidenceSchema } from '../../src/domain/rule
 import { plainLanguage, TARGET_GRADE } from '../../src/domain/plain-language';
 import { suggestOffices } from '../../src/domain/recipients';
 import { writingSupport } from '../../src/domain/writing-assistant';
-import { useCommand, useSnapshot } from '../../src/data/provider';
+import { useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import { OptionCard } from '../../src/components/signature-consent';
 import {
   CircleButton,
@@ -42,6 +42,12 @@ import {
   topicImage,
 } from '../../src/components/kit';
 import { Glyph } from '../../src/components/glyph';
+import { CityField } from '../../src/components/city-picker';
+import { RecipientHelp } from '../../src/components/recipient-finder';
+import { PhotoField, PhotoValue, savePhoto } from '../../src/components/photo-field';
+import { DraftWriter } from '../../src/components/draft-writer';
+import { heldMessage } from '../../src/components/held-notice';
+import { isSampleCity } from '../../src/data/civic-lookup';
 import { anim, kf, reducedMotion } from '../../src/components/motion';
 import {
   Button,
@@ -57,14 +63,17 @@ import {
 
 const DAY = 86400000;
 const isoIn = (days: number) => new Date(Date.now() + days * DAY).toISOString().slice(0, 10);
-const blank = (communityId = '10000000-0000-4000-8000-000000000001'): Draft => ({
+const blank = (
+  communityId = '10000000-0000-4000-8000-000000000001',
+  city = 'Riverton, CA',
+): Draft => ({
   title: '',
   summary: '',
   problem: '',
   action: '',
   recipient: '',
   topic: 'Safer streets',
-  city: 'Riverton, CA',
+  city,
   communityId,
   goal: 500,
   deadline: isoIn(45),
@@ -172,12 +181,16 @@ function ScoreRing({ score }: { score: number }) {
 function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   const q = useSnapshot();
   const command = useCommand();
+  const { adapter } = useBackend();
+  // Photos are attached after publishing; drafts keep their text only.
+  const [photo, setPhoto] = useState<PhotoValue | null>(null);
   const [id, setId] = useState(() =>
     selectedDraftId && selectedDraftId !== 'new' ? selectedDraftId : Crypto.randomUUID(),
   );
   const hydrated = useRef(false);
   const [initialSnapshot] = useState(q.data);
   const home = initialSnapshot?.profile?.joined[0];
+  const homeCity = initialSnapshot?.profile?.city || undefined;
   // A draft picked from Profile is already in the snapshot, so it restores on the first render.
   const [saved] = useState(() => initialSnapshot?.drafts?.find((d) => d.id === selectedDraftId));
   const [ready, setReady] = useState(!!saved || selectedDraftId === 'new');
@@ -203,7 +216,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   );
   const form = useForm<Draft>({
     resolver: zodResolver(draftSchema),
-    defaultValues: saved ? { ...blank(home), ...saved.draft } : blank(home),
+    defaultValues: saved ? { ...blank(home, homeCity), ...saved.draft } : blank(home, homeCity),
     mode: 'onBlur',
   });
   const draft = useWatch({ control: form.control, compute: (values: Draft) => values });
@@ -220,7 +233,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
       .then((raw) => {
         if (!active) return;
         if (raw) {
-          form.reset({ ...blank(home), ...JSON.parse(raw) });
+          form.reset({ ...blank(home, homeCity), ...JSON.parse(raw) });
           setDraftMessage('Restored your on-device writing backup.');
         }
         setReady(true);
@@ -234,7 +247,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
     return () => {
       active = false;
     };
-  }, [initialSnapshot, selectedDraftId, draftKey, form, home]);
+  }, [initialSnapshot, selectedDraftId, draftKey, form, home, homeCity]);
   const backup = JSON.stringify(draft);
   useEffect(() => {
     if (!ready) return;
@@ -268,7 +281,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
     }
   }
   function input(
-    name: 'title' | 'summary' | 'problem' | 'action' | 'recipient' | 'city' | 'customRule',
+    name: 'title' | 'summary' | 'problem' | 'action' | 'recipient' | 'customRule',
     label: string,
     placeholder: string,
     multiline = false,
@@ -292,15 +305,34 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
     );
   }
   function publish() {
+    if (photo && photo.alt.trim().length < 5) {
+      setConfirm(false);
+      setStep(1);
+      toast('Describe your photo for people using screen readers, or remove it.');
+      return;
+    }
     void form.handleSubmit((values) =>
       command.mutate(
         { type: 'create', draft: values, publish: true, draftId: id },
         {
-          onSuccess: (petitionId) => {
+          onSuccess: async (petitionId) => {
             setConfirm(false);
             setPublished(typeof petitionId === 'string' ? petitionId : '');
             void AsyncStorage.removeItem(draftKey);
             toast('Published. Your community can sign it now.');
+            if (!photo || typeof petitionId !== 'string') return;
+            try {
+              await command.mutateAsync({
+                type: 'photo',
+                petitionId,
+                photo: await savePhoto(adapter, photo),
+              });
+              setPhoto(null);
+            } catch (e) {
+              toast(
+                `Published, but the photo was not added: ${e instanceof Error ? e.message : 'try again from Manage'}.`,
+              );
+            }
           },
         },
       ),
@@ -308,10 +340,11 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   }
   function startAnother() {
     setId(Crypto.randomUUID());
-    form.reset(blank(home));
+    form.reset(blank(home, homeCity));
     setPublished(null);
     setUndo(null);
     setTemplate('');
+    setPhoto(null);
     setStep(0);
   }
   if (!q.data?.profile)
@@ -355,6 +388,9 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         : []
   ).filter((x) => x.value && x.value !== draft[x.field]);
   const community = q.data.communities.find((c) => c.id === draft.communityId);
+  const live = published ? q.data.petitions.find((p) => p.id === published) : undefined;
+  const held = live ? heldMessage(live) : null;
+  const unverified = !q.data.profile.emailVerified;
   return (
     <Screen>
       <View
@@ -403,6 +439,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         </Text>
         {step === 0 && (
           <>
+            <DraftWriter form={form} />
             <Rail style={{ marginBottom: 14 }}>
               {templates.map((t) => (
                 <PillChip
@@ -426,21 +463,40 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 'Install pedestrian lighting along the Eastbridge campus path by March 2027',
                 true,
               )}
-              {input('recipient', 'Who can make this change?', 'Riverton Public Works')}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -6 }}>
-                {suggestOffices(draft.topic, `${draft.problem} ${draft.action}`)
-                  .slice(0, 3)
-                  .map((o) => (
-                    <PillChip
-                      key={o.id}
-                      label={o.name.replace(' (fictional)', '')}
-                      height={32}
-                      selected={draft.recipient === o.name}
-                      onPress={() => form.setValue('recipient', o.name, { shouldValidate: true })}
-                    />
-                  ))}
-              </View>
-              {input('city', 'Where is it happening? City and state', 'Riverton, CA')}
+              <Controller
+                control={form.control}
+                name="city"
+                render={({ field, fieldState }) => (
+                  <CityField
+                    label="Where is it happening?"
+                    value={field.value}
+                    onChange={(city) => form.setValue('city', city, { shouldValidate: true })}
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+              {input('recipient', 'Who can make this change?', 'The office that can act on this')}
+              {isSampleCity(draft.city) && (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -6 }}>
+                  {suggestOffices(draft.topic, `${draft.problem} ${draft.action}`)
+                    .slice(0, 3)
+                    .map((o) => (
+                      <PillChip
+                        key={o.id}
+                        label={o.name.replace(' (fictional)', '')}
+                        height={32}
+                        selected={draft.recipient === o.name}
+                        onPress={() => form.setValue('recipient', o.name, { shouldValidate: true })}
+                      />
+                    ))}
+                </View>
+              )}
+              <RecipientHelp
+                draft={draft}
+                onPick={(recipient) =>
+                  form.setValue('recipient', recipient, { shouldValidate: true })
+                }
+              />
             </View>
           </>
         )}
@@ -458,6 +514,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
               'Students ask for a lighting plan for the campus path.',
               true,
             )}
+            <PhotoField value={photo} onChange={setPhoto} disabled={command.isPending} />
             <View style={{ gap: 8 }}>
               <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
                 Topic
@@ -681,7 +738,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 }}
               >
                 <Cover
-                  source={topicImage(draft.topic)}
+                  source={photo ? { uri: photo.uri } : topicImage(draft.topic)}
                   style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 />
                 <Scrim stops="rgba(18,20,15,0) 30%, rgba(18,20,15,0.9) 100%" />
@@ -768,7 +825,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
-                    Published · Change starter earned
+                    {held ? 'Saved · not public yet' : 'Published · Change starter earned'}
                   </Text>
                   <Text
                     style={{
@@ -778,8 +835,8 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                       color: colors.onDark,
                     }}
                   >
-                    Share it with {community?.name ?? 'your community'}, then post updates from
-                    Manage.
+                    {held ??
+                      `Share it with ${community?.name ?? 'your community'}, then post updates from Manage.`}
                   </Text>
                 </View>
               </Animated.View>
@@ -793,7 +850,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           <ScoreRing score={analysis.score} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.label, { fontSize: 10.5, letterSpacing: 1.2 }]}>
-              Simulated AI assistant · local rules
+              Writing check · local rules
             </Text>
             <Text
               style={{
@@ -880,10 +937,15 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           />
         )}
         <Text style={[styles.micro, { fontSize: 10.5 }]}>
-          Advisory only. No generative AI — it rearranges your own words, never fills in an office
-          or checks your facts.
+          Advisory only. This score and these tips use simple rules on your own words. The ✦ helpers
+          use AI (Claude) and only suggest; nothing here checks your facts.
         </Text>
       </View>
+      {step === 3 && unverified && published === null && (
+        <View style={{ marginTop: 12 }}>
+          <Notice text="Publishing needs a verified email address, which keeps spam accounts from flooding the app. Verify your email in your account, then publish. You can save this as a draft meanwhile." />
+        </View>
+      )}
       {command.error && (
         <View style={{ marginTop: 12 }}>
           <Notice error text={command.error.message} />
@@ -916,9 +978,15 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           </>
         ) : (
           <Button
-            title={step < 3 ? 'Continue' : 'Publish petition'}
+            title={
+              step < 3
+                ? 'Continue'
+                : unverified
+                  ? 'Verify your email to publish'
+                  : 'Publish petition'
+            }
             style={{ flex: 1 }}
-            disabled={command.isPending}
+            disabled={command.isPending || (step === 3 && unverified)}
             onPress={() => (step < 3 ? void next() : setConfirm(true))}
           />
         )}

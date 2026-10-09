@@ -243,3 +243,29 @@ An organizer may split a requested action into one to three asks and compare eac
 - Validate public backend configuration before mounting Clerk. Prefer Supabase publishable keys while retaining legacy anon-key support; never fall back to demo after a hosted configuration error.
 - Wait for Clerk to finish loading, then give each Clerk session its own QueryClient. Session changes unmount and clear all old queries, including manager queries whose keys do not contain a user ID. Late results and mutations remain attached to the discarded client.
 - Use hosted Supabase only in the setup workflow, with CLI login, linking, and migration-preview scripts. Remove local-service settings and Docker commands; retain the offline demo only as an explicit choice. Fictional seeding remains opt-in for hosted development databases. Live JWT validation still requires a configured Clerk/Supabase project and staging smoke testing.
+
+## Home deck and real locations (October 1)
+
+- Home is only the swipe deck under a short header; the spotlight, ticker, collections, card grid and community prompts moved to Explore, which shows them while browsing and hides them while searching. One primary way to discover keeps Home focused and makes the deck the app's identity.
+- Locations are chosen from real US cities (Open-Meteo search) or detected once from the device (`expo-location`, rounded to ~1 km, reverse-geocoded by OpenStreetMap Nominatim) and stored only as `City, ST`. Both services are free and need no key. Coordinates are never stored. City matching goes through one tested function, `sameCity`, instead of exact string comparison.
+
+## Real officials, the AI recipient finder and sending (October 1)
+
+- Elected officials come from free public sources: the US Census geocoder (city centre → congressional district), the public-domain `congress-legislators` dataset (members of Congress with phone, website and contact form) and Open States (state legislators, free key). They run server-side because Census sends no CORS headers and the Open States key must stay private. Party is not shown, to keep the app nonpartisan. A large city can span several districts; the UI says the lookup is for the city centre.
+- The AI recipient finder uses Claude Opus 5.5 with web search and reports through a strict tool. Any source URL that its search did not return is dropped, and a suggestion that is neither sourced nor one of the looked-up officials is discarded, so it cannot invent an office. It suggests; the creator taps **Use this**. This reverses the earlier "no generative AI in the creation flow" rule at the owner's request; the score, flags and wording suggestions stay deterministic.
+- Hosted mode runs both in the `civic-lookup` Edge Function. Web search costs money per call, so AI lookups first call `claim_civic_lookup` with the caller's own Clerk token (the database validates it): guests are refused and each person gets 10 an hour.
+- Sending uses the recipient's real channel without the app sending anything itself: Congress offices take contact forms, other offices email. The app cannot observe the send, so the organizer confirms the delivery record. The shared AI model constant moved from `claude-opus-5` to `claude-opus-5-5`.
+
+## Petition photos (October 1)
+
+- One photo per petition: enough for the card and the page header. It is resized and re-encoded on the device, then `stripJpegMetadata` removes every APP1–APP15 and comment segment, so the GPS position phones record never leaves the device even if an encoder were to copy it. That keeps the "never your exact location" promise.
+- The photo is attached by its own organizer-only `photo` command (like the donation link) instead of widening the `create` whitelist, and each change is public edit history, because a picture shapes how people read a request.
+- Hosted photos live in a public Storage bucket with random names; anyone signed in may upload, only the uploader may replace or delete, and the command accepts only that bucket's URLs. The demo keeps the compressed JPEG inline in its on-device data.
+- Photos are not yet screened automatically; a reported petition (photo included) is still hidden by the report review. Photo screening belongs with the spam filter.
+
+## AI petition writer and spam filter (October 5)
+
+- The writer drafts from the creator's own description so anyone can start a petition regardless of writing skill. It is bound to the creator's facts: no invented numbers, dates, names, sources or officials, no recipient; missing details become questions. It fills the form rather than publishing, and one tap undoes it. The deterministic writing check (score, flags, readability) stays rule-based and is now labelled "Writing check · local rules" so it is not confused with the AI.
+- Spam is checked at publication and on every rewording, not only after a report, so it never reaches the feed. A flagged petition is held rather than rejected, because a false positive should cost the organizer an edit, not their work. "Nonsense" joins the categories; the prompt keeps blunt civic speech up.
+- Hosted publication is trustworthy: the database, not the app, marks a new petition pending and hidden, and only the service-role Edge Function records the result, for the exact wording it read (`updated_at` guard). A public petition stays up while a rewording is rechecked.
+- A verified email is required to publish (not to draft), raising the cost of throwaway spam accounts. The owner chose this over a daily limit, duplicate checks and photo screening.

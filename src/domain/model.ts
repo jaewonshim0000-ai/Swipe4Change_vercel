@@ -1,11 +1,8 @@
 import type { SignatureReceipt, SignatureSubmission } from './signature-record';
-export const topics = [
-  'Safer streets',
-  'Environment',
-  'Education',
-  'Public spaces',
-  'Accessibility',
-] as const;
+import type { LookupRequest, LookupResponse } from '../../supabase/functions/_shared/lookup';
+import { petitionTopics } from '../../supabase/functions/_shared/civic-rules';
+import type { ScreenCategory } from '../../supabase/functions/_shared/civic-rules';
+export const topics = petitionTopics;
 export type Topic = (typeof topics)[number];
 export const verificationModes = ['account', 'email', 'community', 'location', 'custom'] as const;
 export type Verification = (typeof verificationModes)[number];
@@ -161,6 +158,15 @@ export interface Petition {
    * holds or verifies money. Absent when the organizer has not added one.
    */
   donationUrl?: string;
+  /** The organizer's photo of the problem, stripped of location metadata. Absent: topic image. */
+  photo?: PetitionPhoto;
+  /**
+   * Set while the automatic check holds a new or reworded petition out of public view; only its
+   * organizers receive it, so they can see why and fix the wording.
+   */
+  heldFor?: ScreenCategory[];
+  /** Hosted only: the server has not finished checking this petition's wording yet. */
+  checking?: boolean;
   /**
    * Set when the AI review of a report flagged the petition. It is then out of public view until
    * a trusted reviewer decides; only its organizers still receive it, so they can see why.
@@ -389,6 +395,8 @@ export type Command =
   | { type: 'report'; petitionId: string; reason: string }
   /** An empty url removes the link. */
   | { type: 'donationLink'; petitionId: string; url: string }
+  /** Sets, replaces or (with null) removes the petition's photo; every change is public history. */
+  | { type: 'photo'; petitionId: string; photo: PetitionPhoto | null }
   | { type: 'appeal'; reportId: string; body: string }
   | { type: 'deliver'; petitionId: string; method: DeliveryMethod; note: string }
   | {
@@ -415,7 +423,16 @@ export interface SavedDraft {
   step: number;
   updatedAt: string;
 }
+/** A petition photo: where it is stored, and the description screen readers announce. */
+export interface PetitionPhoto {
+  url: string;
+  alt: string;
+}
 export interface Adapter {
+  /** Stores a metadata-free JPEG and returns the URL to save with the photo command. */
+  uploadPhoto(jpegBase64: string): Promise<string>;
+  /** Elected officials for a place, or the AI recipient finder; both run on a server. */
+  lookup(request: LookupRequest): Promise<LookupResponse>;
   receipt(petitionId: string): Promise<SignatureReceipt | null>;
   load(): Promise<Snapshot>;
   execute(command: Command): Promise<string | void>;

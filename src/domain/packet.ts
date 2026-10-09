@@ -30,8 +30,16 @@ export function packetLines(
   ].filter(Boolean);
   return [
     'PETITION FOR DELIVERY',
-    'Prepared with Swipe4Change — a student civic project. All names, offices and signatures',
-    'below are FICTIONAL sample data and carry no legal validity.',
+    // Sample petitions and the fictional office directory are labelled; real ones are not.
+    ...(p.sampleCount > 0 || office
+      ? [
+          'Prepared with Swipe4Change — a student civic project. All names, offices and signatures',
+          'below are FICTIONAL sample data and carry no legal validity.',
+        ]
+      : [
+          'Prepared with Swipe4Change — a student civic project. Signatures were collected online;',
+          'Swipe4Change does not certify signers’ identities and this is not a legal ballot petition.',
+        ]),
     '',
     `To:      ${delivery?.recipient ?? p.recipient}`,
     ...(office

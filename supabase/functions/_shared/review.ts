@@ -21,6 +21,10 @@ export interface ReviewStore {
   queue(): Promise<ReviewQueue>;
   screened(petitionId: string, categories: ScreenCategory[]): Promise<void>;
   tagged(petitionId: string, tags: string[], seen: string): Promise<void>;
+  /** Newly published or reworded petitions waiting for their check (public.ai_publish_queue). */
+  publishQueue(): Promise<{ id: string; seen: string; petition: PetitionText }[]>;
+  /** Records a publication check for the wording that was read (public.ai_apply_publish_screening). */
+  checked(petitionId: string, categories: ScreenCategory[], seen: string): Promise<void>;
 }
 
 /**
@@ -28,24 +32,36 @@ export interface ReviewStore {
  * a reporter never waits on an outage. A petition the model cannot tag stays untagged for the next
  * pass; the app ranks it from its words meanwhile. `claude` is null when no API key is configured.
  */
-export async function runReview(store: ReviewStore, claude: Anthropic | null) {
+export async function runReview(
+  store: ReviewStore,
+  claude: Anthropic | null,
+  { tags = true }: { tags?: boolean } = {},
+) {
+  // The model reads the wording; if it cannot, the keyword rules decide so nobody waits on an outage.
+  const check = async (p: PetitionText) => {
+    try {
+      if (!claude) throw new Error('ANTHROPIC_API_KEY is not set.');
+      return await screenWithClaude(claude, p);
+    } catch (error) {
+      console.warn('AI screening unavailable, using the fallback rules:', error);
+      return screenText(petitionBody(p));
+    }
+  };
+  // New petitions first: their organizers are waiting to go public.
+  let checked = 0;
+  for (const p of await store.publishQueue()) {
+    await store.checked(p.id, await check(p.petition), p.seen);
+    checked++;
+  }
   const { reports, petitions, vocabulary } = await store.queue();
   const known = new Set<string>([...starterTags, ...vocabulary]);
   let screened = 0;
   let tagged = 0;
   for (const r of reports) {
-    let categories: ScreenCategory[];
-    try {
-      if (!claude) throw new Error('ANTHROPIC_API_KEY is not set.');
-      categories = await screenWithClaude(claude, r.petition);
-    } catch (error) {
-      console.warn('AI screening unavailable, using the fallback rules:', error);
-      categories = screenText(petitionBody(r.petition));
-    }
-    await store.screened(r.petitionId, categories);
+    await store.screened(r.petitionId, await check(r.petition));
     screened++;
   }
-  if (claude)
+  if (claude && tags)
     for (const p of petitions) {
       try {
         const tags = await tagWithClaude(claude, p.petition, [...known]);
@@ -56,5 +72,5 @@ export async function runReview(store: ReviewStore, claude: Anthropic | null) {
         console.warn('AI tagging failed; will retry on the next pass:', error);
       }
     }
-  return { screened, tagged };
+  return { checked, screened, tagged };
 }

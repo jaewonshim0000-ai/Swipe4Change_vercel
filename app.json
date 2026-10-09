@@ -30,7 +30,20 @@
       "@clerk/expo",
       "expo-notifications",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Swipe4Change uses your location once to find your city. Only the city and state are saved."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Swipe4Change lets you attach a photo of the problem to a petition.",
+          "cameraPermission": "Swipe4Change lets you take a photo of the problem for a petition."
+        }
+      ]
     ],
     "scheme": ["swipe4change", "lookaware"]
   }

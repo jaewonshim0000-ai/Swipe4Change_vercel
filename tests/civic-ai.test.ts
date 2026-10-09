@@ -61,6 +61,7 @@ const offensive = { ...petition, title: 'Get these idiots off our council' };
 function memoryStore() {
   const screened: Record<string, string[]> = {};
   const tagged: Record<string, string[]> = {};
+  const checked: Record<string, string[]> = {};
   const store: ReviewStore = {
     queue: async () => ({
       reports: [
@@ -76,19 +77,25 @@ function memoryStore() {
     tagged: async (id, tags) => {
       tagged[id] = tags;
     },
+    // A newly published petition waiting for its check.
+    publishQueue: async () => [{ id: 'new', seen: 't0', petition: offensive }],
+    checked: async (id, hits) => {
+      checked[id] = hits;
+    },
   };
-  return { store, screened, tagged };
+  return { store, screened, tagged, checked };
 }
 
 test('the review pass settles reports with the model and tags petitions', async () => {
-  const { store, screened, tagged } = memoryStore();
+  const { store, screened, tagged, checked } = memoryStore();
   const { client, calls } = fakeClaude((p) =>
     p.system.startsWith('You tag')
       ? { tags: ['lighting'] }
       : // The model catches what keywords would miss: here, a clean-looking petition.
         { categories: p.messages[0].content.includes('idiots') ? [] : ['spam'], reason: 'test' },
   );
-  expect(await runReview(store, client)).toEqual({ screened: 2, tagged: 1 });
+  expect(await runReview(store, client)).toEqual({ checked: 1, screened: 2, tagged: 1 });
+  expect(checked).toEqual({ new: [] });
   expect(screened).toEqual({ clean: ['spam'], rude: [] });
   expect(tagged).toEqual({ clean: ['lighting'] });
   expect(calls.at(-1)?.messages[0].content).toContain('bus-stops');
@@ -96,7 +103,7 @@ test('the review pass settles reports with the model and tags petitions', async 
 
 test('without the model, reports fall back to the rules and tagging waits', async () => {
   jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-  const { store, screened, tagged } = memoryStore();
+  const { store, screened, tagged, checked } = memoryStore();
   const broken = {
     beta: {
       messages: {
@@ -107,8 +114,23 @@ test('without the model, reports fall back to the rules and tagging waits', asyn
     },
   } as unknown as Anthropic;
   for (const client of [null, broken]) {
-    expect(await runReview(store, client)).toEqual({ screened: 2, tagged: 0 });
+    expect(await runReview(store, client)).toEqual({ checked: 1, screened: 2, tagged: 0 });
+    expect(checked).toEqual({ new: ['harassment'] });
     expect(screened).toEqual({ clean: [], rude: ['harassment'] });
     expect(tagged).toEqual({});
   }
+});
+
+test('someone waiting to go public is not kept waiting for tagging', async () => {
+  const { store, checked, tagged } = memoryStore();
+  const { client } = fakeClaude((p) =>
+    p.system.startsWith('You tag') ? { tags: ['lighting'] } : { categories: [], reason: 'ok' },
+  );
+  expect(await runReview(store, client, { tags: false })).toEqual({
+    checked: 1,
+    screened: 2,
+    tagged: 0,
+  });
+  expect(checked).toEqual({ new: [] });
+  expect(tagged).toEqual({});
 });

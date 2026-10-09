@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { useSnapshot } from '../data/provider';
+import { useCommand, useSnapshot } from '../data/provider';
 import { useReads } from '../data/reads';
 import { useSignals } from '../data/signals';
 import { Petition, Snapshot, topics, verificationLabels, verificationModes } from '../domain/model';
 import { trendingScore } from '../domain/rules';
 import { forYou } from '../domain/for-you';
+import { sameCity } from '../domain/location';
 import {
   DiscoveryFilters,
   ago,
@@ -17,7 +18,7 @@ import {
   nextMilestone,
 } from '../domain/discovery';
 import { governmentLevels, levelLabels } from '../domain/recipients';
-import { ResponsiveGrid, useResponsiveLayout } from '../components/responsive';
+import { ResponsiveGrid } from '../components/responsive';
 import { SwipeDeck } from '../components/swipe-deck';
 import { CollectionCard, PetitionRow, useSave } from '../components/petition-card';
 import {
@@ -33,13 +34,15 @@ import {
   Ring,
   Scrim,
   Screen,
-  Segmented,
   Sheet,
   TopicPill,
   initialsOf,
+  toast,
+  petitionImage,
   topicImage,
 } from '../components/kit';
 import { Glyph } from '../components/glyph';
+import { CitySheet } from '../components/city-picker';
 import { anim, kf } from '../components/motion';
 import { Button, Empty, Loading, Notice, Page, colors, fonts, styles } from '../components/ui';
 import { frost, topicColors } from '../components/theme';
@@ -175,7 +178,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
       }}
     >
       <KenBurns
-        source={topicImage(p.topic)}
+        source={petitionImage(p)}
         label="Illustrative theme image, not petition evidence"
       />
       <Scrim stops="rgba(18,20,15,0.25) 0%, rgba(18,20,15,0) 28%, rgba(18,20,15,0.5) 55%, rgba(18,20,15,0.9) 100%" />
@@ -347,45 +350,27 @@ function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void 
   );
 }
 
+/** Home is the swipe deck. Every other way of finding petitions lives in Explore. */
 function Home({ snapshot: s }: { snapshot: Snapshot }) {
-  const { wide } = useResponsiveLayout();
   const [now] = useState(Date.now);
   const [why, setWhy] = useState(false);
-  const [cards, setCards] = useState(wide);
+  const [picking, setPicking] = useState(false);
+  const command = useCommand();
   const { read } = useReads(s.profile?.id);
   const feed = forYou(s, useSignals(s.profile), now);
   const ranked = feed.map((r) => r.petition);
   const reasons = new Map(feed.map((r) => [r.petition.id, r.reasons]));
-  const local = ranked.filter((p) => p.city === s.profile?.city);
-  const flagship =
-    ranked.find((p) => p.action.includes('Eastbridge campus')) ?? local[0] ?? ranked[0];
-  const community = s.communities.find((c) => s.profile?.joined.includes(c.id)) ?? s.communities[0];
-  const communityPetitions = s.petitions.filter(
-    (p) => p.communityId === community?.id && p.status === 'active',
-  );
-  const latest = communityPetitions
-    .flatMap((p) => p.updates)
-    .filter((u) => !u.removed)
-    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+  const local = ranked.filter((p) => sameCity(p.city, s.profile?.city));
   const hour = new Date(now).getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const unread = s.notifications.filter((n) => !read.includes(n.id)).length;
-  const collections = [
-    { title: 'Near you', note: 'Approximate city matches only.', items: local },
-    {
-      title: 'A milestone within reach',
-      note: 'Signature progress, not policy outcomes.',
-      items: [...ranked]
-        .filter((p) => nextMilestone(p))
-        .sort((a, b) => nextMilestone(a)!.remaining - nextMilestone(b)!.remaining),
-    },
-    {
-      title: 'Gaining momentum',
-      note: 'Seven-day signatures, saves and discussion. Small samples discounted.',
-      items: [...ranked].sort((a, b) => trendingScore(b) - trendingScore(a)).slice(0, 5),
-    },
-  ];
-  const remaining = ranked.filter((p) => !s.signed.includes(p.id));
+  function moveTo(city: string) {
+    if (!s.profile) return;
+    command.mutate(
+      { type: 'onboard', interests: s.profile.interests, city },
+      { onSuccess: () => toast(`Showing causes near ${city}`) },
+    );
+  }
   return (
     <Screen wide>
       <Animated.View
@@ -420,7 +405,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Change location"
-            onPress={() => router.push(s.profile ? '/onboarding' : '/(auth)/sign-in')}
+            onPress={() => (s.profile ? setPicking(true) : router.push('/(auth)/sign-in'))}
             style={{ paddingTop: 3, flexDirection: 'row', gap: 4 }}
           >
             <Text
@@ -480,17 +465,9 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           )}
         </Press>
       </Animated.View>
-      <Animated.View style={[{ paddingTop: 14 }, anim(kf.in, 500, { delay: 60 })]}>
-        <Ticker lines={tickerLines(s, now)} />
-      </Animated.View>
-      {flagship && (
-        <Animated.View style={[{ paddingTop: 16 }, anim(kf.in, 600, { delay: 120 })]}>
-          <Spotlight petition={flagship} snapshot={s} />
-        </Animated.View>
-      )}
       <View
         style={{
-          paddingTop: 26,
+          paddingTop: 22,
           paddingBottom: 12,
           flexDirection: 'row',
           alignItems: 'flex-end',
@@ -498,178 +475,148 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           gap: 10,
         }}
       >
-        <View>
-          <Text
-            accessibilityRole="header"
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 23,
-              lineHeight: 25,
-              letterSpacing: -0.7,
-              color: colors.ink,
-            }}
-          >
-            For you
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setWhy(true)}
-            style={{ paddingTop: 4 }}
-          >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.accent }}>
-              Why these petitions?
-            </Text>
-          </Pressable>
-        </View>
-        <Segmented
-          options={['Swipe', 'Cards']}
-          value={cards ? 1 : 0}
-          onChange={(i) => setCards(i === 1)}
-          itemWidth={68}
-        />
-      </View>
-      {cards ? (
-        <ResponsiveGrid>
-          {remaining.slice(0, 6).map((p, i) => (
-            <PetitionRow key={p.id} petition={p} snapshot={s} index={i} />
-          ))}
-        </ResponsiveGrid>
-      ) : (
-        <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
-          <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
-        </View>
-      )}
-      {collections.map(
-        (c) =>
-          c.items.length > 0 && (
-            <View key={c.title} style={{ paddingTop: 28 }}>
-              <View style={{ paddingBottom: 12 }}>
-                <Text accessibilityRole="header" style={sectionTitle}>
-                  {c.title}
-                </Text>
-                <Text style={note}>{c.note}</Text>
-              </View>
-              <Rail gap={12} style={{ paddingBottom: 12 }}>
-                {c.items.slice(0, 6).map((p) => (
-                  <CollectionCard
-                    key={p.id}
-                    petition={p}
-                    badge={
-                      p.city === s.profile?.city
-                        ? 'Near you'
-                        : (s.communities.find((x) => x.id === p.communityId)?.name ?? p.city)
-                    }
-                  />
-                ))}
-              </Rail>
-            </View>
-          ),
-      )}
-      <View style={{ paddingTop: 22 }}>
-        <Text accessibilityRole="header" style={[sectionTitle, { marginBottom: 12 }]}>
-          Keep the conversation going
-        </Text>
-        {community && (
-          <Press
-            accessibilityRole="link"
-            accessibilityLabel={`Open ${community.name}`}
-            onPress={() => router.push(`/community/${community.id}`)}
-            style={{
-              backgroundColor: colors.white,
-              borderRadius: 26,
-              padding: 16,
-              flexDirection: 'row',
-              gap: 14,
-              alignItems: 'center',
-              boxShadow: '0px 10px 26px -16px rgba(32,38,26,0.35)',
-            }}
-          >
-            <View style={{ width: 58, height: 58 }}>
-              <Ring />
-              <Cover
-                source={topicImage(community.topic)}
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  left: 6,
-                  right: 6,
-                  bottom: 6,
-                  borderRadius: 23,
-                }}
-              />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.semibold,
-                  fontSize: 15,
-                  lineHeight: 19.5,
-                  color: colors.ink,
-                }}
-              >
-                {community.name}
-              </Text>
-              <Text
-                numberOfLines={2}
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 12.5,
-                  lineHeight: 18,
-                  color: colors.muted,
-                }}
-              >
-                {communityPetitions.length} active campaigns ·{' '}
-                {latest ? latest.body : 'Bring a question or an idea'}
-              </Text>
-            </View>
-            <Glyph name="next" size={16} weight={2} />
-          </Press>
-        )}
-        <View
+        <Text
+          accessibilityRole="header"
           style={{
-            marginTop: 14,
-            backgroundColor: colors.dark,
-            borderRadius: 28,
-            padding: 22,
-            gap: 10,
-            overflow: 'hidden',
+            fontFamily: fonts.display,
+            fontSize: 23,
+            lineHeight: 25,
+            letterSpacing: -0.7,
+            color: colors.ink,
           }}
         >
-          <View style={{ position: 'absolute', right: -40, top: -40, width: 150, height: 150 }}>
-            <Ring color="rgba(228,230,195,0.25)" width={1} ms={3400} />
-          </View>
-          <Text
-            style={{
-              fontFamily: fonts.heading,
-              fontSize: 21,
-              lineHeight: 25,
-              letterSpacing: -0.5,
-              color: colors.white,
-              maxWidth: 260,
-            }}
-          >
-            What would you change on your way home?
-          </Text>
-          <Text
-            style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.onDark }}
-          >
-            Turn one specific concern into a request your community can act on.
-          </Text>
-          <Button
-            title="Start a petition →"
-            variant="pale"
-            onPress={() => router.push('/(tabs)/create')}
-            style={{ alignSelf: 'flex-start', marginTop: 4, minHeight: 44 }}
-          />
-        </View>
-        <Text
-          style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}
-        >
-          Fictional sample data. Nothing here establishes legal validity.
+          For you
         </Text>
+        <Pressable accessibilityRole="button" onPress={() => setWhy(true)} style={{ padding: 4 }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.accent }}>
+            Why these?
+          </Text>
+        </Pressable>
       </View>
+      <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
+        <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
+      </View>
+      <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>
+        Fictional sample data. Nothing here establishes legal validity.
+      </Text>
+      <CitySheet visible={picking} onClose={() => setPicking(false)} onPick={moveTo} />
       <WhySheet visible={why} onClose={() => setWhy(false)} />
     </Screen>
+  );
+}
+
+/** The community and creation invitations at the foot of Explore. */
+function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
+  const community = s.communities.find((c) => s.profile?.joined.includes(c.id)) ?? s.communities[0];
+  const communityPetitions = s.petitions.filter(
+    (p) => p.communityId === community?.id && p.status === 'active',
+  );
+  const latest = communityPetitions
+    .flatMap((p) => p.updates)
+    .filter((u) => !u.removed)
+    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+  return (
+    <View style={{ paddingTop: 22 }}>
+      <Text accessibilityRole="header" style={[sectionTitle, { marginBottom: 12 }]}>
+        Keep the conversation going
+      </Text>
+      {community && (
+        <Press
+          accessibilityRole="link"
+          accessibilityLabel={`Open ${community.name}`}
+          onPress={() => router.push(`/community/${community.id}`)}
+          style={{
+            backgroundColor: colors.white,
+            borderRadius: 26,
+            padding: 16,
+            flexDirection: 'row',
+            gap: 14,
+            alignItems: 'center',
+            boxShadow: '0px 10px 26px -16px rgba(32,38,26,0.35)',
+          }}
+        >
+          <View style={{ width: 58, height: 58 }}>
+            <Ring />
+            <Cover
+              source={topicImage(community.topic)}
+              style={{
+                position: 'absolute',
+                top: 6,
+                left: 6,
+                right: 6,
+                bottom: 6,
+                borderRadius: 23,
+              }}
+            />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={{
+                fontFamily: fonts.semibold,
+                fontSize: 15,
+                lineHeight: 19.5,
+                color: colors.ink,
+              }}
+            >
+              {community.name}
+            </Text>
+            <Text
+              numberOfLines={2}
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 12.5,
+                lineHeight: 18,
+                color: colors.muted,
+              }}
+            >
+              {communityPetitions.length} active campaigns ·{' '}
+              {latest ? latest.body : 'Bring a question or an idea'}
+            </Text>
+          </View>
+          <Glyph name="next" size={16} weight={2} />
+        </Press>
+      )}
+      <View
+        style={{
+          marginTop: 14,
+          backgroundColor: colors.dark,
+          borderRadius: 28,
+          padding: 22,
+          gap: 10,
+          overflow: 'hidden',
+        }}
+      >
+        <View style={{ position: 'absolute', right: -40, top: -40, width: 150, height: 150 }}>
+          <Ring color="rgba(228,230,195,0.25)" width={1} ms={3400} />
+        </View>
+        <Text
+          style={{
+            fontFamily: fonts.heading,
+            fontSize: 21,
+            lineHeight: 25,
+            letterSpacing: -0.5,
+            color: colors.white,
+            maxWidth: 260,
+          }}
+        >
+          What would you change on your way home?
+        </Text>
+        <Text
+          style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.onDark }}
+        >
+          Turn one specific concern into a request your community can act on.
+        </Text>
+        <Button
+          title="Start a petition →"
+          variant="pale"
+          onPress={() => router.push('/(tabs)/create')}
+          style={{ alignSelf: 'flex-start', marginTop: 4, minHeight: 44 }}
+        />
+      </View>
+      <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>
+        Fictional sample data. Nothing here establishes legal validity.
+      </Text>
+    </View>
   );
 }
 
@@ -720,6 +667,30 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
     { label: 'Community', key: 'community', options: s.communities.map((c) => [c.id, c.name]) },
   ];
   const q = search.trim();
+  // Browsing with no search or filters shows the curated sections; searching shows only results.
+  const browsing =
+    !q &&
+    (Object.keys(emptyFilters) as (keyof DiscoveryFilters)[]).every(
+      (k) => filters[k] === emptyFilters[k],
+    );
+  const local = ranked.filter((p) => sameCity(p.city, city));
+  const flagship =
+    ranked.find((p) => p.action.includes('Eastbridge campus')) ?? local[0] ?? ranked[0];
+  const collections = [
+    { title: 'Near you', note: 'Approximate city matches only.', items: local },
+    {
+      title: 'A milestone within reach',
+      note: 'Signature progress, not policy outcomes.',
+      items: [...ranked]
+        .filter((p) => nextMilestone(p))
+        .sort((a, b) => nextMilestone(a)!.remaining - nextMilestone(b)!.remaining),
+    },
+    {
+      title: 'Gaining momentum',
+      note: 'Seven-day signatures, saves and discussion. Small samples discounted.',
+      items: [...ranked].sort((a, b) => trendingScore(b) - trendingScore(a)).slice(0, 5),
+    },
+  ];
   return (
     <Screen wide>
       <Text style={styles.label}>Explore</Text>
@@ -834,6 +805,47 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
           />
         ))}
       </Rail>
+      {browsing && (
+        <>
+          <Animated.View style={[{ paddingTop: 14 }, anim(kf.in, 500, { delay: 60 })]}>
+            <Ticker lines={tickerLines(s, now)} />
+          </Animated.View>
+          {flagship && (
+            <Animated.View style={[{ paddingTop: 16 }, anim(kf.in, 600, { delay: 120 })]}>
+              <Spotlight petition={flagship} snapshot={s} />
+            </Animated.View>
+          )}
+          {collections.map(
+            (c) =>
+              c.items.length > 0 && (
+                <View key={c.title} style={{ paddingTop: 28 }}>
+                  <View style={{ paddingBottom: 12 }}>
+                    <Text accessibilityRole="header" style={sectionTitle}>
+                      {c.title}
+                    </Text>
+                    <Text style={note}>{c.note}</Text>
+                  </View>
+                  <Rail gap={12} style={{ paddingBottom: 12 }}>
+                    {c.items.slice(0, 6).map((p) => (
+                      <CollectionCard
+                        key={p.id}
+                        petition={p}
+                        badge={
+                          sameCity(p.city, city)
+                            ? 'Near you'
+                            : (s.communities.find((x) => x.id === p.communityId)?.name ?? p.city)
+                        }
+                      />
+                    ))}
+                  </Rail>
+                </View>
+              ),
+          )}
+          <Text accessibilityRole="header" style={[sectionTitle, { paddingTop: 22 }]}>
+            All petitions
+          </Text>
+        </>
+      )}
       <Text
         accessibilityLiveRegion="polite"
         style={{
@@ -843,7 +855,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
           color: colors.muted,
         }}
       >
-        {list.length} matching petition{list.length === 1 ? '' : 's'}
+        {list.length} {browsing ? 'active' : 'matching'} petition{list.length === 1 ? '' : 's'}
       </Text>
       <ResponsiveGrid>
         {list.map((p, i) => (
@@ -855,7 +867,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
             match={
               q
                 ? `Matches “${q}”`
-                : p.city === city
+                : sameCity(p.city, city)
                   ? `Near you · ${p.city}`
                   : s.profile?.interests.includes(p.topic)
                     ? 'One of your interests'
@@ -936,6 +948,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
           ))}
         </Rail>
       </View>
+      <KeepGoing snapshot={s} />
       <Sheet visible={!!draft} onClose={() => setDraft(null)}>
         <Text
           accessibilityRole="header"

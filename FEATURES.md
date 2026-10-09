@@ -11,26 +11,26 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - **Welcome screen** with three demo accounts (Maya the student organizer, Sam the approved local resident, Jordan the new member) — no password needed.
 - **Explore first:** browse every public petition as a guest before signing in.
 - **Hosted sign-in** through Clerk when the Supabase backend is enabled.
-- **Onboarding:** pick at least three interests (or skip) and an approximate city/state. An exact address is never asked for.
+- **Onboarding:** pick at least three interests (or skip) and your city. An exact address is never asked for.
+- **Real city picker:** type-ahead search of real US cities, or **Use my current location** once. Only "City, ST" is saved — the position is rounded to about a kilometre, used for one lookup and discarded. The fictional demo towns are offered as labelled sample cities.
 - **Deep links** open any petition or community directly (`swipe4change://`, with the old `lookaware://` still working).
 
 ## 2. Discover petitions
 
-**Home**
+**Home is the swipe deck**
 
-- Greeting with the number of active causes near your city, and a quick **Change location**.
-- **Local spotlight** featuring the flagship petition, its progress, next milestone and latest update.
-- **Swipe deck** — right to sign (opens the signing review; only your confirmation records a signature), left to pass, up to read more. Every gesture also has a labelled button, passes can be undone, and a first-run tip explains the gestures.
-- **Card view** toggle for a grid instead of the deck.
-- **Why these petitions?** shows the exact ranking recipe as a table.
-- Collections: **Near you**, **Recently updated**, **A milestone within reach**, **From your communities**, **Gaining momentum** (trending), plus community activity cards and a “start a petition” prompt.
+- Greeting with the number of active causes near your city, and **Change** opens the city picker in place.
+- **Swipe deck** on every screen size — right to sign (opens the signing review; only your confirmation records a signature), left to pass, up to read more. Every gesture also has a labelled button, passes can be undone, and a first-run tip explains the gestures. When you run out, **Explore more** takes you to Explore.
+- **Why these?** shows the exact ranking recipe as a table.
 
-**Explore**
+**Explore holds every other way to find petitions**
 
+- While browsing (no search or filters): the live ticker, the **local spotlight**, collections (**Near you**, **A milestone within reach**, **Gaining momentum**), then **All petitions** as cards.
+- Searching or filtering shows only the matching results.
 - Full-text search across petitions and communities, with topic chips and quick filters (near you, updated this week, ending within 30 days).
 - **Filter sheet:** approximate city, signing requirement, recipient level of government, community, deadline and recent updates. Unapplied edits can be cancelled; filters clear in one tap.
 - Every result says why it matched. Phones get compact rows; wider screens get a grid.
-- **Find your people:** community suggestions beside the results.
+- **Find your people:** community suggestions, your community's latest activity and a “start a petition” prompt at the foot of the page.
 
 **For You: a feed that learns from what you do** ✦ new
 
@@ -46,14 +46,16 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 - Topic, city and status, title, requested action, creator, community and recipient.
 - The story in three parts: **the problem**, **how we propose to solve it**, and **who can make this change**.
-- **Who decides this?** — the recipient's level of government and usual response time, linked to the recipient directory.
+- **Who decides this?** — the recipient's level of government and usual response time, linked to the recipient directory; for a real elected official, their office, district, phone and website or contact form.
 - Progress bar, sample-vs-real signature disclosure, and the next milestone.
 - **Story / Progress / Activity** tabs:
   - **Story:** the change requested, why it matters, and the organizer's labelled sources.
   - **Progress:** milestones, the delivery record, and recorded responses with their verification status.
   - **Activity:** organizer updates, the structured discussion (question / idea / experience), community endorsements and public edit history.
 - **Save** (saving is following), **Share**, **Volunteer**, **Donate** (when the organizer linked a fundraising page), **Report a concern**.
-- **AI report review:** reporting sends the petition's wording (never the reporter or their reason) to Claude. If it finds spam, threats, insults or hateful language, the petition is hidden from the public until a person reviews it; otherwise it stays up and the report waits for a reviewer. Reports can't hide a clean petition. Keyword rules take over if the model can't be reached.
+- **Spam filter at publication:** every petition is checked by Claude as it is published and whenever its wording changes, for spam, threats, insults, hateful language and nonsense (gibberish, test posts, jokes with no request). Flagged petitions are saved but held out of public view with the reason; editing the wording rechecks it and clean wording goes public. Keyword rules decide when the model can't be reached. Blunt or angry civic speech stays up.
+- **Verified email to publish:** saving drafts needs none; publishing does, which keeps throwaway accounts from flooding the app.
+- **AI report review:** reporting sends the petition's wording (never the reporter or their reason) to Claude. If it finds spam, threats, insults, hateful language or nonsense, the petition is hidden from the public until a person reviews it; otherwise it stays up and the report waits for a reviewer. Reports can't hide a clean petition. Keyword rules take over if the model can't be reached.
 - “N signed because a supporter shared it” when shares are working.
 - The latest public supporter names, exactly as each signer chose to appear.
 - A **sticky Sign bar** on phones once the main button scrolls away.
@@ -88,15 +90,19 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 - Start from a **template** or a blank page.
 - **Four steps:** Define the change → Build the case → Configure participation → Review and publish.
-- **Writing assistant** (local rules, clearly labelled — no generative AI):
+- **Write it for me ✦ (AI):** describe what's wrong in your own words — any language, or by dictation — and Claude drafts the title, summary, problem, requested change and topic. It never invents facts, numbers, names or sources; when something important is missing it asks up to three questions instead. Every field stays editable and **Undo AI draft** restores yours.
+- **Writing check** (local rules, clearly labelled):
   - A 0–100 quality score with a visible rubric.
   - Missing-piece flags: recipient, action, location, deadline, evidence, measurable outcome.
   - Suggested titles and summaries built from your own fields, applied in one click and reversible.
   - A suggested recipient _category_ — it never fills in an office for you.
   - Official research starting points by topic.
 - **Plain-language check:** reading grade level against a grade-9 target, plus flags for passive voice, vague verbs and asks with no number or date. Advisory only; never blocks publishing.
-- **Recipient directory suggestions** ranked by topic and wording.
+- **Your elected officials:** for a real city, the two U.S. senators, the House member and (with an Open States key) the state senator and representative, one tap to address the petition to any of them. Party is never shown.
+- **Find the right recipient ✦ (AI):** Claude searches the web for the office that can actually make the change — a city department, a school board, a legislator — and shows why, public contact details and its sources. Sources it did not really find are dropped; it only suggests, and **Use this** fills the field.
+- **Recipient directory suggestions** for the fictional sample cities, ranked by topic and wording.
 - **Participation rules:** eligibility mode, custom rule text, and which public identities signers may choose.
+- **A photo of the problem:** take or choose one, with a required description for screen readers. It replaces the stock topic image on every card and on the petition page. Location and other metadata are stripped on the device before upload.
 - **Card and full-page previews** before a publish confirmation.
 - **Private drafts:** save from any step, keep several, and resume or delete them from Profile.
 
@@ -119,6 +125,9 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - **Delivery packet:** a printable / PDF / shareable document with the petition text, requested action, recipient and level of government, sources, signature count, eligibility rule and public supporter list.
 - The packet **freezes** the count and names at the moment of sending, and contains only what's already public — no contact details, and anonymous signers are counted but never named.
 - **Responses** have three states: unverified, pending, verified. Only verified responses get official styling, and demo ones are labelled fictional.
+
+- **Send it:** copy the packet, then open a member of Congress's contact form or website, or your email app addressed to the office (the request in the body, the full packet on the clipboard). The delivery record is filled in for you to confirm.
+- Packets for real petitions say signatures were collected online and are not a legal ballot petition; only sample data is labelled fictional.
 
 ## 9. Recipient directory
 
@@ -190,5 +199,6 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - Legal ballot-measure collection (voter-registration matching, circulator affidavits, notarization) — the drawn signature is not a legally certified signature.
 - In-app payments or fundraising (donations are an external link only).
 - Push notifications, email or daily digests (in-app only for now).
-- Maps, file uploads, real-time updates, and bot detection.
-- Generative AI in the writing assistant (AI is used only for report review and hidden tags).
+- Maps, file uploads beyond one petition photo, real-time updates, and bot detection.
+- Generative AI in the writing check's score and tips (Claude is used for the petition writer, the sourced recipient finder, the publication spam check, report review and hidden tags).
+- Automatic photo screening (photos are covered by reports).

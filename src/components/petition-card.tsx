@@ -7,7 +7,7 @@ import { Petition, Snapshot } from '../domain/model';
 import { daysLeft, milestoneLabel } from '../domain/discovery';
 import { useCommand } from '../data/provider';
 import { recordSignal } from '../data/signals';
-import { Bar, Cover, GlassPill, Heart, Press, Scrim, TopicPill, toast, topicImage } from './kit';
+import { Bar, Cover, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
 import { stag } from './motion';
 import { colors, fonts } from './theme';
 
@@ -94,7 +94,7 @@ export function PetitionRow({
         ]}
       >
         <Cover
-          source={topicImage(p.topic)}
+          source={petitionImage(p)}
           style={{ width: detail ? 98 : 96, height: detail ? 122 : 112, borderRadius: 18 }}
         />
         <View
@@ -190,7 +190,7 @@ export function CollectionCard({ petition: p, badge }: { petition: Petition; bad
       }}
     >
       <Cover
-        source={topicImage(p.topic)}
+        source={petitionImage(p)}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
       <Scrim stops="rgba(18,20,15,0) 30%, rgba(18,20,15,0.88) 100%" />

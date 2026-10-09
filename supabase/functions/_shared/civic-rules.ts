@@ -3,6 +3,15 @@
  * nothing. Relative imports of this file keep the `.ts` extension because Deno requires it.
  */
 
+/** Petition topics. The app's model re-exports these; the AI writer picks one of them. */
+export const petitionTopics = [
+  'Safer streets',
+  'Environment',
+  'Education',
+  'Public spaces',
+  'Accessibility',
+] as const;
+
 /** The public text of a petition: the only thing ever sent to the AI model. */
 export interface PetitionText {
   title: string;
@@ -61,7 +70,7 @@ export function normalizeTags(tags: readonly string[]): string[] {
 }
 
 // Alphabetical, the order every review result is reported in.
-export const screenCategories = ['harassment', 'hate', 'spam', 'threats'] as const;
+export const screenCategories = ['harassment', 'hate', 'nonsense', 'spam', 'threats'] as const;
 export type ScreenCategory = (typeof screenCategories)[number];
 
 /**
@@ -72,6 +81,15 @@ export type ScreenCategory = (typeof screenCategories)[number];
 const B = '(^|[^a-z])';
 const E = '([^a-z]|$)';
 export const screenRules: readonly { category: ScreenCategory; pattern: string }[] = [
+  // Gibberish, placeholder text and test posts. Repeated punctuation ("Fix it!!!") is fine.
+  {
+    category: 'nonsense',
+    pattern: '([a-z])\\1{5,}|asdf|qwert|zxcv|hjkl|sdfg|dfgh|uiop|lorem ipsum',
+  },
+  {
+    category: 'nonsense',
+    pattern: `${B}(this is (just )?a test|test (petition|post)|testing 123|please ignore|ignore this)${E}`,
+  },
   {
     category: 'spam',
     pattern: `${B}(buy now|click here|free money|act now|limited time offer|work from home|crypto giveaway|bitcoin|promo code|discount code|casino|dm me|followers for sale)${E}`,

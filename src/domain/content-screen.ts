@@ -18,6 +18,7 @@ export const screenLabels: Record<ScreenCategory, string> = {
   threats: 'threats',
   harassment: 'insults or profanity',
   hate: 'hateful language',
+  nonsense: 'text that is not a real request',
 };
 
 /** The rule-based fallback over everything a reader sees on the petition. */

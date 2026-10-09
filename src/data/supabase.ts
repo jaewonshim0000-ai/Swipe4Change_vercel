@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { Adapter, Command } from '../domain/model';
 import { Database } from './database.types';
 import { getBackendConfig } from './config';
+import * as Crypto from 'expo-crypto';
+import { fromBase64 } from '../domain/jpeg';
 /** Clerk's Supabase third-party integration validates tokens; no service credential enters the client. */
 export function createSupabaseAdapter(getToken: () => Promise<string | null>): Adapter {
   const config = getBackendConfig();
@@ -12,8 +14,8 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   // Runs the AI review queue (report screening, hidden tags) in the ai-review Edge Function.
-  const review = async () => {
-    const { error } = await db.functions.invoke('ai-review');
+  const review = async (screeningOnly = false) => {
+    const { error } = await db.functions.invoke('ai-review', { body: { screeningOnly } });
     if (error) throw error;
   };
   return {
@@ -45,9 +47,12 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
         const row = await db.from('reports').select('screening').eq('id', data).single();
         return row.data?.screening ?? 'pending';
       }
-      // New or reworded petitions need tags; nobody waits on that.
-      if (['create', 'edit', 'publish'].includes(command.type))
+      // New or reworded petitions are checked before they go public, so the organizer waits for
+      // that (seconds) and sees the result; tagging follows in the background.
+      if (['create', 'edit', 'publish'].includes(command.type)) {
+        await review(true).catch(() => undefined);
         void review().catch(() => undefined);
+      }
       return data ?? undefined;
     },
     async requests(petition_id: string) {
@@ -69,6 +74,29 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
       const { data, error } = await db.rpc('lookaware_community_reports', { community_id });
       if (error) throw new Error(error.message);
       return data ?? [];
+    },
+    async uploadPhoto(jpegBase64) {
+      // Random names: Storage policies let a signed-in person add files, and only its uploader
+      // can replace or delete one.
+      const path = `${Crypto.randomUUID()}.jpg`;
+      const bucket = db.storage.from('petition-photos');
+      const { error } = await bucket.upload(path, fromBase64(jpegBase64), {
+        contentType: 'image/jpeg',
+        upsert: false,
+      });
+      if (error) throw new Error(`The photo could not be uploaded: ${error.message}`);
+      return bucket.getPublicUrl(path).data.publicUrl;
+    },
+    async lookup(body) {
+      const { data, error } = await db.functions.invoke('civic-lookup', { body });
+      if (!error) return data;
+      // The function explains refusals (sign-in, hourly limit) in its JSON body.
+      const context = (error as { context?: unknown }).context;
+      const reason =
+        context instanceof Response
+          ? ((await context.json().catch(() => null)) as { error?: string } | null)?.error
+          : undefined;
+      throw new Error(reason ?? error.message);
     },
     async signIn() {
       throw new Error('Use Clerk to sign in.');
