@@ -10,8 +10,7 @@ enabled = true
 enabled = true
 sql_paths = ["./seed.sql"]
 
-# Configure Clerk in the HOSTED dashboard, not via local auth settings here.
-# Existing Clerk development issuer: elegant-kodiak-6215.clerk.accounts.dev
+# Configure Clerk in the HOSTED dashboard, not via local auth settings here (see SETUP.md).
 
 # This existing queue-only worker accepts no caller-selected data.
 [functions.ai-review]

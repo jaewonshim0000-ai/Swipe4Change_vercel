@@ -57,7 +57,7 @@ Use Node 22 LTS or newer (Node 26 also tested) and npm.
 
 ```sh
 npm ci
-# Configure hosted Supabase and apply migrations as described below.
+# Set up Clerk and Supabase as described in SETUP.md (or set EXPO_PUBLIC_BACKEND=demo in .env).
 npm run web
 # Or run Metro for iOS / Android:
 npm start
@@ -239,47 +239,23 @@ Browsing is public: opening `/` lands on Home without requiring login. Guests ha
 
 The app keeps Clerk for authentication and uses Supabase for persistent data through the existing typed RPC adapter. There is no second Supabase Auth session. Setup errors render an actionable screen instead of silently switching to fictional data. Queries wait for Clerk hydration, and every Clerk session owns a separate TanStack Query cache, including private manager queries.
 
-The installed Clerk CLI is linked to the existing **Swipe4Change** development application. Its Native API is enabled, with email/password, email codes, and Google available. The native callback `swipe4change://auth-callback` is registered, and signed session tokens include `role: authenticated`. The app includes Clerk's Expo config plugin and secure token cache; native sign-in handles cancellation and errors before navigating. These follow the [Clerk Expo quickstart](https://clerk.com/docs/expo/getting-started/quickstart).
+**Setting up a live deployment:** follow [SETUP.md](SETUP.md). It creates a fresh Clerk application and Supabase project, sets the session-token claims (`role`, `email_verified`, `name`), pushes the migrations, deploys the Edge Functions and publishes the website on EAS Hosting. The fictional seed is never pushed to a live project.
 
-Clerk setup verification (September 30, 2026): CLI 3.4.0 confirmed authentication, the link to `app_3K3QOcSMAc823cnBsiIv8R9ihB2`, application reachability, and development environment configuration. The existing provider in `src/data/provider.tsx` was preserved instead of accepting a duplicate provider from the initializer. Typecheck, lint, all 133 tests across 23 suites, and web export passed. The live browser rendered authentication with Google and email options. A real account sign-in, authenticated Supabase access, session persistence after restart, and native-device authentication still require end-to-end verification.
-
-When `EXPO_PUBLIC_BACKEND` is unset, the app selects hosted mode. Missing Supabase settings then show a setup message; they do not silently log you into a fictional account. Choose `EXPO_PUBLIC_BACKEND=demo` explicitly for the offline demo. Clerk keys are already in the ignored `.env.local`; do not replace them or run `clerk init` again. The Clerk secret key is CLI/server-only and must never be imported into app code.
-
-The September 30 configuration pass verified Clerk's development settings, registered the callback, and applied all nine migrations to hosted Supabase project `npxjyqihefyyejeeegld`. Remote migration history matches the checkout, all 23 public tables have RLS enabled, and the public `lookaware_snapshot` RPC succeeds. The supplied Supabase URL/public key remain in ignored local configuration. No fictional seed was imported, so the hosted petition feed is initially empty. Real browser/device sign-in and session persistence remain to be exercised after the hosted Clerk connection is enabled.
-
-### Project configuration
-
-The existing ignored `.env.local` selects `supabase` and points to the hosted project `npxjyqihefyyejeeegld.supabase.co`. Preserve its installed public keys. For a fresh checkout, copy `.env.example` to `.env` and enter the hosted project URL, Supabase publishable key, and Clerk publishable key. Existing `.env.local` values override `.env`. Restart Expo after changing configuration.
-
-`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is preferred; an empty value falls back to `EXPO_PUBLIC_SUPABASE_ANON_KEY` for legacy anon JWTs. Never put a service-role key in the app. Enable Clerk third-party authentication in the **hosted Supabase dashboard**, trusting `elegant-kodiak-6215.clerk.accounts.dev` for this development application. The CLI config file does not configure hosted authentication.
-
-### Hosted database
-
-```sh
-npx supabase login
-npx supabase link --project-ref npxjyqihefyyejeeegld
-npm run supabase:push:preview
-npm run supabase:push
-```
-
-`supabase login` requires your Supabase account; the app’s public key cannot authorize database deployment. No Docker is needed for linking or pushing migrations. The preview lists pending migrations; push applies them to the linked project. Seed data is not pushed by default. To include fictional data in a development project only, run `npx supabase db push --include-seed`. Never reset a hosted database to install this integration.
-
-
-1. Use the existing Supabase and Clerk development projects (or create your own for a separate deployment). Enable the **Clerk third-party authentication integration** in Supabase. The RPCs use the signed JWT `sub`; they do not assume Clerk IDs are Supabase UUIDs. See [Supabase Clerk integration](https://supabase.com/docs/guides/auth/third-party/clerk).
-2. Apply every SQL file in `supabase/migrations/` in filename order with the Supabase CLI or SQL editor, then optionally apply `supabase/seed.sql` to a **development** database. Seed accounts have no Clerk mapping and cannot be logged into remotely.
-3. Copy `.env.example` to `.env`. Set `EXPO_PUBLIC_BACKEND=supabase`, your public project URL, public anon/publishable key, and Clerk publishable key. Never use a service-role key or Clerk secret key in Expo configuration.
-   - **AI review:** deploy the Edge Function and give it the key: `supabase functions deploy ai-review --no-verify-jwt` and `supabase secrets set ANTHROPIC_API_KEY=...`. It takes no input and only processes the database's queue (pending reports, untagged petitions) through service-role-only SQL functions, so it needs no user token (Clerk tokens are not Supabase JWTs). Without it, reports stay **pending** for a person and the feed ranks from petition wording.
-   - **Officials and the recipient finder:** `supabase functions deploy civic-lookup --no-verify-jwt` and `supabase secrets set ANTHROPIC_API_KEY=... OPENSTATES_API_KEY=...`. Officials lookups are open; each AI lookup first calls `claim_civic_lookup` with the caller's own Clerk token, which refuses guests and allows 10 an hour per person.
-4. Configure Clerk's hosted sign-in/sign-up and authorized web origins. Native sign-in uses the hosted account portal with `swipe4change://auth-callback`; register the scheme in Clerk and build a development client. Web uses Clerk's SignIn component. On first authenticated snapshot, a private subject mapping and a public `Community member` profile are provisioned. The mapping never leaves PostgreSQL.
-5. If email-based eligibility is needed, configure a trusted boolean `email_verified` session claim sourced from Clerk's verified primary email. Initial provisioning reads this signed claim. Later verification changes must be synchronized by a trusted webhook/admin process; the client cannot self-award email or location approval. Missing claims deny email eligibility. Never derive location approval from the editable city field.
-6. Grant real community ownership/moderator roles and display names through trusted provisioning. The local demo collaborator picker uses the three fictional profiles; production collaborator invitations and user discovery need a reviewed invite flow. For now, provision collaborators administratively in `petition_collaborators` rather than using the fictional picker.
-7. Test on staging with two distinct Clerk users. Verify private drafts, duplicate signatures, anonymous projection, wrong-owner update rejection, and hidden reports. Confirm JWT issuer/audience/claim configuration for your actual Clerk instance before public release.
+The snapshot RPC refreshes each person's private record from their signed Clerk token on every load: `email_verified` (when the claim is present) and, while it is still the placeholder `Community member`, their display name. Grant real community ownership/moderator roles through trusted provisioning, and provision production collaborators administratively in `petition_collaborators` rather than through the demo's fictional picker.
 
 Regenerate matching relational row types from the migration with `npm run types:db`, then run `npm run format`.
 
 The typed RPC boundary includes `lookaware_snapshot`, `lookaware_command`, `lookaware_requests`, `lookaware_community_posts`, `lookaware_community_reports`, `lookaware_volunteers`, and the owner-only `signature_receipt`. Every exposed table has RLS. Direct client writes are revoked; commands take identity from the validated JWT, enforce ownership/eligibility, and lock the petition row while signing. A database unique constraint enforces one `(petition_id, user_id)` signature. Private profiles, reports, and verification mappings never enter public signature payloads. SQL security-definer functions pin an empty search path and explicitly restrict execute grants.
 
 **Trusted operations:** real official-response verification, email/location approval, report decisions, final appeal review, and discretionary badge awards must run server-side. No client route can grant these powers. First voice, Showing up, Community builder, Change starter, and Conversation starter are awarded transactionally from confirmed activity; profile editing cannot grant badges. The fictional verified response is clearly labeled in both seed data and the UI.
+
+## Federal rules open for comment
+
+Home and Explore show real U.S. federal proposals that are open for public comment, fetched in the app from the [Federal Register API](https://www.federalregister.gov/developers/documentation/api/v1) (public, no key). `src/domain/federal.ts` keeps proposed rules from agencies that match the app's topics (for example NHTSA to Safer streets, EPA to Environment, National Park Service to Public spaces, disability-access rules to Accessibility), drops routine notices such as airworthiness directives and state air-plan approvals, accepts only `federalregister.gov` and `regulations.gov` links, and ranks your interests first, then the soonest deadline. Each card opens `federal/<document number>` with the official summary, the agency and the deadline. **Comment on Regulations.gov** leaves the app after a confirmation; comments are written and sent on the government site. Federal rules cannot be signed or saved in Swipe4Change, and the section hides itself when offline.
+
+## Accounts in the live app
+
+Onboarding asks for a display name and a required "I'm 13 or older and agree to the Terms and Privacy Policy" checkbox linking the plain-language [Terms and Privacy page](app/legal.tsx). Profile → **Delete account** (live mode only; type `DELETE` to confirm) removes the person's petition photos, then their signatures, saves, memberships, interests, drafts, volunteering, reports, notifications, badges and Clerk mapping (`delete_account`), archives the petitions they own, keeps public updates and posts under "Deleted account", and finally deletes the Clerk user. The fictional sample cities, the fictional recipient directory and the simulated location rule appear only in the demo.
 
 ## Scope and limitations
 

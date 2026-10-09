@@ -10,9 +10,10 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 - **Welcome screen** with three demo accounts (Maya the student organizer, Sam the approved local resident, Jordan the new member) — no password needed.
 - **Explore first:** browse every public petition as a guest before signing in.
-- **Hosted sign-in** through Clerk when the Supabase backend is enabled.
-- **Onboarding:** pick at least three interests (or skip) and your city. An exact address is never asked for.
-- **Real city picker:** type-ahead search of real US cities, or **Use my current location** once. Only "City, ST" is saved — the position is rounded to about a kilometre, used for one lookup and discarded. The fictional demo towns are offered as labelled sample cities.
+- **Real sign-in** through Clerk (email or Google) when the Supabase backend is enabled; see [SETUP.md](SETUP.md).
+- **Onboarding:** your display name, at least three interests (or skip) and your city, plus a required “I’m 13 or older and agree to the Terms and Privacy Policy”. An exact address is never asked for.
+- **Plain-language Terms and Privacy** page describing exactly what is stored.
+- **Real city picker:** type-ahead search of real US cities, or **Use my current location** once. Only "City, ST" is saved — the position is rounded to about a kilometre, used for one lookup and discarded. In the demo only, the fictional towns are offered as labelled sample cities.
 - **Deep links** open any petition or community directly (`swipe4change://`, with the old `lookaware://` still working).
 
 ## 2. Discover petitions
@@ -30,6 +31,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - Full-text search across petitions and communities, with topic chips and quick filters (near you, updated this week, ending within 30 days).
 - **Filter sheet:** approximate city, signing requirement, recipient level of government, community, deadline and recent updates. Unapplied edits can be cancelled; filters clear in one tap.
 - Every result says why it matched. Phones get compact rows; wider screens get a grid.
+- **Federal rules open for comment** ✦ new: real U.S. proposals from the Federal Register on topics like road safety, the environment and parks, ranked by your interests and deadline. Each opens the official summary and a link to comment on Regulations.gov (after a leaving-the-app warning). Also on Home.
 - **Find your people:** community suggestions, your community's latest activity and a “start a petition” prompt at the foot of the page.
 
 **For You: a feed that learns from what you do** ✦ new
@@ -165,6 +167,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - Your communities, your private drafts, and profile editing (name, bio, signing-history personalization toggle).
 - Interests and approximate location, and the status of the private email/location checks.
 - **Your reports and appeals:** see the automatic check's result, add an appeal, or withdraw it.
+- **Delete account** (live app): removes your personal records and photos, takes your petitions out of public view, and deletes your sign-in.
 - **Demo controls:** simulate a failed write to see rollback, or reset all demo data.
 
 ## 13. Trust, privacy and safety

@@ -64,6 +64,7 @@
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
     "export:web": "expo export --platform web",
+    "deploy:web": "expo export --platform web && npx eas-cli@latest deploy --prod",
     "seed": "tsx scripts/seed.ts",
     "test:db": "tsx scripts/test-database.ts",
     "types:db": "tsx scripts/generate-types.ts",
