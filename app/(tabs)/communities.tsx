@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { useCommand, useSnapshot } from '../../src/data/provider';
+import { isDemo, useCommand, useSnapshot } from '../../src/data/provider';
 import { Topic, topics } from '../../src/domain/model';
 import { communitySchema } from '../../src/domain/rules';
 import {
@@ -73,7 +73,8 @@ export default function Communities() {
         Your people, nearby.
       </Text>
       <Text style={[styles.muted, { fontSize: 13.5, lineHeight: 21, marginBottom: 16 }]}>
-        Local groups in a fictional town. Owners endorse petitions and moderate their own space.
+        {isDemo ? 'Local groups in a fictional town.' : 'Local groups near you.'} Owners endorse
+        petitions and moderate their own space.
       </Text>
       <View style={{ gap: 14 }}>
         <ResponsiveGrid>

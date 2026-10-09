@@ -18,13 +18,18 @@ import {
   identityModes,
   topics,
   verificationLabels,
-  verificationModes,
 } from '../../src/domain/model';
 import { analyzeDraft, draftSchema, evidenceSchema } from '../../src/domain/rules';
 import { plainLanguage, TARGET_GRADE } from '../../src/domain/plain-language';
 import { suggestOffices } from '../../src/domain/recipients';
 import { writingSupport } from '../../src/domain/writing-assistant';
-import { useBackend, useCommand, useSnapshot } from '../../src/data/provider';
+import {
+  isDemo,
+  offeredVerifications,
+  useBackend,
+  useCommand,
+  useSnapshot,
+} from '../../src/data/provider';
 import { OptionCard } from '../../src/components/signature-consent';
 import {
   CircleButton,
@@ -93,13 +98,13 @@ const templates = [
     label: 'Safer walk home',
     topic: 'Safer streets',
     action: 'Install pedestrian lighting along the route by March 2027',
-    recipient: 'Riverton Public Works (fictional)',
+    recipient: isDemo ? 'Riverton Public Works (fictional)' : '',
   },
   {
     label: 'Welcoming place',
     topic: 'Accessibility',
     action: 'Add an accessible entrance to the park',
-    recipient: 'Riverton ADA Coordinator (fictional)',
+    recipient: isDemo ? 'Riverton ADA Coordinator (fictional)' : '',
   },
   { label: 'Blank page', topic: 'Safer streets', action: '', recipient: '' },
 ] as const;
@@ -627,7 +632,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
             <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
               Who may sign
             </Text>
-            {verificationModes.map((v) => (
+            {offeredVerifications.map((v) => (
               <OptionCard
                 key={v}
                 label={verificationLabels[v]}

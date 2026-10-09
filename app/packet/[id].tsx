@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Platform, Share, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useSnapshot } from '../../src/data/provider';
+import { isDemo, useSnapshot } from '../../src/data/provider';
 import { packetText } from '../../src/domain/packet';
 import { deliveryMethodLabels } from '../../src/domain/model';
 import {
@@ -101,8 +101,9 @@ export default function Packet() {
         </Text>
       </Panel>
       <Text style={styles.micro}>
-        Fictional demo document. Nothing here establishes legal validity, and no contact details or
-        verification evidence are included.
+        {isDemo
+          ? 'Fictional demo document. Nothing here establishes legal validity, and no contact details or verification evidence are included.'
+          : 'Signer names appear only as each person chose. No contact details or verification evidence are included.'}
       </Text>
     </Page>
   );

@@ -267,7 +267,9 @@ export default function Community() {
             </View>
           )}
           <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18 }]}>
-            Fictional demo community. Posts and events are sample data and carry no official weight.
+            {isDemo
+              ? 'Fictional demo community. Posts and events are sample data and carry no official weight.'
+              : 'Posts are written by members and carry no official weight.'}
           </Text>
         </View>
       </Animated.ScrollView>

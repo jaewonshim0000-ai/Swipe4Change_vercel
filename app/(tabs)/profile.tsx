@@ -89,7 +89,7 @@ export default function Profile() {
       .filter((b) => !(b in glyphs))
       .map((b) => ({
         name: b,
-        criteria: 'Fictional sample award.',
+        criteria: isDemo ? 'Fictional sample award.' : 'Awarded for your activity.',
         progress: 1,
         target: 1,
         earned: true,

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { useCommand, useSnapshot } from '../data/provider';
+import { isDemo, offeredVerifications, useCommand, useSnapshot } from '../data/provider';
 import { useReads } from '../data/reads';
 import { useSignals } from '../data/signals';
-import { Petition, Snapshot, topics, verificationLabels, verificationModes } from '../domain/model';
+import { Petition, Snapshot, topics, verificationLabels } from '../domain/model';
 import { trendingScore } from '../domain/rules';
 import { forYou } from '../domain/for-you';
 import { sameCity } from '../domain/location';
@@ -177,10 +177,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
         boxShadow: '0px 22px 40px -22px rgba(32,38,26,0.55)',
       }}
     >
-      <KenBurns
-        source={petitionImage(p)}
-        label="Illustrative theme image, not petition evidence"
-      />
+      <KenBurns source={petitionImage(p)} label="Illustrative theme image, not petition evidence" />
       <Scrim stops="rgba(18,20,15,0.25) 0%, rgba(18,20,15,0) 28%, rgba(18,20,15,0.5) 55%, rgba(18,20,15,0.9) 100%" />
       <View
         style={[
@@ -497,7 +494,9 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
         <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
       </View>
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>
-        Fictional sample data. Nothing here establishes legal validity.
+        {isDemo
+          ? 'Fictional sample data. Nothing here establishes legal validity.'
+          : 'Your voice. Your community. Your choice.'}
       </Text>
       <CitySheet visible={picking} onClose={() => setPicking(false)} onPick={moveTo} />
       <WhySheet visible={why} onClose={() => setWhy(false)} />
@@ -614,7 +613,9 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
         />
       </View>
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>
-        Fictional sample data. Nothing here establishes legal validity.
+        {isDemo
+          ? 'Fictional sample data. Nothing here establishes legal validity.'
+          : 'Your voice. Your community. Your choice.'}
       </Text>
     </View>
   );
@@ -657,7 +658,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
     {
       label: 'Signing requirement',
       key: 'requirement',
-      options: verificationModes.map((v) => [v, verificationLabels[v]]),
+      options: offeredVerifications.map((v) => [v, verificationLabels[v]]),
     },
     {
       label: 'Level of government',

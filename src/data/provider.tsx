@@ -12,12 +12,16 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { Adapter, Command, Snapshot } from '../domain/model';
+import { Adapter, Command, Snapshot, verificationModes } from '../domain/model';
 import { optimisticSnapshot } from '../domain/rules';
 import { LocalAdapter } from './local';
 import { demoAi } from './ai';
 import { createSupabaseAdapter } from './supabase';
 export const isDemo = process.env.EXPO_PUBLIC_BACKEND === 'demo';
+/** Location approval is only simulated in the demo; the real app has no residency check yet. */
+export const offeredVerifications = isDemo
+  ? verificationModes
+  : verificationModes.filter((v) => v !== 'location');
 export const localAdapter = new LocalAdapter(AsyncStorage, Crypto.randomUUID, demoAi);
 const createQueryClient = () =>
   new QueryClient({

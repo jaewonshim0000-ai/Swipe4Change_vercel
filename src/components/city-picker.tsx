@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { Place, normalizeCity, sampleCities } from '../domain/location';
 import { cityFromDevice, searchCities } from '../data/places';
+import { isDemo } from '../data/provider';
 import { Press, Sheet } from './kit';
 import { Glyph } from './glyph';
 import { Notice, colors, fonts, styles } from './ui';
@@ -65,7 +66,7 @@ export function CitySheet({
   }
 
   const typed = normalizeCity(query);
-  const samples = sampleCities.filter((c) => normalizeCity(c.city).startsWith(typed));
+  const samples = isDemo ? sampleCities.filter((c) => normalizeCity(c.city).startsWith(typed)) : [];
   const found = typed.length >= 2 ? results : [];
   const list = [...samples, ...found.filter((r) => !samples.some((s) => s.city === r.city))];
 

@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { isDemo, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
+import {
+  isDemo,
+  offeredVerifications,
+  useBackend,
+  useCommand,
+  useSnapshot,
+} from '../../src/data/provider';
 import {
   canManage,
   changedFields,
@@ -20,7 +26,6 @@ import {
   identityLabels,
   identityModes,
   verificationLabels,
-  verificationModes,
   volunteerRoleLabels,
   deliveryMethods,
   deliveryMethodLabels,
@@ -455,7 +460,7 @@ export default function Manager() {
           <>
             <Text style={styles.h3}>Private verification requirement</Text>
             <View style={styles.row}>
-              {verificationModes.map((v) => (
+              {offeredVerifications.map((v) => (
                 <Chip
                   key={v}
                   label={verificationLabels[v]}

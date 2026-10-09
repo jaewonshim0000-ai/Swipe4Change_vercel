@@ -12,7 +12,7 @@ import {
   Profile,
   postKindLabels,
 } from '../domain/model';
-import { useBackend, useCommand } from '../data/provider';
+import { isDemo, useBackend, useCommand } from '../data/provider';
 import { Button, Chip, Confirm, Field, Notice, colors, fonts, styles } from './ui';
 import { Initials, PillChip, Rail, initialsOf, toast } from './kit';
 import { Composer as PostBox } from './entries';
@@ -62,7 +62,7 @@ const blurbs: Record<ViewId | 'Campaign updates' | 'Reports', string> = {
   Discussion: 'Anyone can read this. Members post questions, ideas and first-hand experience.',
   Announcements:
     'Posted in the community’s voice by its owner and moderators. Members read but do not post here.',
-  Events: 'Meetups, walk-throughs and hearings, soonest first. Fictional demo events.',
+  Events: `Meetups, walk-throughs and hearings, soonest first.${isDemo ? ' Fictional demo events.' : ''}`,
   'Organizer space':
     'A private working room for the owner and moderators. Members cannot read this space.',
   'Campaign updates':
