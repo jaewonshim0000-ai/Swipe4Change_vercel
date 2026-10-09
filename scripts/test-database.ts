@@ -1092,9 +1092,97 @@ async function run() {
   await auth('clerk_sam');
   await db.query('select public.claim_civic_lookup()');
 
+  // Live accounts: signed Clerk claims refresh email verification and the placeholder name.
+  const claims = async (c: Record<string, unknown>) => {
+    current = { subject: String(c.sub), role: 'authenticated' };
+    await db.exec('reset role');
+    await db.query(`select set_config('request.jwt.claims',$1,false)`, [JSON.stringify(c)]);
+    await db.exec('set role authenticated');
+  };
+  await claims({ sub: 'clerk_ada', email_verified: false, name: 'Ada Lovelace' });
+  let ada = (await snapshot()).profile!;
+  assert.equal(ada.name, 'Ada Lovelace');
+  assert.equal(ada.emailVerified, false);
+  await claims({ sub: 'clerk_ada', email_verified: true, name: 'Ada Lovelace' });
+  assert.equal((await snapshot()).profile!.emailVerified, true);
+  // A token without the claim (dashboard not configured) leaves the stored value alone.
+  await claims({ sub: 'clerk_ada' });
+  assert.equal((await snapshot()).profile!.emailVerified, true);
+  // A chosen name is never overwritten by the claim.
+  await command({ type: 'profile', name: 'Ada L.', bio: '', useSigningHistory: true });
+  await claims({ sub: 'clerk_ada', email_verified: true, name: 'Ada Lovelace' });
+  assert.equal((await snapshot()).profile!.name, 'Ada L.');
+  await claims({ sub: 'clerk_bo', name: 'B' });
+  assert.equal((await snapshot()).profile!.name, 'Community member');
+
+  // Deleting an account removes personal records, archives the person's petitions, and keeps
+  // what they wrote in public under "Deleted account". Other people's signatures stay.
+  await claims({ sub: 'clerk_ada', email_verified: true });
+  ada = (await snapshot()).profile!;
+  const adaPetition = await command({
+    type: 'create',
+    draft: {
+      ...seedPetitions()[0],
+      title: 'Ada asks for a safer crossing by the library',
+      verification: 'account',
+    },
+    publish: true,
+  });
+  const open = (await snapshot()).petitions.find(
+    (p) => p.verification === 'account' && p.status === 'active' && p.id !== adaPetition,
+  )!.id;
+  await sign(open);
+  await command({ type: 'save', petitionId: petitionId(1) });
+  await command({ type: 'join', communityId: seedPetitions()[0].communityId });
+  await command({
+    type: 'discussion',
+    petitionId: open,
+    body: 'I walk this route every morning and it is dark.',
+    kind: 'experience',
+  });
+  await auth('clerk_maya');
+  await sign(adaPetition);
+  await auth('clerk_ada');
+  await command({ type: 'delete_account' });
+  await db.exec('reset role');
+  const owned = await db.query(
+    `select (select count(*) from public.signatures where user_id=$1)::int sigs,
+       (select count(*) from public.petition_saves where user_id=$1)::int saves,
+       (select count(*) from public.community_members where user_id=$1)::int members,
+       (select count(*) from public.user_interests where user_id=$1)::int interests,
+       (select count(*) from public.notifications where user_id=$1)::int notes,
+       (select count(*) from private.principals where profile_id=$1)::int principals,
+       (select count(*) from public.discussion_posts where author_id=$1)::int posts,
+       (select count(*) from public.signatures where petition_id=$2)::int others,
+       (select status from public.petitions where id=$2) status,
+       (select name from public.profiles where id=$1) name`,
+    [ada.id, adaPetition],
+  );
+  assert.deepEqual(owned.rows[0], {
+    sigs: 0,
+    saves: 0,
+    members: 0,
+    interests: 0,
+    notes: 0,
+    principals: 0,
+    posts: 1,
+    others: 1,
+    status: 'archived',
+    name: 'Deleted account',
+  });
+  await auth('clerk_sam');
+  assert(!(await snapshot()).petitions.some((p) => p.id === adaPetition));
+  // Signing in again with the same Clerk account starts over with a fresh, empty profile.
+  await claims({ sub: 'clerk_ada', email_verified: true, name: 'Ada Lovelace' });
+  const restarted = (await snapshot()).profile!;
+  assert.notEqual(restarted.id, ada.id);
+  assert.equal(restarted.name, 'Ada Lovelace');
+  await auth('', 'anon');
+  await assert.rejects(() => command({ type: 'delete_account' }));
+
   await db.close();
   console.log(
-    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, and organizer-only petition photos on the public record.',
+    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, organizer-only petition photos on the public record, signed claims that refresh email verification and the starting name, and account deletion that keeps public writing unattributed.',
   );
 }
 void run().catch((error) => {
