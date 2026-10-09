@@ -39,6 +39,8 @@ test('onboarding asks for a real name and the age and terms agreement before fin
   );
   const name = await screen.findByLabelText('Your name');
   expect(name.props.value).toBe('');
+  // The name is public wherever the person writes, so the hint must not promise otherwise.
+  expect(screen.getByText(/petitions, updates and posts you write/)).toBeTruthy();
   const topics = ['Safer streets', 'Environment', 'Education'];
   for (const topic of topics)
     if (!screen.getByLabelText(topic).props.accessibilityState.checked)

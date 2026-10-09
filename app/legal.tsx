@@ -23,7 +23,7 @@ const sections: [string, string[]][] = [
     [
       'Sign-in is handled by Clerk, which keeps your email address and password. Our database never receives your email; it stores an anonymous account ID, the display name you choose, your approximate city and state, your interests, an optional bio, and whether your email is verified.',
       'When you sign a petition we store the public identity you chose (full name, first name and last initial, or anonymous) and a private receipt of your drawn signature and the exact text you signed. Organizers and the public see only the identity you chose, never your email, contact details or account ID.',
-      'Petitions, updates, discussion posts and photos you publish are public. Photos have location and camera details removed before upload.',
+      'Petitions, updates, discussion posts and photos you publish are public and show your display name. Photos have location and camera details removed before upload.',
     ],
   ],
   [

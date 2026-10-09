@@ -215,8 +215,8 @@ export default function Onboarding() {
           placeholder="First and last name"
         />
         <Text style={[styles.micro, { fontSize: 11.5, paddingHorizontal: 6 }]}>
-          Shown only when you sign with your full name or first name and initial. You can sign
-          anonymously too.
+          Public on petitions, updates and posts you write. When you sign, you choose your full
+          name, first name and initial, or anonymous.
         </Text>
       </View>
       <Pressable
