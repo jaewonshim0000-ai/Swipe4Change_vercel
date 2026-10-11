@@ -20,6 +20,7 @@ import {
   toast,
 } from './kit';
 import { Glyph } from './glyph';
+import { Medal, badgeLook } from './badge-medal';
 import { anim, kf } from './motion';
 import { Button, Notice, colors, fonts, styles } from './ui';
 
@@ -232,7 +233,7 @@ export function SignatureConsent({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 12,
-                  backgroundColor: colors.soft,
+                  backgroundColor: badgeLook('First voice').tone.soft,
                   borderRadius: 20,
                   paddingVertical: 12,
                   paddingHorizontal: 14,
@@ -240,14 +241,9 @@ export function SignatureConsent({
                 anim(kf.in, 500, { delay: 600 }),
               ]}
             >
-              <Animated.Text
-                style={[
-                  { fontSize: 20 },
-                  anim(kf.float, 2400, { loop: true, ease: 'ease-in-out' }),
-                ]}
-              >
-                🏅
-              </Animated.Text>
+              <Animated.View style={anim(kf.float, 2400, { loop: true, ease: 'ease-in-out' })}>
+                <Medal name="First voice" earned size={40} />
+              </Animated.View>
               <Text
                 style={{
                   fontFamily: fonts.medium,

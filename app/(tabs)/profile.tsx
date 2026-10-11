@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { isDemo, localAdapter, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import { useReads } from '../../src/data/reads';
-import { badgeProgress } from '../../src/domain/personalization';
+import { badgeDefinitions, badgeProgress } from '../../src/domain/personalization';
 import { rippleTotal } from '../../src/domain/ripple';
 import {
   Button,
@@ -34,14 +34,10 @@ import {
 import { anim, kf, stag } from '../../src/components/motion';
 import { ProfileEditor } from '../../src/components/profile-personalization';
 import { RippleSummary } from '../../src/components/ripple';
+import { Medal, badgeLook } from '../../src/components/badge-medal';
+import { Glyph } from '../../src/components/glyph';
+import { shadows } from '../../src/components/theme';
 
-const glyphs: Record<string, string> = {
-  'First voice': '✦',
-  'Change starter': '↗',
-  'Conversation starter': '❝',
-  'Community builder': '◎',
-  'Showing up': '★',
-};
 type SheetName = 'drafts' | 'reports' | 'ripple' | 'profile' | null;
 
 export default function Profile() {
@@ -86,7 +82,7 @@ export default function Profile() {
       earned: b.earned,
     })),
     ...p.badges
-      .filter((b) => !(b in glyphs))
+      .filter((b) => !badgeDefinitions.some((d) => d.name === b))
       .map((b) => ({
         name: b,
         criteria: 'Fictional sample award.',
@@ -94,7 +90,8 @@ export default function Profile() {
         target: 1,
         earned: true,
       })),
-  ];
+  ].sort((a, b) => Number(b.earned) - Number(a.earned));
+  const earnedCount = badges.filter((b) => b.earned).length;
   const unread = s.notifications.filter((n) => !read.includes(n.id)).length;
   const rows = [
     { label: 'Private drafts', value: s.drafts?.length ?? 0, onPress: () => setPanel('drafts') },
@@ -227,97 +224,101 @@ export default function Profile() {
         </View>
       </Animated.View>
 
-      <Text accessibilityRole="header" style={[styles.h2, { marginTop: 24, marginBottom: 12 }]}>
-        Badges
-      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginTop: 24,
+          marginBottom: 12,
+        }}
+      >
+        <Text accessibilityRole="header" style={styles.h2}>
+          Badges
+        </Text>
+        <Text style={styles.small}>
+          {earnedCount} of {badges.length} earned
+        </Text>
+      </View>
       <Rail gap={10} style={{ paddingBottom: 6 }}>
-        {badges.map((b) => (
-          <View
-            key={b.name}
-            accessible
-            accessibilityLabel={`${b.name}. ${b.criteria} ${b.earned ? 'Earned.' : `${b.progress} of ${b.target}.`}`}
-            style={[
-              {
-                width: 148,
-                minHeight: 176,
-                borderRadius: 22,
-                padding: 14,
-                gap: 6,
-                backgroundColor: b.earned ? colors.white : colors.quiet,
-              },
-              b.earned ? { boxShadow: '0px 12px 26px -16px rgba(32,38,26,0.45)' } : null,
-            ]}
-          >
+        {badges.map((b, i) => {
+          const { tone } = badgeLook(b.name);
+          return (
             <Animated.View
+              key={b.name}
+              accessible
+              accessibilityLabel={`${b.name}. ${b.criteria} ${b.earned ? 'Earned.' : `${b.progress} of ${b.target}.`}`}
               style={[
                 {
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
-                  marginBottom: 4,
+                  width: 148,
+                  minHeight: 196,
+                  borderRadius: 22,
+                  padding: 14,
+                  paddingTop: 16,
+                  gap: 6,
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: b.earned ? colors.dark : colors.knob,
+                  backgroundColor: b.earned ? colors.white : colors.quiet,
                 },
-                b.earned ? anim(kf.float, 3000, { loop: true, ease: 'ease-in-out' }) : null,
+                b.earned ? shadows.raised : null,
+                stag(i),
               ]}
-            >
-              <Text
-                style={{
-                  fontFamily: fonts.semibold,
-                  fontSize: 17,
-                  color: b.earned ? colors.pale : '#9A9E92',
-                }}
-              >
-                {glyphs[b.name] ?? '◆'}
-              </Text>
-            </Animated.View>
-            <Text
-              style={{
-                fontFamily: fonts.semibold,
-                fontSize: 13.5,
-                lineHeight: 17,
-                color: colors.ink,
-              }}
-            >
-              {b.name}
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 11,
-                lineHeight: 15.5,
-                color: colors.muted,
-              }}
-            >
-              {b.criteria}
-            </Text>
-            <View
-              style={{
-                height: 4,
-                borderRadius: 4,
-                backgroundColor: colors.track,
-                overflow: 'hidden',
-                marginTop: 'auto',
-              }}
             >
               <Animated.View
                 style={[
-                  {
-                    width: `${Math.min(100, (100 * b.progress) / b.target)}%`,
-                    height: '100%',
-                    transformOrigin: 'left',
-                    backgroundColor: b.earned ? colors.sage : '#B9BEAF',
-                  },
-                  anim(kf.grow, 1000),
+                  { marginBottom: 6 },
+                  b.earned ? anim(kf.float, 3000, { loop: true, ease: 'ease-in-out' }) : null,
                 ]}
-              />
-            </View>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 10.5, color: colors.accent }}>
-              {b.earned ? 'Earned' : `${b.progress} of ${b.target}`}
-            </Text>
-          </View>
-        ))}
+              >
+                <Medal name={b.name} earned={b.earned} progress={b.progress / b.target} />
+              </Animated.View>
+              <Text
+                style={{
+                  fontFamily: fonts.semibold,
+                  fontSize: 13.5,
+                  lineHeight: 17,
+                  color: b.earned ? colors.ink : colors.secondary,
+                  textAlign: 'center',
+                }}
+              >
+                {b.name}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 11,
+                  lineHeight: 15.5,
+                  color: colors.muted,
+                  textAlign: 'center',
+                }}
+              >
+                {b.criteria}
+              </Text>
+              <View
+                style={{
+                  marginTop: 'auto',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderRadius: 999,
+                  paddingVertical: 4,
+                  paddingHorizontal: 10,
+                  backgroundColor: b.earned ? tone.soft : colors.white,
+                }}
+              >
+                {b.earned && <Glyph name="check" size={12} color={tone.accent} weight={2.6} />}
+                <Text
+                  style={{
+                    fontFamily: fonts.semibold,
+                    fontSize: 10.5,
+                    color: b.earned ? tone.accent : colors.muted,
+                  }}
+                >
+                  {b.earned ? 'Earned' : `${b.progress} of ${b.target}`}
+                </Text>
+              </View>
+            </Animated.View>
+          );
+        })}
       </Rail>
       <Text style={[styles.micro, { marginTop: 4 }]}>
         Badges recognize participation, not verified impact.
