@@ -79,23 +79,44 @@ const note = {
 };
 const shortTitle = (t: string) => t.split(' ').slice(0, 4).join(' ');
 
-/** Real federal proposals open for comment. Hidden while loading, offline, or when none match. */
-function FederalSection({ interests, limit }: { interests: Topic[]; limit: number }) {
+/** Explore's federal category: real proposals from U.S. agencies, which are not petitions. */
+function FederalRules({ interests }: { interests: Topic[] }) {
   const q = useFederalRules();
   const [now] = useState(Date.now);
-  const rules = rankFederalRules(q.data ?? [], interests).slice(0, limit);
-  if (!rules.length) return null;
+  const [topic, setTopic] = useState<Topic | ''>('');
+  const rules = rankFederalRules(q.data ?? [], interests, topic);
   return (
-    <View style={{ paddingTop: 28 }}>
-      <Text accessibilityRole="header" style={sectionTitle}>
-        Federal rules open for comment
-      </Text>
-      <Text style={note}>Real proposals from U.S. agencies. You comment on the official site.</Text>
-      <Rail gap={12} style={{ paddingTop: 12, paddingBottom: 12 }}>
-        {rules.map((r) => (
-          <FederalCard key={r.id} rule={r} now={now} />
+    <View style={{ gap: 12, paddingTop: 14 }}>
+      <Notice text="Federal rules aren’t petitions. U.S. agencies propose them, and anyone can send the agency a public comment before the deadline. You comment on the official site; nothing is signed or counted in Swipe4Change." />
+      <Rail style={{ paddingBottom: 4 }}>
+        {(['', ...topics] as const).map((t) => (
+          <PillChip
+            key={t || 'all'}
+            label={t || 'All topics'}
+            selected={topic === t}
+            onPress={() => setTopic(t)}
+          />
         ))}
       </Rail>
+      {q.isPending ? (
+        <Text style={note}>Loading federal rules…</Text>
+      ) : q.isError ? (
+        <View style={{ gap: 12 }}>
+          <Empty
+            title="We couldn’t reach the Federal Register"
+            body="Check your connection and try again."
+          />
+          <Button title="Try again" onPress={() => void q.refetch()} />
+        </View>
+      ) : rules.length ? (
+        <ResponsiveGrid>
+          {rules.map((r) => (
+            <FederalCard key={r.id} rule={r} now={now} wide />
+          ))}
+        </ResponsiveGrid>
+      ) : (
+        <Empty title="No open rules on this topic" body="Try another topic or All topics." />
+      )}
     </View>
   );
 }
@@ -650,6 +671,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
 
 function Explore({ snapshot: s }: { snapshot: Snapshot }) {
   const [now] = useState(Date.now);
+  const [kind, setKind] = useState<'petitions' | 'federal'>('petitions');
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<DiscoveryFilters>(emptyFilters);
   const [draft, setDraft] = useState<DiscoveryFilters | null>(null);
@@ -725,201 +747,221 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
       <Text accessibilityRole="header" style={[styles.title, { marginTop: 8, marginBottom: 14 }]}>
         Find your next cause.
       </Text>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-            backgroundColor: colors.white,
-            borderRadius: 999,
-            paddingHorizontal: 16,
-            minHeight: 52,
-            boxShadow: '0px 8px 22px -14px rgba(32,38,26,0.35)',
-          }}
-        >
-          <Glyph name="search" size={18} color={colors.muted} />
-          <TextInput
-            accessibilityLabel="Search petitions"
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Try lighting, Riverton, a community…"
-            placeholderTextColor="#8C9086"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontFamily: fonts.body,
-              fontSize: 15,
-              color: colors.ink,
-              paddingVertical: 12,
-            }}
-          />
-          {!!search && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Clear search"
-              onPress={() => setSearch('')}
+      <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+        <PillChip
+          label="Petitions"
+          selected={kind === 'petitions'}
+          onPress={() => setKind('petitions')}
+        />
+        <PillChip
+          label="Federal rules"
+          selected={kind === 'federal'}
+          onPress={() => setKind('federal')}
+        />
+      </View>
+      {kind === 'federal' ? (
+        <FederalRules interests={s.profile?.interests ?? []} />
+      ) : (
+        <>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View
               style={{
-                width: 26,
-                height: 26,
-                borderRadius: 13,
-                backgroundColor: colors.canvas,
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                backgroundColor: colors.white,
+                borderRadius: 999,
+                paddingHorizontal: 16,
+                minHeight: 52,
+                boxShadow: '0px 8px 22px -14px rgba(32,38,26,0.35)',
+              }}
+            >
+              <Glyph name="search" size={18} color={colors.muted} />
+              <TextInput
+                accessibilityLabel="Search petitions"
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Try lighting, Riverton, a community…"
+                placeholderTextColor="#8C9086"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                  color: colors.ink,
+                  paddingVertical: 12,
+                }}
+              />
+              {!!search && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                  onPress={() => setSearch('')}
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 13,
+                    backgroundColor: colors.canvas,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.muted }}>
+                    ×
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+            <Press
+              accessibilityLabel={count ? `Filters, ${count} active` : 'Filters'}
+              scale={0.94}
+              onPress={() => setDraft(filters)}
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 26,
+                backgroundColor: colors.dark,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.muted }}>×</Text>
-            </Pressable>
-          )}
-        </View>
-        <Press
-          accessibilityLabel={count ? `Filters, ${count} active` : 'Filters'}
-          scale={0.94}
-          onPress={() => setDraft(filters)}
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 26,
-            backgroundColor: colors.dark,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Glyph name="filters" size={19} color={colors.white} />
-          {count > 0 && (
-            <Animated.View
-              style={[
-                {
-                  position: 'absolute',
-                  top: -2,
-                  right: -2,
-                  width: 19,
-                  height: 19,
-                  borderRadius: 10,
-                  backgroundColor: colors.pale,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                anim(kf.pop, 300, { ease: 'ease' }),
-              ]}
-            >
-              <Text style={{ fontFamily: fonts.bold, fontSize: 10, color: colors.dark }}>
-                {count}
+              <Glyph name="filters" size={19} color={colors.white} />
+              {count > 0 && (
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      width: 19,
+                      height: 19,
+                      borderRadius: 10,
+                      backgroundColor: colors.pale,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    },
+                    anim(kf.pop, 300, { ease: 'ease' }),
+                  ]}
+                >
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 10, color: colors.dark }}>
+                    {count}
+                  </Text>
+                </Animated.View>
+              )}
+            </Press>
+          </View>
+          <Rail style={{ paddingTop: 14, paddingBottom: 4 }}>
+            {(['', ...topics] as const).map((t) => (
+              <PillChip
+                key={t || 'all'}
+                label={t || 'All topics'}
+                selected={filters.topic === t}
+                onPress={() => setFilters({ ...filters, topic: t })}
+              />
+            ))}
+          </Rail>
+          <Rail style={{ paddingTop: 8, paddingBottom: 6 }}>
+            {quick.map((c) => (
+              <PillChip
+                key={c.label}
+                label={c.label}
+                selected={c.on}
+                onPress={c.toggle}
+                height={34}
+                outline
+              />
+            ))}
+          </Rail>
+          {browsing && (
+            <>
+              <Animated.View style={[{ paddingTop: 14 }, anim(kf.in, 500, { delay: 60 })]}>
+                <Ticker lines={tickerLines(s, now)} />
+              </Animated.View>
+              {flagship && (
+                <Animated.View style={[{ paddingTop: 16 }, anim(kf.in, 600, { delay: 120 })]}>
+                  <Spotlight petition={flagship} snapshot={s} />
+                </Animated.View>
+              )}
+              {collections.map(
+                (c) =>
+                  c.items.length > 0 && (
+                    <View key={c.title} style={{ paddingTop: 28 }}>
+                      <View style={{ paddingBottom: 12 }}>
+                        <Text accessibilityRole="header" style={sectionTitle}>
+                          {c.title}
+                        </Text>
+                        <Text style={note}>{c.note}</Text>
+                      </View>
+                      <Rail gap={12} style={{ paddingBottom: 12 }}>
+                        {c.items.slice(0, 6).map((p) => (
+                          <CollectionCard
+                            key={p.id}
+                            petition={p}
+                            badge={
+                              sameCity(p.city, city)
+                                ? 'Near you'
+                                : (s.communities.find((x) => x.id === p.communityId)?.name ??
+                                  p.city)
+                            }
+                          />
+                        ))}
+                      </Rail>
+                    </View>
+                  ),
+              )}
+              <Text accessibilityRole="header" style={[sectionTitle, { paddingTop: 22 }]}>
+                All petitions
               </Text>
-            </Animated.View>
+            </>
           )}
-        </Press>
-      </View>
-      <Rail style={{ paddingTop: 14, paddingBottom: 4 }}>
-        {(['', ...topics] as const).map((t) => (
-          <PillChip
-            key={t || 'all'}
-            label={t || 'All topics'}
-            selected={filters.topic === t}
-            onPress={() => setFilters({ ...filters, topic: t })}
-          />
-        ))}
-      </Rail>
-      <Rail style={{ paddingTop: 8, paddingBottom: 6 }}>
-        {quick.map((c) => (
-          <PillChip
-            key={c.label}
-            label={c.label}
-            selected={c.on}
-            onPress={c.toggle}
-            height={34}
-            outline
-          />
-        ))}
-      </Rail>
-      {browsing && (
-        <>
-          <Animated.View style={[{ paddingTop: 14 }, anim(kf.in, 500, { delay: 60 })]}>
-            <Ticker lines={tickerLines(s, now)} />
-          </Animated.View>
-          {flagship && (
-            <Animated.View style={[{ paddingTop: 16 }, anim(kf.in, 600, { delay: 120 })]}>
-              <Spotlight petition={flagship} snapshot={s} />
-            </Animated.View>
-          )}
-          {collections.map(
-            (c) =>
-              c.items.length > 0 && (
-                <View key={c.title} style={{ paddingTop: 28 }}>
-                  <View style={{ paddingBottom: 12 }}>
-                    <Text accessibilityRole="header" style={sectionTitle}>
-                      {c.title}
-                    </Text>
-                    <Text style={note}>{c.note}</Text>
-                  </View>
-                  <Rail gap={12} style={{ paddingBottom: 12 }}>
-                    {c.items.slice(0, 6).map((p) => (
-                      <CollectionCard
-                        key={p.id}
-                        petition={p}
-                        badge={
-                          sameCity(p.city, city)
-                            ? 'Near you'
-                            : (s.communities.find((x) => x.id === p.communityId)?.name ?? p.city)
-                        }
-                      />
-                    ))}
-                  </Rail>
-                </View>
-              ),
-          )}
-          <FederalSection interests={s.profile?.interests ?? []} limit={12} />
-          <Text accessibilityRole="header" style={[sectionTitle, { paddingTop: 22 }]}>
-            All petitions
+          <Text
+            accessibilityLiveRegion="polite"
+            style={{
+              paddingVertical: 10,
+              fontFamily: fonts.medium,
+              fontSize: 12.5,
+              color: colors.muted,
+            }}
+          >
+            {list.length} {browsing ? 'active' : 'matching'} petition{list.length === 1 ? '' : 's'}
           </Text>
+          <ResponsiveGrid>
+            {list.map((p, i) => (
+              <PetitionRow
+                key={p.id}
+                petition={p}
+                snapshot={s}
+                index={i}
+                match={
+                  q
+                    ? `Matches “${q}”`
+                    : sameCity(p.city, city)
+                      ? `Near you · ${p.city}`
+                      : s.profile?.interests.includes(p.topic)
+                        ? 'One of your interests'
+                        : `Active in ${s.communities.find((c) => c.id === p.communityId)?.name ?? p.city}`
+                }
+              />
+            ))}
+            {!list.length && (
+              <View style={{ gap: 12 }}>
+                <Empty
+                  title="Nothing matches yet"
+                  body="Try a place like Brookside or a word like lighting."
+                />
+                <Button
+                  title="Clear search and filters"
+                  onPress={() => {
+                    setSearch('');
+                    setFilters(emptyFilters);
+                  }}
+                />
+              </View>
+            )}
+          </ResponsiveGrid>
         </>
       )}
-      <Text
-        accessibilityLiveRegion="polite"
-        style={{
-          paddingVertical: 10,
-          fontFamily: fonts.medium,
-          fontSize: 12.5,
-          color: colors.muted,
-        }}
-      >
-        {list.length} {browsing ? 'active' : 'matching'} petition{list.length === 1 ? '' : 's'}
-      </Text>
-      <ResponsiveGrid>
-        {list.map((p, i) => (
-          <PetitionRow
-            key={p.id}
-            petition={p}
-            snapshot={s}
-            index={i}
-            match={
-              q
-                ? `Matches “${q}”`
-                : sameCity(p.city, city)
-                  ? `Near you · ${p.city}`
-                  : s.profile?.interests.includes(p.topic)
-                    ? 'One of your interests'
-                    : `Active in ${s.communities.find((c) => c.id === p.communityId)?.name ?? p.city}`
-            }
-          />
-        ))}
-        {!list.length && (
-          <View style={{ gap: 12 }}>
-            <Empty
-              title="Nothing matches yet"
-              body="Try a place like Brookside or a word like lighting."
-            />
-            <Button
-              title="Clear search and filters"
-              onPress={() => {
-                setSearch('');
-                setFilters(emptyFilters);
-              }}
-            />
-          </View>
-        )}
-      </ResponsiveGrid>
       <View style={{ paddingTop: 26 }}>
         <Text accessibilityRole="header" style={[sectionTitle, { marginBottom: 12 }]}>
           Find your people

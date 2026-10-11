@@ -29,6 +29,7 @@ const shapes = {
     'M17 14.5c2.6 0 4.5 1.9 4.5 4.5',
   ],
   profile: [[12, 8, 3.6], 'M4.5 20a7.5 7.5 0 0 1 15 0'],
+  capitol: ['M12 3 3 8h18Z', 'M6 11v6M10 11v6M14 11v6M18 11v6', 'M4 20h16'],
 } satisfies Record<string, (string | [number, number, number])[]>;
 export type GlyphName = keyof typeof shapes;
 

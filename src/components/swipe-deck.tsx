@@ -39,6 +39,7 @@ import {
   topicImage,
 } from './kit';
 import { Glyph } from './glyph';
+import { KindBadge } from './federal-card';
 import { anim, kf } from './motion';
 import { colors, fonts } from './theme';
 
@@ -402,9 +403,7 @@ export function SwipeDeck({
               }}
             >
               <GlassPill
-                text={
-                  petition ? (community?.name ?? petition.city) : 'Federal rule · open for comment'
-                }
+                text={petition ? (community?.name ?? petition.city) : 'Open for comment'}
               />
               <GlassPill
                 text={`${petition ? daysLeft(petition, now) : ruleDaysLeft(rule!.closesOn, now)} days left`}
@@ -449,7 +448,10 @@ export function SwipeDeck({
             <View style={{ position: 'absolute', left: 20, right: 20, bottom: 20, gap: 9 }}>
               {petition ? (
                 <>
-                  <TopicPill topic={petition.topic} />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    <KindBadge kind="petition" />
+                    <TopicPill topic={petition.topic} />
+                  </View>
                   <Text
                     accessibilityRole="header"
                     style={{
@@ -506,7 +508,10 @@ export function SwipeDeck({
               ) : (
                 rule && (
                   <>
-                    <TopicPill topic={rule.topic} />
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      <KindBadge kind="federal" />
+                      <TopicPill topic={rule.topic} />
+                    </View>
                     <Text
                       accessibilityRole="header"
                       numberOfLines={4}

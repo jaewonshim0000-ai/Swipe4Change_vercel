@@ -78,6 +78,7 @@ test('swiping passes reversibly, supports and learns without signing', async () 
       <SwipeDeck petitions={snapshot.petitions} snapshot={snapshot} />
     </QueryClientProvider>,
   );
+  expect(screen.getByText('Petition')).toBeTruthy();
   const artwork = () =>
     screen.getByLabelText('Swipe artwork left to pass, right to support or up to read more');
   const event = (pageX: number, pageY = 50) => ({ nativeEvent: { pageX, pageY } });
@@ -123,7 +124,9 @@ test('a federal rule in the deck opens its page to comment, with no signing or s
     </QueryClientProvider>,
   );
   expect(screen.getByText(rule.title)).toBeTruthy();
-  expect(screen.getByText(/Federal rule/)).toBeTruthy();
+  // Labelled as its own kind, not a petition.
+  expect(screen.getByText('Federal rule')).toBeTruthy();
+  expect(screen.queryByText('Petition')).toBeNull();
   expect(screen.queryByLabelText('Save')).toBeNull();
   // Guests can comment too: the rule page, not sign-in, comes next.
   await fireEvent.press(screen.getByLabelText('Comment'));
