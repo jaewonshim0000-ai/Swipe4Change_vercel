@@ -1,8 +1,8 @@
 # Swipe4Change — Feature List
 
-Current as of September 27, 2026. Every account, community, office, signature and response in the demo is fictional.
+Current as of October 11, 2026. Every account, community, office, signature and response in the demo is fictional.
 
-**At a glance:** one Expo / React Native app for iOS, Android and web · works fully offline as a local demo with three sample accounts · switches to a real Supabase + Clerk backend with one environment variable · 102 unit tests and a PostgreSQL integration test.
+**At a glance:** one Expo / React Native app for iOS, Android and web · works fully offline as a local demo with three sample accounts · switches to a real Supabase + Clerk backend with one environment variable · 170 unit and UI tests and a PostgreSQL integration test.
 
 ---
 
@@ -105,10 +105,12 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - **A photo of the problem:** take or choose one, with a required description for screen readers. It replaces the stock topic image on every card and on the petition page. Location and other metadata are stripped on the device before upload.
 - **Card and full-page previews** before a publish confirmation.
 - **Private drafts:** save from any step, keep several, and resume or delete them from Profile.
+- **Already started?** ✦ new — while you define the change, and again before publishing, Create shows up to three open petitions that look like the same ask: same city or office, the same issue, and shared place names like a street or campus. Open one to sign or help instead of splitting supporters, or tap **Mine is different** to hide them. Advisory only, never blocks publishing, and uses fixed rules rather than AI.
 
 ## 7. Organizer dashboard (Manage)
 
 - **At a glance:** progress, update/discussion/endorsement counts, and how many signatures came through supporter shares.
+- **Signatures, last 14 days** ✦ new — a daily bar chart of real signatures, split into share links, community members and everyone else, with this week against the week before. Tap a day for its breakdown. Counts only: organizers never see who signed how, and fictional sample signatures are not charted.
 - Publish a saved draft.
 - **Delivery:** preview the delivery packet, then record how and where it was sent (email, online portal, in person, posted mail).
 - **Volunteer roster:** names, chosen roles and notes; organizer-only, with no contact details.
@@ -191,7 +193,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - **Stack:** Expo SDK 57, React Native 0.86, React 19, strict TypeScript, Expo Router, TanStack Query, React Hook Form + Zod, Clerk, Supabase, and the Anthropic SDK (Claude) on the server only.
 - **Two backends, one contract:** a persistent offline local adapter and a Supabase RPC adapter share the same typed commands, so the whole app runs either way.
 - **Database:** row-level security on all 23 exposed tables with default-deny, writes only through authorized functions, row locks while signing, and a database-level unique signature constraint. A recursive query computes ripples and returns counts only.
-- **Tests:** 109 unit and UI tests across 19 suites; a PostgreSQL integration test (PGlite) that runs every migration and the seed, then exercises permissions, privacy and the ripple rules.
+- **Tests:** 170 unit and UI tests across 32 suites; a PostgreSQL integration test (PGlite) that runs every migration and the seed, then exercises permissions, privacy and the ripple rules.
 - **Repeatable seed:** 12 petitions across 5 topics and 4 communities, from one typed factory shared by the demo and the SQL seed.
 
 ## Deliberately not included
