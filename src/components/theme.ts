@@ -51,6 +51,11 @@ export const topicColors = {
   'Public spaces': { accent: '#78504F', soft: '#F4E5E2' },
   Accessibility: { accent: '#66517C', soft: '#EDE6F4' },
 };
+/**
+ * Chart series in fixed order (never cycled). Checked with the dataviz palette validator: every
+ * pair stays apart under colour-blindness simulation, and each clears 3:1 on white.
+ */
+export const series = ['#2a78d6', '#e0602e', '#14966b'] as const;
 export const fonts = {
   body: 'WorkSans_400Regular',
   medium: 'WorkSans_500Medium',

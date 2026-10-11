@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { demoIds, petitionId, seedPetitions } from '../src/data/seed';
 import type { CommunityPost, Snapshot } from '../src/domain/model';
+import type { TrendCount } from '../src/domain/trend';
 import type Anthropic from '@anthropic-ai/sdk';
 import { ReviewQueue, ReviewStore, runReview } from '../supabase/functions/_shared/review';
 import { PetitionText, petitionBody, screenText } from '../supabase/functions/_shared/civic-rules';
@@ -818,6 +819,23 @@ async function run() {
   let rippled = await snapshot();
   assert.deepEqual(rippled.ripple!.petitions, [{ petitionId: spread, direct: 1, further: 1 }]);
   assert.equal(rippled.petitions.find((p) => p.id === spread)!.viaShares, 2);
+  // The organizer's trend: today's signatures by source, never who. Maya is a community member;
+  // Sam and Jordan arrived through links.
+  const trend = async (id: string) =>
+    (
+      await db.query<{ value: TrendCount[] }>(
+        'select public.lookaware_signature_trend($1::uuid) as value',
+        [id],
+      )
+    ).rows[0].value;
+  assert.deepEqual(await trend(spread), [
+    { daysAgo: 0, source: 'community', count: 1 },
+    { daysAgo: 0, source: 'link', count: 2 },
+  ]);
+  assert(!JSON.stringify(await trend(spread)).includes(demoIds.sam), 'no signer leaves');
+  await auth('clerk_sam');
+  await assert.rejects(() => trend(spread), /Only organizers/);
+  await auth('clerk_maya');
   const told = rippled.notifications.find((n) => n.kind === 'ripple')!;
   assert(told.body.includes('1 person has signed it because of you'));
   assert(!told.body.includes('Sam'), 'the sharer is never told who signed');
@@ -1094,7 +1112,7 @@ async function run() {
 
   await db.close();
   console.log(
-    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, and organizer-only petition photos on the public record.',
+    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters and signature trends, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, and organizer-only petition photos on the public record.',
   );
 }
 void run().catch((error) => {

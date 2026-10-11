@@ -1,4 +1,5 @@
 import type { SignatureReceipt, SignatureSubmission } from './signature-record';
+import type { TrendCount } from './trend';
 import type { LookupRequest, LookupResponse } from '../../supabase/functions/_shared/lookup';
 import { petitionTopics } from '../../supabase/functions/_shared/civic-rules';
 import type { ScreenCategory } from '../../supabase/functions/_shared/civic-rules';
@@ -441,6 +442,8 @@ export interface Adapter {
   reset(): Promise<void>;
   requests(petitionId: string): Promise<EligibilityRequest[]>;
   volunteers(petitionId: string): Promise<Volunteer[]>;
+  /** Organizer-only: real signatures per day for the last two weeks, by where they came from. */
+  signatureTrend(petitionId: string): Promise<TrendCount[]>;
   communityPosts(communityId: string): Promise<CommunityPost[]>;
   /** Moderator-only queue of reported posts in one community. */
   communityReports(communityId: string): Promise<PostReport[]>;

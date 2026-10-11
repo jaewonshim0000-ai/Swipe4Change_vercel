@@ -65,6 +65,11 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
       if (error) throw new Error(error.message);
       return data ?? [];
     },
+    async signatureTrend(petition_id: string) {
+      const { data, error } = await db.rpc('lookaware_signature_trend', { petition_id });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
     async communityPosts(community_id: string) {
       const { data, error } = await db.rpc('lookaware_community_posts', { community_id });
       if (error) throw new Error(error.message);

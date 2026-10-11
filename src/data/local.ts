@@ -39,6 +39,7 @@ import {
   volunteerSchema,
 } from '../domain/rules';
 import { profileSchema } from '../domain/personalization';
+import { countTrend } from '../domain/trend';
 import { screenLabels, screenPetition } from '../domain/content-screen';
 import {
   PetitionText,
@@ -282,6 +283,27 @@ export class LocalAdapter implements Adapter {
       (s.volunteers ?? [])
         .filter((v) => v.petitionId === petitionId)
         .map(({ userId: _private, ...v }) => v),
+    );
+  }
+  /** Organizer-only day counts. Which signer arrived how never leaves this method. */
+  async signatureTrend(petitionId: string, now = Date.now()) {
+    const s = await this.read();
+    const p = s.petitions.find((p) => p.id === petitionId);
+    if (!p || !canManage(p, s.profiles.find((u) => u.id === s.session) ?? null))
+      throw new Error('Only organizers can see signature trends.');
+    const viaLink = new Set((s.referrals ?? []).map((r) => r.signatureId));
+    return countTrend(
+      s.signatures
+        .filter((x) => x.petitionId === petitionId)
+        .map((x) => ({
+          signedAt: x.signedAt,
+          source: viaLink.has(x.id)
+            ? ('link' as const)
+            : s.profiles.find((u) => u.id === x.userId)?.joined.includes(p.communityId)
+              ? ('community' as const)
+              : ('other' as const),
+        })),
+      now,
     );
   }
   /** True when the reader owns or moderates the community. */

@@ -129,6 +129,7 @@ export function useCommand() {
       await client.invalidateQueries({ queryKey: ['snapshot'] });
       await client.invalidateQueries({ queryKey: ['requests'] });
       await client.invalidateQueries({ queryKey: ['posts'] });
+      await client.invalidateQueries({ queryKey: ['trend'] });
     },
   });
 }
