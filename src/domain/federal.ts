@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Topic } from './model';
+import type { Petition, Topic } from './model';
 
 /**
  * Real U.S. federal rules open for public comment, from the Federal Register's public API (no key,
@@ -139,4 +139,21 @@ export function daysLeft(closesOn: string, now: number) {
   const today = new Date(now);
   const start = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
   return Math.max(0, Math.round((Date.parse(`${closesOn}T00:00:00Z`) - start) / 86_400_000));
+}
+
+export type DeckItem =
+  | { kind: 'petition'; id: string; petition: Petition }
+  | { kind: 'federal'; id: string; rule: FederalRule };
+
+/** Home's swipe deck: one federal rule after every three petitions, any left over at the end. */
+export function withFederalRules(petitions: Petition[], rules: FederalRule[]): DeckItem[] {
+  const deck: DeckItem[] = [];
+  let next = 0;
+  petitions.forEach((petition, i) => {
+    deck.push({ kind: 'petition', id: petition.id, petition });
+    if ((i + 1) % 3 === 0 && next < rules.length)
+      deck.push({ kind: 'federal', id: rules[next].id, rule: rules[next++] });
+  });
+  for (const rule of rules.slice(next)) deck.push({ kind: 'federal', id: rule.id, rule });
+  return deck;
 }

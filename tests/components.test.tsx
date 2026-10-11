@@ -100,3 +100,36 @@ test('swiping passes reversibly, supports and learns without signing', async () 
   client.clear();
   motion.mockRestore();
 });
+
+test('a federal rule in the deck opens its page to comment, with no signing or saving', async () => {
+  const motion = jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+  await localAdapter.reset();
+  await localAdapter.signOut();
+  const snapshot = await localAdapter.load();
+  const rule = {
+    id: '2026-20251',
+    title: 'Bicycle Use in Park Areas',
+    summary: 'The National Park Service proposes to update bicycle rules.',
+    agency: 'National Park Service',
+    topic: 'Public spaces' as const,
+    closesOn: '2099-11-02',
+    commentUrl: 'https://www.regulations.gov/commenton/NPS-2026-0166-0001',
+    url: 'https://www.federalregister.gov/d/2026-20251',
+  };
+  const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
+  const view = await render(
+    <QueryClientProvider client={client}>
+      <SwipeDeck petitions={[]} rules={[rule]} snapshot={snapshot} />
+    </QueryClientProvider>,
+  );
+  expect(screen.getByText(rule.title)).toBeTruthy();
+  expect(screen.getByText(/Federal rule/)).toBeTruthy();
+  expect(screen.queryByLabelText('Save')).toBeNull();
+  // Guests can comment too: the rule page, not sign-in, comes next.
+  await fireEvent.press(screen.getByLabelText('Comment'));
+  expect(router.push).toHaveBeenCalledWith('/federal/2026-20251');
+  expect(router.push).not.toHaveBeenCalledWith('/(auth)/sign-in');
+  await view.unmount();
+  client.clear();
+  motion.mockRestore();
+});

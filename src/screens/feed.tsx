@@ -374,6 +374,9 @@ function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void 
 /** Home is the swipe deck. Every other way of finding petitions lives in Explore. */
 function Home({ snapshot: s }: { snapshot: Snapshot }) {
   const [now] = useState(Date.now);
+  // Federal rules join the deck as their own cards; none while loading or offline.
+  const federal = useFederalRules();
+  const rules = rankFederalRules(federal.data ?? [], s.profile?.interests ?? []).slice(0, 6);
   const [why, setWhy] = useState(false);
   const [picking, setPicking] = useState(false);
   const command = useCommand();
@@ -515,9 +518,8 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
         </Pressable>
       </View>
       <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
-        <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
+        <SwipeDeck petitions={ranked} rules={rules} snapshot={s} reasons={reasons} />
       </View>
-      <FederalSection interests={s.profile?.interests ?? []} limit={3} />
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>
         {isDemo
           ? 'Fictional sample data. Nothing here establishes legal validity.'

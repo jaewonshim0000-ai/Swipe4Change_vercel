@@ -19,9 +19,25 @@ import Animated, {
 import { router } from 'expo-router';
 import { Petition, Snapshot, verificationLabels } from '../domain/model';
 import { daysLeft, milestoneLabel } from '../domain/discovery';
+import {
+  DeckItem,
+  FederalRule,
+  daysLeft as ruleDaysLeft,
+  withFederalRules,
+} from '../domain/federal';
 import { recordSignal } from '../data/signals';
 import { useSave } from './petition-card';
-import { Bar, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
+import {
+  Bar,
+  GlassPill,
+  Heart,
+  Press,
+  Scrim,
+  TopicPill,
+  toast,
+  petitionImage,
+  topicImage,
+} from './kit';
 import { Glyph } from './glyph';
 import { anim, kf } from './motion';
 import { colors, fonts } from './theme';
@@ -29,6 +45,11 @@ import { colors, fonts } from './theme';
 type Direction = 'pass' | 'support' | 'learn';
 /** The design's release easing, `cubic-bezier(.2,.8,.2,1)` over 380ms. */
 const release = { duration: 380, easing: Easing.bezier(0.2, 0.8, 0.2, 1) };
+const imageOf = (item: DeckItem) =>
+  item.kind === 'petition' ? petitionImage(item.petition) : topicImage(item.rule.topic);
+/** Petitions open their own page; federal rules open theirs, where commenting starts. */
+const pageOf = (item: DeckItem) =>
+  item.kind === 'petition' ? `/petition/${item.id}` : `/federal/${item.id}`;
 
 /** The rubber stamp that fades in as the card heads one way. */
 function Stamp({
@@ -87,12 +108,12 @@ function Stamp({
 
 /** One of the two cards resting behind the top card; they rise as it is dragged away. */
 function Behind({
-  petition,
+  item,
   depth,
   dx,
   dy,
 }: {
-  petition: Petition;
+  item: DeckItem;
   depth: 1 | 2;
   dx: SharedValue<number>;
   dy: SharedValue<number>;
@@ -122,11 +143,7 @@ function Behind({
         style,
       ]}
     >
-      <Image
-        source={petitionImage(petition)}
-        resizeMode="cover"
-        style={{ width: '100%', height: '100%' }}
-      />
+      <Image source={imageOf(item)} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(18,20,15,0.25)' }]} />
     </Animated.View>
   );
@@ -174,10 +191,13 @@ function DeckButton({
 
 export function SwipeDeck({
   petitions,
+  rules = [],
   snapshot,
   reasons,
 }: {
   petitions: Petition[];
+  /** Real federal proposals open for comment, mixed in as their own cards. */
+  rules?: FederalRule[];
   snapshot: Snapshot;
   /** Why each petition is in the feed, keyed by id. */
   reasons?: Map<string, string[]>;
@@ -195,10 +215,12 @@ export function SwipeDeck({
     const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
     return () => listener.remove();
   }, []);
-  const remaining = petitions.filter(
-    (p) => !skipped.includes(p.id) && !snapshot.signed.includes(p.id),
+  const remaining = withFederalRules(petitions, rules).filter(
+    (d) => !skipped.includes(d.id) && !(d.kind === 'petition' && snapshot.signed.includes(d.id)),
   );
   const current = remaining[0];
+  const petition = current?.kind === 'petition' ? current.petition : undefined;
+  const rule = current?.kind === 'federal' ? current.rule : undefined;
   const top = useAnimatedStyle(() => ({
     transform: [
       { translateX: dx.get() },
@@ -212,13 +234,13 @@ export function SwipeDeck({
   }
   function act(direction: Direction) {
     if (!current || busy) return;
-    if (!snapshot.profile && direction === 'support') {
+    if (petition && !snapshot.profile && direction === 'support') {
       settle(0, 0);
       router.push('/(auth)/sign-in');
       return;
     }
     // Opening the petition logs its own signal there, so only the swipes are recorded here.
-    if (direction !== 'learn')
+    if (petition && direction !== 'learn')
       void recordSignal(snapshot.profile, current.id, direction === 'pass' ? 'skip' : 'interested');
     const finish = () => {
       if (direction === 'pass') {
@@ -226,8 +248,8 @@ export function SwipeDeck({
         toast('Passed. Nothing was signed.');
       }
       // Supporting opens the signing sheet: a swipe is intent, never a recorded signature.
-      else if (direction === 'support') router.push(`/petition/${current.id}?sign=1`);
-      else router.push(`/petition/${current.id}`);
+      else if (direction === 'support' && petition) router.push(`/petition/${current.id}?sign=1`);
+      else router.push(pageOf(current));
       dx.set(0);
       dy.set(0);
       setBusy(false);
@@ -312,15 +334,14 @@ export function SwipeDeck({
       </Animated.View>
     );
   const saved = snapshot.saved.includes(current.id);
-  const community = snapshot.communities.find((c) => c.id === current.communityId);
+  const community = petition && snapshot.communities.find((c) => c.id === petition.communityId);
   const behind = remaining.slice(1, 3);
+  const signWord = rule ? 'Comment' : 'Sign';
   return (
     <View>
       <View style={{ height: 452 }}>
         {behind
-          .map((p, i) => (
-            <Behind key={p.id} petition={p} depth={(i + 1) as 1 | 2} dx={dx} dy={dy} />
-          ))
+          .map((d, i) => <Behind key={d.id} item={d} depth={(i + 1) as 1 | 2} dx={dx} dy={dy} />)
           .reverse()}
         <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 5 }, top]}>
           <View
@@ -344,7 +365,7 @@ export function SwipeDeck({
               else if (y < -90) act('learn');
               else {
                 settle(0, 0);
-                if (Math.abs(x) < 6 && Math.abs(y) < 6) router.push(`/petition/${current.id}`);
+                if (Math.abs(x) < 6 && Math.abs(y) < 6) router.push(pageOf(current));
               }
             }}
             onResponderTerminationRequest={() => false}
@@ -363,7 +384,7 @@ export function SwipeDeck({
             ]}
           >
             <Image
-              source={petitionImage(current)}
+              source={imageOf(current)}
               resizeMode="cover"
               accessibilityLabel="Illustrative theme image, not petition evidence"
               style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
@@ -380,11 +401,17 @@ export function SwipeDeck({
                 gap: 8,
               }}
             >
-              <GlassPill text={community?.name ?? current.city} />
-              <GlassPill text={`${daysLeft(current, now)} days left`} />
+              <GlassPill
+                text={
+                  petition ? (community?.name ?? petition.city) : 'Federal rule · open for comment'
+                }
+              />
+              <GlassPill
+                text={`${petition ? daysLeft(petition, now) : ruleDaysLeft(rule!.closesOn, now)} days left`}
+              />
             </View>
             <Stamp
-              label="Sign"
+              label={signWord}
               color={colors.success}
               rotate={-12}
               place={{ left: 22 }}
@@ -420,59 +447,116 @@ export function SwipeDeck({
               }}
             />
             <View style={{ position: 'absolute', left: 20, right: 20, bottom: 20, gap: 9 }}>
-              <TopicPill topic={current.topic} />
-              <Text
-                accessibilityRole="header"
-                style={{
-                  fontFamily: fonts.heading,
-                  fontSize: 27,
-                  lineHeight: 30,
-                  letterSpacing: -0.9,
-                  color: colors.white,
-                }}
-              >
-                {current.title}
-              </Text>
-              <Text
-                numberOfLines={3}
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  lineHeight: 19.5,
-                  color: colors.onImage,
-                }}
-              >
-                {current.action}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Glyph name="pin" size={12} weight={2} color={colors.pale} />
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    flexShrink: 1,
-                    fontFamily: fonts.body,
-                    fontSize: 12,
-                    color: colors.onImage,
-                  }}
-                >
-                  {current.city} · {verificationLabels[current.verification]}
-                </Text>
-              </View>
-              <View style={{ marginTop: 2 }}>
-                <Bar
-                  pct={(100 * current.count) / current.goal}
-                  tone="light"
-                  label="Signature goal progress"
-                />
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-                <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.white }}>
-                  {current.count.toLocaleString()} of {current.goal.toLocaleString()}
-                </Text>
-                <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
-                  {milestoneLabel(current)}
-                </Text>
-              </View>
+              {petition ? (
+                <>
+                  <TopicPill topic={petition.topic} />
+                  <Text
+                    accessibilityRole="header"
+                    style={{
+                      fontFamily: fonts.heading,
+                      fontSize: 27,
+                      lineHeight: 30,
+                      letterSpacing: -0.9,
+                      color: colors.white,
+                    }}
+                  >
+                    {petition.title}
+                  </Text>
+                  <Text
+                    numberOfLines={3}
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      lineHeight: 19.5,
+                      color: colors.onImage,
+                    }}
+                  >
+                    {petition.action}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Glyph name="pin" size={12} weight={2} color={colors.pale} />
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        flexShrink: 1,
+                        fontFamily: fonts.body,
+                        fontSize: 12,
+                        color: colors.onImage,
+                      }}
+                    >
+                      {petition.city} · {verificationLabels[petition.verification]}
+                    </Text>
+                  </View>
+                  <View style={{ marginTop: 2 }}>
+                    <Bar
+                      pct={(100 * petition.count) / petition.goal}
+                      tone="light"
+                      label="Signature goal progress"
+                    />
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+                    <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.white }}>
+                      {petition.count.toLocaleString()} of {petition.goal.toLocaleString()}
+                    </Text>
+                    <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
+                      {milestoneLabel(petition)}
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                rule && (
+                  <>
+                    <TopicPill topic={rule.topic} />
+                    <Text
+                      accessibilityRole="header"
+                      numberOfLines={4}
+                      style={{
+                        fontFamily: fonts.heading,
+                        fontSize: 25,
+                        lineHeight: 28,
+                        letterSpacing: -0.8,
+                        color: colors.white,
+                      }}
+                    >
+                      {rule.title}
+                    </Text>
+                    {!!rule.summary && (
+                      <Text
+                        numberOfLines={3}
+                        style={{
+                          fontFamily: fonts.body,
+                          fontSize: 13,
+                          lineHeight: 19.5,
+                          color: colors.onImage,
+                        }}
+                      >
+                        {rule.summary}
+                      </Text>
+                    )}
+                    <Text
+                      numberOfLines={2}
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 12,
+                        lineHeight: 17,
+                        color: colors.onImage,
+                      }}
+                    >
+                      {rule.agency} · applies nationwide
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 11.5,
+                        lineHeight: 16,
+                        color: colors.onDark,
+                      }}
+                    >
+                      ✦ A real federal proposal. You comment on the official site, not here.
+                    </Text>
+                  </>
+                )
+              )}
               {!!reasons?.get(current.id)?.[0] && (
                 <Text
                   numberOfLines={2}
@@ -503,10 +587,18 @@ export function SwipeDeck({
       >
         <DeckButton label="Pass" glyph="✕" color={colors.muted} onPress={() => act('pass')} />
         <DeckButton label="Read" glyph="↑" color={colors.blue} onPress={() => act('learn')} />
-        <DeckButton label="Save" color={colors.heart} onPress={() => save(current)}>
-          <Heart on={saved} dark size={19} />
-        </DeckButton>
-        <DeckButton label="Sign" glyph="✓" color={colors.pale} big onPress={() => act('support')} />
+        {petition && (
+          <DeckButton label="Save" color={colors.heart} onPress={() => save(petition)}>
+            <Heart on={saved} dark size={19} />
+          </DeckButton>
+        )}
+        <DeckButton
+          label={signWord}
+          glyph={rule ? '→' : '✓'}
+          color={colors.pale}
+          big
+          onPress={() => act('support')}
+        />
       </View>
       <View
         style={{
@@ -518,7 +610,7 @@ export function SwipeDeck({
         }}
       >
         <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.outline }}>
-          ← pass · ↑ read · sign →
+          ← pass · ↑ read · {signWord.toLowerCase()} →
         </Text>
         {!!skipped.length && (
           <Animated.View style={anim(kf.pop, 300, { ease: 'ease' })}>

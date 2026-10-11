@@ -3,7 +3,9 @@ import {
   federalSearchUrl,
   rankFederalRules,
   toFederalRules,
+  withFederalRules,
 } from '../src/domain/federal';
+import { seedPetitions } from '../src/data/seed';
 
 const agency = (name: string, slug: string | null) => ({ name, slug });
 const item = (overrides: Record<string, unknown>) => ({
@@ -149,4 +151,27 @@ test('asks the Federal Register only for proposed rules still open for comment',
   expect(url.searchParams.get('conditions[type][]')).toBe('PRORULE');
   expect(url.searchParams.get('conditions[comment_date][gte]')).toBe('2026-10-08');
   expect(url.searchParams.getAll('fields[]')).toContain('comment_url');
+});
+
+test('the Home deck slips one federal rule in after every three petitions', () => {
+  const petitions = seedPetitions().slice(0, 7);
+  const rules = toFederalRules({
+    results: ['r1', 'r2', 'r3'].map((id) => item({ document_number: id })),
+  });
+  const kinds = (deck: ReturnType<typeof withFederalRules>) =>
+    deck.map((d) => (d.kind === 'federal' ? d.id : 'p'));
+  // Leftover rules follow the petitions, so a new community's deck is never empty.
+  expect(kinds(withFederalRules(petitions, rules))).toEqual([
+    'p',
+    'p',
+    'p',
+    'r1',
+    'p',
+    'p',
+    'p',
+    'r2',
+    'p',
+    'r3',
+  ]);
+  expect(kinds(withFederalRules([], rules))).toEqual(['r1', 'r2', 'r3']);
 });
