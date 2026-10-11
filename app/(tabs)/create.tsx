@@ -47,6 +47,8 @@ import { RecipientHelp } from '../../src/components/recipient-finder';
 import { PhotoField, PhotoValue, savePhoto } from '../../src/components/photo-field';
 import { DraftWriter } from '../../src/components/draft-writer';
 import { heldMessage } from '../../src/components/held-notice';
+import { SimilarPetitions } from '../../src/components/similar-petitions';
+import { similarPetitions } from '../../src/domain/similar';
 import { isSampleCity } from '../../src/data/civic-lookup';
 import { anim, kf, reducedMotion } from '../../src/components/motion';
 import {
@@ -199,6 +201,8 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   const [preview, setPreview] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const [published, setPublished] = useState<string | null>(null);
+  /** Similar petitions the creator said differ from theirs, hidden for the rest of this draft. */
+  const [different, setDifferent] = useState<string[]>([]);
   const [now] = useState(Date.now);
   const [undo, setUndo] = useState<{
     field: 'title' | 'summary' | 'problem';
@@ -391,6 +395,18 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   const live = published ? q.data.petitions.find((p) => p.id === published) : undefined;
   const held = live ? heldMessage(live) : null;
   const unverified = !q.data.profile.emailVerified;
+  const similar =
+    published === null && (step === 0 || step === 3)
+      ? similarPetitions(draft, q.data.petitions, now).filter(
+          (m) => !different.includes(m.petition.id),
+        )
+      : [];
+  const similarPanel = (
+    <SimilarPetitions
+      matches={similar}
+      onDismiss={() => setDifferent([...different, ...similar.map((m) => m.petition.id)])}
+    />
+  );
   return (
     <Screen>
       <View
@@ -498,6 +514,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 }
               />
             </View>
+            {!!similar.length && <View style={{ marginTop: 14 }}>{similarPanel}</View>}
           </>
         )}
         {step === 1 && (
@@ -720,6 +737,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         )}
         {step === 3 && (
           <>
+            {!!similar.length && <View style={{ marginBottom: 14 }}>{similarPanel}</View>}
             <View style={{ marginBottom: 12 }}>
               <Segmented
                 options={['Card preview', 'Page preview']}
