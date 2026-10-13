@@ -417,7 +417,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
     );
   }
   return (
-    <Screen wide>
+    <Screen wide fill>
       <Animated.View
         style={[{ flexDirection: 'row', alignItems: 'center', gap: 12 }, anim(kf.in, 500)]}
       >
@@ -538,7 +538,16 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           </Text>
         </Pressable>
       </View>
-      <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
+      {/* Takes the height left above the tab bar and centers the card in it. */}
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          width: '100%',
+          maxWidth: 540,
+          alignSelf: 'center',
+        }}
+      >
         <SwipeDeck petitions={ranked} rules={rules} snapshot={s} reasons={reasons} />
       </View>
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>

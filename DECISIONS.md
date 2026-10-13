@@ -53,7 +53,7 @@ The optional local demo cannot award legal acceptance. Real verification and doc
     anything. Nothing in this app should be able to add your name to a public document by accident, and
     a gesture is exactly the kind of input that happens by accident. The four circular actions and the
     Follow / Volunteer / Share row give every gesture a labelled equivalent, so the deck is fully usable
-    without dragging at all.
+    without dragging at all. _(The buttons were later removed; see "Centered swipe card".)_
 29. **Saving and following are different asks, superseding decision 18.** Treating a save as a _(Superseded by 44.)_
     subscription was tidy, but it meant a person could not keep a petition to read later without also
     opting into its notifications. Saving is now a private bookmark that notifies nobody; following is
@@ -286,3 +286,21 @@ An organizer may split a requested action into one to three asks and compare eac
 - Votes are private. The hosted table has row-level security with no policies; the snapshot publishes totals plus each person's own votes. The owner's one-click endorse is refused.
 - The seed adds Sam and Jordan to Riverton students and gives the members-only crosswalk petition their two yes votes, so the demo's third vote backs it. The flagship's older sample endorsement shows as backing without a tally.
 - Members-only petitions already worked; they are now named on cards ("Members of … only") and listed on each community page so membership visibly matters for signing.
+
+## Similar petitions and signature trends (October 11)
+
+- **"Already started?" is advisory and rule-based.** Near-duplicates split supporters, so Create shows up to three open petitions that look like the same ask, live on the first step and again before publishing. It never blocks publishing: two lighting requests on different streets are both legitimate, and only the creator knows. A match needs the same city or office plus a shared issue tag (lighting, crossings, transit…); setting and audience tags such as campus, schools or students never match on their own, because in the seed they paired unrelated asks. Shared title/action words add weight, so a street name like "Elm" separates a duplicate from a neighbour. Tags stay hidden; the creator sees plain reasons (same recipient, same city, same topic). The rule is calibrated so the twelve distinct seed petitions flag only one related pair.
+- **The trend chart shows real signatures only, in 24-hour buckets.** Seed petitions hold hundreds of fictional sample signatures with no dates, and inventing a daily history for them would be fabricated data, so the chart says they are not shown. Days count back from the fetch ("last 24 hours") rather than by calendar date, so the local and SQL versions agree without time zones.
+- **Sources are counts, not people.** Each real signature counts once: a share link (a referral row) wins over community membership, then everyone else. Membership is read as it is now, not at signing time, which is close enough for "is our community showing up" and needs no new history table. Per-day counts reveal nothing an organizer refreshing the total could not already see; no signer, exact time or link owner leaves `lookaware_signature_trend`, which is organizer-only like the volunteer roster.
+- **Chart colours were validated, not eyeballed.** The app's muted tokens read as grey and failed colour-blind separation, so the chart uses three dedicated series colours (`series` in the theme) that pass the palette validator for every pair, with a legend, per-day screen-reader labels and a tap readout so colour is never the only channel.
+
+## Centered swipe card (October 11)
+
+- The Pass / Read / Save / Sign buttons under the deck were removed at the owner's request, and the card now centers in the space above the tab bar (`Screen fill`). On phones the buttons sat partly under the floating tab bar.
+- The buttons were the deck's only non-drag controls, so their jobs moved onto the card rather than disappearing: tapping opens the petition, screen readers (and Switch Control) get Read, Pass, Sign and Save as accessibility actions, and the focused card takes ←, → and ↑ or Enter on the web, matching the "← pass · ↑ read · sign →" hint. Save stays one tap away on the petition page.
+
+## Community notifications and starting a petition from a community (October 11)
+
+- **Members hear from the people who run a community.** Announcements and events posted by the owner or a moderator notify every member; a member's own event still lists under Events but notifies no one, so one person cannot ping a whole community, and the private organizer room never notifies. Notifications stay in-app; there is no per-community mute yet, which is the first thing to add if communities get noisy.
+- **A new campaign is announced once, when it is first public.** Publishing marks it `announce_pending`; the publication check announces it when it clears, so a petition held for spam is never advertised, and fixing it announces it then. Petitions published before the migration, and petitions restored after a report, never announce. The organizer and collaborators are not told about their own campaign. The local demo keeps the same rule with a private `toAnnounce` list.
+- **"Start a petition here" starts a fresh draft** with the community and the community's city chosen, like "Start a new draft" from Profile, so it does not reopen an unrelated on-device backup. The community stays editable in step 2.

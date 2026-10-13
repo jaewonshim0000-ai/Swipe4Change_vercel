@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { communityId, demoIds, petitionId, seedPetitions } from '../src/data/seed';
 import type { CommunityPost, Snapshot } from '../src/domain/model';
+import type { TrendCount } from '../src/domain/trend';
 import type Anthropic from '@anthropic-ai/sdk';
 import { ReviewQueue, ReviewStore, runReview } from '../supabase/functions/_shared/review';
 import { PetitionText, petitionBody, screenText } from '../supabase/functions/_shared/civic-rules';
@@ -706,6 +707,47 @@ async function run() {
       }),
     /already reviewed/,
   );
+  // Members hear from the people who run a community: the owner's event and announcement reach
+  // Sam. The author, a member's own event and the private organizer room notify no one.
+  const heard = async (who: string) => {
+    await auth(who);
+    return (await snapshot()).notifications
+      .filter((n) => n.kind === 'community' && n.body.startsWith('Riverton working group'))
+      .map((n) => n.body);
+  };
+  await command({
+    type: 'communityPost',
+    communityId: space,
+    body: 'Lighting audit results are in. Thank you all.',
+    kind: 'announcement',
+    space: 'announcements',
+    channel: '',
+  });
+  await command({
+    type: 'communityPost',
+    communityId: space,
+    body: 'Moderators only: prep call before the walk.',
+    kind: 'event',
+    space: 'organizers',
+    channel: '',
+    eventAt: '2026-10-03T18:30:00Z',
+    location: 'Online (fictional)',
+  });
+  assert.deepEqual(await heard('clerk_sam'), [
+    'Riverton working group announcement: Lighting audit results are in. Thank you all.',
+    'Riverton working group event: Walk the unlit stretch together.',
+  ]);
+  await command({
+    type: 'communityPost',
+    communityId: space,
+    body: 'A member-run study meetup after class.',
+    kind: 'event',
+    space: 'discussion',
+    channel: '',
+    eventAt: '2026-10-05T18:30:00Z',
+    location: 'Riverton library (fictional)',
+  });
+  assert.deepEqual(await heard('clerk_jordan'), [], 'authors and member events notify no one');
 
   // Delivery: the point where a petition becomes a document somebody sent.
   await auth('clerk_maya');
@@ -818,6 +860,23 @@ async function run() {
   let rippled = await snapshot();
   assert.deepEqual(rippled.ripple!.petitions, [{ petitionId: spread, direct: 1, further: 1 }]);
   assert.equal(rippled.petitions.find((p) => p.id === spread)!.viaShares, 2);
+  // The organizer's trend: today's signatures by source, never who. Maya is a community member;
+  // Sam and Jordan arrived through links.
+  const trend = async (id: string) =>
+    (
+      await db.query<{ value: TrendCount[] }>(
+        'select public.lookaware_signature_trend($1::uuid) as value',
+        [id],
+      )
+    ).rows[0].value;
+  assert.deepEqual(await trend(spread), [
+    { daysAgo: 0, source: 'community', count: 1 },
+    { daysAgo: 0, source: 'link', count: 2 },
+  ]);
+  assert(!JSON.stringify(await trend(spread)).includes(demoIds.sam), 'no signer leaves');
+  await auth('clerk_sam');
+  await assert.rejects(() => trend(spread), /Only organizers/);
+  await auth('clerk_maya');
   const told = rippled.notifications.find((n) => n.kind === 'ripple')!;
   assert(told.body.includes('1 person has signed it because of you'));
   assert(!told.body.includes('Sam'), 'the sharer is never told who signed');
@@ -952,6 +1011,18 @@ async function run() {
 
   // Publication check: a new petition stays out of public view until the review has read it.
   // Flagged wording is held with its reasons for the organizer; fixed wording goes public.
+  // Sam belongs to the community these are published into, so he hears about each new campaign
+  // once it is public: never while it waits for its check, and never while it is held.
+  await auth('clerk_sam');
+  const homeCommunity = seedPetitions()[0].communityId;
+  if (!(await snapshot()).profile!.joined.includes(homeCommunity))
+    await command({ type: 'join', communityId: homeCommunity });
+  const campaigns = async () => {
+    await auth('clerk_sam');
+    return (await snapshot()).notifications
+      .filter((n) => n.body.startsWith('New campaign in Riverton students'))
+      .map((n) => n.body);
+  };
   autoCheck = false;
   await auth('clerk_jordan');
   await assert.rejects(
@@ -975,6 +1046,7 @@ async function run() {
   assert.equal(held.checking, true);
   await auth('clerk_sam');
   assert(!(await snapshot()).petitions.some((p) => [joke, fresh].includes(p.id)), 'unchecked');
+  assert(!(await campaigns()).some((b) => b.includes('A fresh petition')), 'not before its check');
   await assert.rejects(() => db.query('select public.ai_publish_queue()'), /permission denied/);
   assert.equal((await runReview(store, model, { tags: false })).checked, 2);
   await auth('clerk_sam');
@@ -983,6 +1055,12 @@ async function run() {
     'clean wording goes public',
   );
   assert(!(await snapshot()).petitions.some((p) => p.id === joke), 'flagged wording stays held');
+  assert(
+    (await campaigns()).includes(
+      'New campaign in Riverton students: “A fresh petition waiting for its check”.',
+    ),
+  );
+  assert(!(await campaigns()).some((b) => b.includes('qwfp')), 'held wording is not announced');
   await auth('clerk_maya');
   held = (await snapshot()).petitions.find((p) => p.id === joke)!;
   assert.deepEqual(held.heldFor, ['nonsense']);
@@ -1003,6 +1081,11 @@ async function run() {
   assert(
     (await snapshot()).petitions.some((p) => p.id === joke),
     'public once fixed',
+  );
+  assert.equal(
+    (await campaigns()).filter((b) => b.includes('Light the path between the bus stop')).length,
+    1,
+    'announced once, when the fixed wording goes public',
   );
   autoCheck = true;
 
@@ -1149,7 +1232,6 @@ async function run() {
   s = await snapshot();
   assert(s.notifications.some((n) => n.body.includes('Riverton students voted to back')));
   assert(s.backingVotes.every((v) => v.support));
-
 
   // Live accounts: signed Clerk claims refresh email verification and the placeholder name.
   const claims = async (c: Record<string, unknown>) => {

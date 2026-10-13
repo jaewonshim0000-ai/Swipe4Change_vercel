@@ -73,8 +73,8 @@ export default function Communities() {
         Your people, nearby.
       </Text>
       <Text style={[styles.muted, { fontSize: 13.5, lineHeight: 21, marginBottom: 16 }]}>
-        {isDemo ? 'Local groups in a fictional town.' : 'Local groups near you.'} Members vote
-        on which petitions their community backs, and some petitions only members can sign.
+        {isDemo ? 'Local groups in a fictional town.' : 'Local groups near you.'} Members vote on
+        which petitions their community backs, and some petitions only members can sign.
       </Text>
       <View style={{ gap: 14 }}>
         <ResponsiveGrid>

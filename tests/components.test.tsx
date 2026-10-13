@@ -79,8 +79,7 @@ test('swiping passes reversibly, supports and learns without signing', async () 
     </QueryClientProvider>,
   );
   expect(screen.getByText('Petition')).toBeTruthy();
-  const artwork = () =>
-    screen.getByLabelText('Swipe artwork left to pass, right to support or up to read more');
+  const artwork = () => screen.getByLabelText(/signatures, \d+ days left\.$/);
   const event = (pageX: number, pageY = 50) => ({ nativeEvent: { pageX, pageY } });
   await fireEvent(artwork(), 'responderGrant', event(200));
   await fireEvent(artwork(), 'responderRelease', event(30));
@@ -96,6 +95,18 @@ test('swiping passes reversibly, supports and learns without signing', async () 
   await fireEvent(artwork(), 'responderGrant', event(50, 300));
   await fireEvent(artwork(), 'responderRelease', event(50, 100));
   expect(router.push).toHaveBeenCalledWith(`/petition/${snapshot.petitions[0].id}`);
+  // With no buttons under the card, screen readers reach the same moves as card actions.
+  const action = (actionName: string) =>
+    fireEvent(artwork(), 'accessibilityAction', { nativeEvent: { actionName } });
+  expect(artwork().props.accessibilityLabel).toMatch(new RegExp(`^${snapshot.petitions[0].title}`));
+  await action('pass');
+  await waitFor(() => expect(screen.queryByText(snapshot.petitions[0].title)).toBeNull());
+  await fireEvent.press(screen.getByLabelText('Undo last pass'));
+  jest.mocked(router.push).mockClear();
+  await action('sign');
+  expect(router.push).toHaveBeenCalledWith(`/petition/${snapshot.petitions[0].id}?sign=1`);
+  await action('activate');
+  expect(router.push).toHaveBeenLastCalledWith(`/petition/${snapshot.petitions[0].id}`);
   expect((await localAdapter.load()).signed).toEqual([]);
   await view.unmount();
   client.clear();
@@ -128,8 +139,14 @@ test('a federal rule in the deck opens its page to comment, with no signing or s
   expect(screen.getByText('Federal rule')).toBeTruthy();
   expect(screen.queryByText('Petition')).toBeNull();
   expect(screen.queryByLabelText('Save')).toBeNull();
+  const card = screen.getByLabelText(/^Federal proposal: Bicycle Use in Park Areas\./);
+  expect(card.props.accessibilityActions.map((x: { label: string }) => x.label)).toEqual([
+    'Read',
+    'Pass',
+    'Comment',
+  ]);
   // Guests can comment too: the rule page, not sign-in, comes next.
-  await fireEvent.press(screen.getByLabelText('Comment'));
+  await fireEvent(card, 'accessibilityAction', { nativeEvent: { actionName: 'sign' } });
   expect(router.push).toHaveBeenCalledWith('/federal/2026-20251');
   expect(router.push).not.toHaveBeenCalledWith('/(auth)/sign-in');
   await view.unmount();

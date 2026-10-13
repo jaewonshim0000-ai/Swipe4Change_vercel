@@ -14,7 +14,7 @@
 
 Target: **2 minutes 50 seconds**. Start in the local demo as Maya with onboarding completed. Keep a short original request ready to enter. All names, evidence, signatures, deliveries, and official responses are fictional.
 
-**0:00–0:25 — A familiar local problem.** Show Home's Riverton welcome and the swipe deck, led by the Eastbridge lighting petition. Swipe up (or tap **Read**) to open it. Explain the dark campus-to-bus path, the requested lighting plan, the responsible Public Works recipient, and the sample audit.
+**0:00–0:25 — A familiar local problem.** Show Home's Riverton welcome and the swipe deck, led by the Eastbridge lighting petition. Swipe up (or tap the card) to open it. Explain the dark campus-to-bus path, the requested lighting plan, the responsible Public Works recipient, and the sample audit.
 
 **0:25–1:00 — Deliberate participation.** Tap **Review and sign**. Read the exact text and the eligibility check, choose **Anonymous supporter** from the exact name previews, then draw a signature and tick the consent box. The confirmation appears only after the write succeeds. Point out that only Maya can open her drawing, and that the database rejects a duplicate. Tap **Share my link**.
 

@@ -50,6 +50,7 @@ import { CityField } from '../../src/components/city-picker';
 import { SendPacket } from '../../src/components/send-packet';
 import { ManagePhoto } from '../../src/components/photo-field';
 import { HeldNotice } from '../../src/components/held-notice';
+import { SignatureTrend } from '../../src/components/signature-trend';
 export default function Manager() {
   const { petitionId } = useLocalSearchParams<{ petitionId: string }>();
   const q = useSnapshot();
@@ -65,6 +66,11 @@ export default function Manager() {
   const volunteers = useQuery({
     queryKey: ['volunteers', petitionId],
     queryFn: () => adapter.volunteers(petitionId),
+    enabled: !!allowed,
+  });
+  const trend = useQuery({
+    queryKey: ['trend', petitionId],
+    queryFn: () => adapter.signatureTrend(petitionId),
     enabled: !!allowed,
   });
   const [method, setMethod] = useState<(typeof deliveryMethods)[number]>('email');
@@ -153,6 +159,19 @@ export default function Manager() {
             ? `${p.viaShares} of ${p.count - p.sampleCount} real signatures arrived through a supporter’s share link. Supporters spreading it is working.`
             : 'No one has signed through a supporter’s link yet. Ask signers to share their link from the petition page.'}
         </Text>
+        <View style={styles.divider} />
+        {trend.isPending ? (
+          <Text style={styles.muted}>Loading the last two weeks…</Text>
+        ) : trend.error ? (
+          <Notice error text={trend.error.message} />
+        ) : (
+          // Day buckets were counted back from when the data was fetched, so label them from then.
+          <SignatureTrend
+            counts={trend.data}
+            sampleCount={p.sampleCount}
+            now={trend.dataUpdatedAt}
+          />
+        )}
         {p.status === 'draft' && (
           <Button title="Publish saved draft" onPress={() => setConfirm('publish')} />
         )}

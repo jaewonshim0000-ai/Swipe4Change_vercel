@@ -30,6 +30,15 @@ const shapes = {
   ],
   profile: [[12, 8, 3.6], 'M4.5 20a7.5 7.5 0 0 1 15 0'],
   capitol: ['M12 3 3 8h18Z', 'M6 11v6M10 11v6M14 11v6M18 11v6', 'M4 20h16'],
+  pen: ['M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16Z', 'm13.5 6.5 4 4', 'M14 20h6'],
+  calendar: [
+    'M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z',
+    'M4 10h16M8 3v4M16 3v4',
+    'm9 15 2 2 4-4',
+  ],
+  flag: ['M5 21V4', 'M5 4h11l-2 4.5 2 4.5H5'],
+  chat: ['M20 11.5a8 8 0 0 1-11.7 7.1L4 20l1.3-4A8 8 0 1 1 20 11.5Z'],
+  star: ['m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z'],
 } satisfies Record<string, (string | [number, number, number])[]>;
 export type GlyphName = keyof typeof shapes;
 

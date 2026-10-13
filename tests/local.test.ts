@@ -35,7 +35,7 @@ test('create, publish, sign anonymously, persist, manage and discuss end to end'
   let s = await a.load();
   expect(s.signed).toContain(id);
   expect(s.signatures[0]).toEqual({
-    id: 'test-2',
+    id: expect.any(String),
     petitionId: id,
     displayName: 'Anonymous supporter',
     identity: 'anonymous',

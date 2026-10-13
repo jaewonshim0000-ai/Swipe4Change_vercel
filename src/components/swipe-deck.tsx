@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ViewProps,
   ViewStyle,
 } from 'react-native';
 import Animated, {
@@ -27,17 +28,7 @@ import {
 } from '../domain/federal';
 import { recordSignal } from '../data/signals';
 import { useSave } from './petition-card';
-import {
-  Bar,
-  GlassPill,
-  Heart,
-  Press,
-  Scrim,
-  TopicPill,
-  toast,
-  petitionImage,
-  topicImage,
-} from './kit';
+import { Bar, GlassPill, Press, Scrim, TopicPill, toast, petitionImage, topicImage } from './kit';
 import { Glyph } from './glyph';
 import { KindBadge } from './federal-card';
 import { anim, kf } from './motion';
@@ -150,45 +141,13 @@ function Behind({
   );
 }
 
-function DeckButton({
-  label,
-  glyph,
-  color,
-  onPress,
-  big = false,
-  children,
-}: {
-  label: string;
-  glyph?: string;
-  color: string;
-  onPress: () => void;
-  big?: boolean;
-  children?: React.ReactNode;
-}) {
-  const size = big ? 70 : 58;
-  return (
-    <Press
-      accessibilityLabel={label}
-      onPress={onPress}
-      scale={0.92}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: big ? colors.dark : colors.white,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 3,
-        boxShadow: '0px 10px 22px -12px rgba(18,20,15,0.5)',
-      }}
-    >
-      {children ?? <Text style={{ fontSize: 19, lineHeight: 21, color }}>{glyph}</Text>}
-      <Text style={{ fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 0.3, color }}>
-        {label}
-      </Text>
-    </Press>
-  );
-}
+/** Web keyboard equivalents of the swipes, matching the on-screen hint. */
+const keys: Record<string, Direction> = {
+  ArrowLeft: 'pass',
+  ArrowRight: 'support',
+  ArrowUp: 'learn',
+  Enter: 'learn',
+};
 
 export function SwipeDeck({
   petitions,
@@ -345,9 +304,39 @@ export function SwipeDeck({
           .map((d, i) => <Behind key={d.id} item={d} depth={(i + 1) as 1 | 2} dx={dx} dy={dy} />)
           .reverse()}
         <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 5 }, top]}>
+          {/* No buttons under the card: screen readers get these as actions, and the web
+              keyboard gets the arrow keys from the hint below. */}
           <View
-            accessibilityLabel="Swipe artwork left to pass, right to support or up to read more"
-            accessibilityHint="Or use the Pass, Read, Save and Sign buttons below."
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={
+              petition
+                ? `${petition.title}. ${petition.action}. ${petition.city}, ${requirementLabel(petition, snapshot.communities)}. ${petition.count.toLocaleString()} of ${petition.goal.toLocaleString()} signatures, ${daysLeft(petition, now)} days left.`
+                : `Federal proposal: ${rule!.title}. ${rule!.agency}. Open for comment, ${ruleDaysLeft(rule!.closesOn, now)} days left.`
+            }
+            accessibilityHint={`Swipe left to pass, right to ${signWord.toLowerCase()} or up to read. More actions are available.`}
+            accessibilityActions={[
+              { name: 'activate', label: 'Read' },
+              { name: 'pass', label: 'Pass' },
+              { name: 'sign', label: signWord },
+              ...(petition ? [{ name: 'save', label: saved ? 'Unsave' : 'Save' }] : []),
+            ]}
+            onAccessibilityAction={(e) => {
+              const name = e.nativeEvent.actionName;
+              if (name === 'save') {
+                if (petition) save(petition);
+              } else act(name === 'pass' ? 'pass' : name === 'sign' ? 'support' : 'learn');
+            }}
+            {...(Platform.OS === 'web'
+              ? ({
+                  focusable: true,
+                  onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+                    if (!keys[e.key]) return;
+                    e.preventDefault();
+                    act(keys[e.key]);
+                  },
+                } as unknown as ViewProps)
+              : null)}
             onStartShouldSetResponder={() => true}
             onMoveShouldSetResponder={() => true}
             onResponderGrant={(e) => {
@@ -594,32 +583,9 @@ export function SwipeDeck({
           justifyContent: 'center',
           alignItems: 'center',
           gap: 14,
-          paddingTop: 16,
-          paddingBottom: 4,
-        }}
-      >
-        <DeckButton label="Pass" glyph="✕" color={colors.muted} onPress={() => act('pass')} />
-        <DeckButton label="Read" glyph="↑" color={colors.blue} onPress={() => act('learn')} />
-        {petition && (
-          <DeckButton label="Save" color={colors.heart} onPress={() => save(petition)}>
-            <Heart on={saved} dark size={19} />
-          </DeckButton>
-        )}
-        <DeckButton
-          label={signWord}
-          glyph={rule ? '→' : '✓'}
-          color={colors.pale}
-          big
-          onPress={() => act('support')}
-        />
-      </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 14,
           minHeight: 36,
+          // Clears the cards behind, which peek out up to 32pt below the top card.
+          paddingTop: 44,
         }}
       >
         <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.outline }}>

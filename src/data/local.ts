@@ -40,6 +40,7 @@ import {
   backingReached,
 } from '../domain/rules';
 import { profileSchema } from '../domain/personalization';
+import { countTrend } from '../domain/trend';
 import { screenLabels, screenPetition } from '../domain/content-screen';
 import {
   PetitionText,
@@ -75,6 +76,8 @@ interface LocalState {
   receipts?: (SignatureReceipt & { userId: string })[];
   /** Who brought whom, keyed by the signature it credits. Private: only counts leave this file. */
   referrals?: { signatureId: string; referrerId: string }[];
+  /** Published petitions not yet announced to their community, because the check holds them. */
+  toAnnounce?: string[];
   drafts?: (SavedDraft & { userId: string })[];
   version: 1;
   session: string | null;
@@ -302,6 +305,27 @@ export class LocalAdapter implements Adapter {
         .map(({ userId: _private, ...v }) => v),
     );
   }
+  /** Organizer-only day counts. Which signer arrived how never leaves this method. */
+  async signatureTrend(petitionId: string, now = Date.now()) {
+    const s = await this.read();
+    const p = s.petitions.find((p) => p.id === petitionId);
+    if (!p || !canManage(p, s.profiles.find((u) => u.id === s.session) ?? null))
+      throw new Error('Only organizers can see signature trends.');
+    const viaLink = new Set((s.referrals ?? []).map((r) => r.signatureId));
+    return countTrend(
+      s.signatures
+        .filter((x) => x.petitionId === petitionId)
+        .map((x) => ({
+          signedAt: x.signedAt,
+          source: viaLink.has(x.id)
+            ? ('link' as const)
+            : s.profiles.find((u) => u.id === x.userId)?.joined.includes(p.communityId)
+              ? ('community' as const)
+              : ('other' as const),
+        })),
+      now,
+    );
+  }
   /** True when the reader owns or moderates the community. */
   private moderates(s: LocalState, communityId: string) {
     const c = (s.communities ?? seedCommunities()).find((x) => x.id === communityId);
@@ -442,6 +466,26 @@ export class LocalAdapter implements Adapter {
       /** Owner and collaborators, minus the actor. */
       const managers = (p: Petition) =>
         [p.ownerId, ...p.collaborators].filter((id) => id !== user.id);
+      /** A community's members, minus the given people. */
+      const members = (communityId: string, skip: string[]) =>
+        s.profiles
+          .filter((p) => p.joined.includes(communityId) && !skip.includes(p.id))
+          .map((p) => p.id);
+      /**
+       * A new campaign is announced to its community once, the first time it is actually public:
+       * at publication, or when wording held by the check is fixed. Restorations never re-announce.
+       */
+      const announce = (p: Petition) => {
+        if (!s.toAnnounce?.includes(p.id) || p.hidden || p.status !== 'active') return;
+        s.toAnnounce = s.toAnnounce.filter((id) => id !== p.id);
+        const community = communities.find((x) => x.id === p.communityId);
+        if (community)
+          notify(
+            members(community.id, [p.ownerId, ...p.collaborators]),
+            `New campaign in ${community.name}: “${p.title}”.`,
+            'community',
+          );
+      };
       if (c.type === 'profile') {
         Object.assign(user, profileSchema.parse(c));
         return;
@@ -544,6 +588,14 @@ export class LocalAdapter implements Adapter {
           ...(v.kind === 'event' ? { eventAt: v.eventAt, location: v.location ?? '' } : {}),
         };
         s.posts[c.communityId] = [...(s.posts[c.communityId] ?? []), post];
+        // Members hear from the people who run the community. A member's own event still lists
+        // under Events but notifies no one, and the private organizer room never does.
+        if (moderator && v.space !== 'organizers' && ['announcement', 'event'].includes(v.kind))
+          notify(
+            members(c.communityId, [user.id]),
+            `${community.name} ${v.kind}: ${post.body.length > 100 ? `${post.body.slice(0, 99)}…` : post.body}`,
+            'community',
+          );
         return;
       }
       if (c.type === 'reportPost') {
@@ -704,6 +756,10 @@ export class LocalAdapter implements Adapter {
           ...(ai.tags ? { tags: ai.tags } : {}),
         });
         screened(s.petitions[0]);
+        if (c.publish) {
+          (s.toAnnounce ??= []).push(id);
+          announce(s.petitions[0]);
+        }
         if (c.draftId)
           s.drafts = (s.drafts ?? []).filter((d) => d.id !== c.draftId || d.userId !== user.id);
         if (c.publish && !user.badges.includes('Change starter'))
@@ -979,6 +1035,8 @@ export class LocalAdapter implements Adapter {
         draftSchema.parse(p);
         p.status = 'active';
         screened(p);
+        (s.toAnnounce ??= []).push(p.id);
+        announce(p);
         if (!user.badges.includes('Change starter')) user.badges.push('Change starter');
         return;
       }
@@ -1005,6 +1063,7 @@ export class LocalAdapter implements Adapter {
           if (ai.tags) p.tags = ai.tags;
           else delete p.tags;
           screened(p);
+          announce(p);
         }
         notify(
           followers(p),
