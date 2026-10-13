@@ -51,6 +51,8 @@ import { SendPacket } from '../../src/components/send-packet';
 import { ManagePhoto } from '../../src/components/photo-field';
 import { HeldNotice } from '../../src/components/held-notice';
 import { SignatureTrend } from '../../src/components/signature-trend';
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+
 export default function Manager() {
   const { petitionId } = useLocalSearchParams<{ petitionId: string }>();
   const q = useSnapshot();
@@ -151,8 +153,8 @@ export default function Manager() {
         </View>
         <Progress petition={p} />
         <Text style={styles.muted}>
-          {p.updates.length} updates · {p.discussion.length} discussion posts · {backers(p).length}{' '}
-          communities backing
+          {count(p.updates.length, 'update')} · {count(p.discussion.length, 'discussion post')} ·{' '}
+          {backers(p).length === 1 ? '1 community' : `${backers(p).length} communities`} backing
         </Text>
         <Text style={styles.small}>
           {p.viaShares > 0

@@ -419,6 +419,9 @@ export function PillChip({
             }
           : {
               backgroundColor: selected ? colors.dark : colors.white,
+              // The hairline keeps an unselected chip visible on white cards as well as the canvas.
+              borderWidth: 1,
+              borderColor: selected ? colors.dark : colors.line,
               boxShadow: selected
                 ? '0px 8px 18px -10px rgba(18,20,15,0.6)'
                 : '0px 4px 12px -10px rgba(32,38,26,0.4)',

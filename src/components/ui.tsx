@@ -85,6 +85,8 @@ export function Button({
           gap: 8,
           backgroundColor: t.bg,
         },
+        // White buttons get a hairline so they still read as buttons on white cards.
+        t.bg === colors.white ? { borderWidth: 1, borderColor: colors.line } : null,
         style,
       ]}
     >

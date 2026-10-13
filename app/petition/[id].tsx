@@ -228,17 +228,17 @@ function PetitionPage({
     { label: saved ? 'Saved' : 'Save', icon: <Heart on={saved} dark />, onPress: () => save(p) },
     {
       label: 'Share',
-      icon: <Text style={{ fontSize: 18, color: colors.dark }}>↗</Text>,
+      icon: <Glyph name="share" size={19} />,
       onPress: () => void share(p, s),
     },
     {
       label: myOffer ? 'Volunteering' : 'Volunteer',
-      icon: <Text style={{ fontSize: 18 }}>✋</Text>,
+      icon: <Glyph name="hand" size={19} color={myOffer ? colors.accent : colors.dark} />,
       onPress: () => needAccount(() => setOffering(true)),
     },
     {
       label: 'Report',
-      icon: <Text style={{ fontSize: 18, color: colors.muted }}>⚑</Text>,
+      icon: <Glyph name="flag" size={19} color={colors.muted} />,
       onPress: () => needAccount(() => setReport(true)),
     },
   ];

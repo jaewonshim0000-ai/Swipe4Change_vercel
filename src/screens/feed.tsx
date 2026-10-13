@@ -131,7 +131,7 @@ function tickerLines(s: Snapshot, now: number) {
   };
   const posts = s.petitions
     .flatMap((p) => [
-      ...p.endorsements.map((e) => ({ p, e, verb: 'endorsed' })),
+      ...p.endorsements.map((e) => ({ p, e, verb: 'voted to back' })),
       ...p.discussion
         .filter((e) => !e.removed)
         .map((e) => ({ p, e, verb: verbs[e.kind] ?? 'posted on' })),
@@ -289,10 +289,16 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
           numberOfLines={2}
           style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.onImage }}
         >
-          ↳{' '}
-          {update
-            ? `${update.body} · ${ago(update.date, now)}`
-            : `Organized by ${community?.name ?? p.creator}`}
+          {update ? (
+            <>
+              <Text style={{ fontFamily: fonts.semibold, color: colors.white }}>
+                Update · {ago(update.date, now)}{' '}
+              </Text>
+              {update.body}
+            </>
+          ) : (
+            `Organized by ${community?.name ?? p.creator}`
+          )}
         </Text>
         <View style={{ marginTop: 3 }}>
           <Bar pct={(100 * p.count) / p.goal} tone="light" label="Signature goal progress" />
@@ -315,7 +321,7 @@ const recipe = [
   { label: 'Approximate city', pct: 30, note: 'City and state only — never an address' },
   { label: 'Communities you joined', pct: 20, note: 'Groups you chose, not groups we guessed' },
   { label: 'Freshness and activity', pct: 10, note: 'Recent updates and new signatures' },
-  { label: 'Endorsements', pct: 5, note: 'Capped, so one loud community can’t dominate' },
+  { label: 'Community backing', pct: 5, note: 'Capped, so one loud community can’t dominate' },
 ];
 function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   return (
@@ -422,16 +428,29 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
         style={[{ flexDirection: 'row', alignItems: 'center', gap: 12 }, anim(kf.in, 500)]}
       >
         <Press
-          accessibilityLabel="Profile"
+          accessibilityLabel={s.profile ? 'Profile' : 'Sign in'}
           scale={0.94}
           onPress={() => router.push(s.profile ? '/(tabs)/profile' : '/(auth)/sign-in')}
           style={{ borderRadius: 24, boxShadow: '0px 6px 16px -8px rgba(32,38,26,0.4)' }}
         >
-          <Initials
-            text={s.profile ? initialsOf(s.profile.name) : '?'}
-            size={46}
-            ring={colors.white}
-          />
+          {s.profile ? (
+            <Initials text={initialsOf(s.profile.name)} size={46} ring={colors.white} />
+          ) : (
+            <View
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 999,
+                borderWidth: 2,
+                borderColor: colors.white,
+                backgroundColor: colors.pale,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Glyph name="profile" size={20} weight={1.8} color={colors.accent} />
+            </View>
+          )}
         </Press>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
@@ -449,21 +468,49 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Change location"
+            accessibilityLabel={s.profile ? 'Change location' : 'Sign in for causes near you'}
             onPress={() => (s.profile ? setPicking(true) : router.push('/(auth)/sign-in'))}
             style={{ paddingTop: 3, flexDirection: 'row', gap: 4 }}
           >
-            <Text
-              numberOfLines={1}
-              style={{ flexShrink: 1, fontFamily: fonts.body, fontSize: 13, color: colors.muted }}
-            >
-              {s.profile?.city
-                ? `${local.length} active causes near ${s.profile.city.split(',')[0]}`
-                : 'Choose your approximate location'}
-            </Text>
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
-              · Change
-            </Text>
+            {s.profile ? (
+              <>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flexShrink: 1,
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    color: colors.muted,
+                  }}
+                >
+                  {s.profile.city
+                    ? `${local.length} causes near ${s.profile.city.split(',')[0]}`
+                    : 'Choose your city'}
+                </Text>
+                <Text
+                  style={{
+                    flexShrink: 0,
+                    fontFamily: fonts.semibold,
+                    fontSize: 13,
+                    color: colors.accent,
+                  }}
+                >
+                  · Change
+                </Text>
+              </>
+            ) : (
+              <Text
+                numberOfLines={1}
+                style={{
+                  flexShrink: 1,
+                  fontFamily: fonts.semibold,
+                  fontSize: 13,
+                  color: colors.accent,
+                }}
+              >
+                Sign in for causes near you →
+              </Text>
+            )}
           </Pressable>
         </View>
         <Press

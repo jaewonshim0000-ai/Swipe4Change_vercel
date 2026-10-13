@@ -150,10 +150,12 @@ export default function Communities() {
                         {[
                           `${c.members} members`,
                           `${own.length} campaigns`,
-                          membersOnly ? `${membersOnly} members-only` : '',
+                          membersOnly ? `${membersOnly} for members only` : '',
                           backed ? `${backed} backed` : '',
                         ]
                           .filter(Boolean)
+                          // Lines break between stats, never inside one.
+                          .map((stat) => stat.replace(/ /g, ' '))
                           .join(' · ')}
                       </Text>
                       <Press

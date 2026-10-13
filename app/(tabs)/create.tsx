@@ -900,8 +900,9 @@ function Create({
             <Text
               style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 }}
             >
-              Reading grade {clarity.words && clarity.grade ? clarity.grade : '—'} · target{' '}
-              {TARGET_GRADE} or below
+              {clarity.words && clarity.grade
+                ? `Reading grade ${clarity.grade} · target ${TARGET_GRADE} or below`
+                : `Aim for reading grade ${TARGET_GRADE} or below`}
             </Text>
           </View>
         </View>
