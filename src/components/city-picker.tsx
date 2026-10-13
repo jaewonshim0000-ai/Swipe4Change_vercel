@@ -109,7 +109,7 @@ export function CitySheet({
             flex: 1,
             minWidth: 0,
             fontFamily: fonts.body,
-            fontSize: 15,
+            fontSize: 14.5,
             color: colors.ink,
             paddingVertical: 12,
           }}
@@ -132,7 +132,7 @@ export function CitySheet({
         }}
       >
         <Glyph name="pin" size={18} color={colors.accent} />
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.ink }}>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
           {locating ? 'Finding your city…' : 'Use my current location'}
         </Text>
       </Press>
@@ -156,7 +156,7 @@ export function CitySheet({
               borderBottomColor: colors.line,
             }}
           >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
               {p.city}
             </Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
@@ -210,8 +210,8 @@ export function CityField({
           style={{
             flex: 1,
             fontFamily: fonts.body,
-            fontSize: 15,
-            color: value ? colors.ink : '#8C9086',
+            fontSize: 14.5,
+            color: value ? colors.ink : colors.placeholder,
           }}
         >
           {value || 'Choose a city'}

@@ -5,7 +5,7 @@ import { isSampleCity, useOfficials, useRecipientFinder } from '../data/civic-lo
 import { PillChip } from './kit';
 import { Button, Notice, colors, fonts, styles } from './ui';
 
-const small = { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 18, color: colors.muted };
+const small = { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted };
 
 /**
  * Under "Who can make this change?": the real elected officials for the petition's city, and the
@@ -26,7 +26,7 @@ export function RecipientHelp({
     <View style={{ gap: 10 }}>
       {!sample && !!draft.city && (
         <View style={{ gap: 6 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.secondary }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
             Your elected officials in {draft.city.split(',')[0]}
           </Text>
           {officials.isPending && <Text style={small}>Looking up your representatives…</Text>}
@@ -44,7 +44,7 @@ export function RecipientHelp({
                   />
                 ))}
               </View>
-              <Text style={[styles.micro, { fontSize: 11.5 }]}>
+              <Text style={[styles.micro, { fontSize: 12 }]}>
                 Districts are for the centre of {draft.city.split(',')[0]}; a large city can have
                 several. {officials.data.stateNote ?? ''}
               </Text>
@@ -98,14 +98,14 @@ function Suggestion({
   return (
     <View
       accessibilityLabel="AI recipient suggestion"
-      style={{ backgroundColor: colors.soft, borderRadius: 18, padding: 14, gap: 8 }}
+      style={{ backgroundColor: colors.soft, borderRadius: 20, padding: 14, gap: 8 }}
     >
       <Text
         style={{ fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 1, color: colors.accent }}
       >
         AI SUGGESTION · CHECK BEFORE SENDING
       </Text>
-      <Text style={{ fontFamily: fonts.heading, fontSize: 17, lineHeight: 22, color: colors.ink }}>
+      <Text style={{ fontFamily: fonts.heading, fontSize: 18, lineHeight: 22, color: colors.ink }}>
         {s.recipient}
       </Text>
       <Text style={[small, { color: colors.secondary }]}>{s.reason}</Text>

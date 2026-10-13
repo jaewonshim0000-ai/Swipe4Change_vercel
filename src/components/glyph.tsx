@@ -1,4 +1,5 @@
 import Svg, { Circle, Path } from 'react-native-svg';
+import { colors } from './theme';
 
 /** Line icons drawn in the design (24×24, round caps). A circle is `[cx, cy, r]`. */
 const shapes = {
@@ -45,7 +46,7 @@ export type GlyphName = keyof typeof shapes;
 export function Glyph({
   name,
   size = 20,
-  color = '#1C1F19',
+  color = colors.dark,
   weight = 1.8,
 }: {
   name: GlyphName;

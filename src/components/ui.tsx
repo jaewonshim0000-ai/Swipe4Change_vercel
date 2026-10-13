@@ -17,7 +17,7 @@ import { colors, fonts, styles } from './theme';
 import { anim, kf } from './motion';
 import { CircleButton, PillChip, Press, Screen, Sheet } from './kit';
 import { Glyph } from './glyph';
-export { colors, fonts, styles, tokens } from './theme';
+export { colors, fonts, styles } from './theme';
 
 export function Icon({
   name,
@@ -203,7 +203,7 @@ export function Page({
                 {title}
               </Text>
             )}
-            {!!subtitle && <Text style={[styles.muted, { fontSize: 13.5 }]}>{subtitle}</Text>}
+            {!!subtitle && <Text style={[styles.muted, { fontSize: 13 }]}>{subtitle}</Text>}
             {action}
           </View>
         )}
@@ -225,8 +225,8 @@ export function Notice({ text, error = false }: { text: string; error?: boolean 
       style={{
         paddingHorizontal: 14,
         paddingVertical: 12,
-        backgroundColor: error ? '#FBEDEA' : colors.soft,
-        borderRadius: 18,
+        backgroundColor: error ? colors.errorSoft : colors.soft,
+        borderRadius: 20,
       }}
     >
       <Text style={error ? styles.error : [styles.muted, { color: colors.secondary }]}>{text}</Text>
@@ -299,7 +299,7 @@ export function Empty({ title, body }: { title: string; body: string }) {
       style={[
         {
           backgroundColor: colors.white,
-          borderRadius: 26,
+          borderRadius: 24,
           paddingVertical: 32,
           paddingHorizontal: 22,
           alignItems: 'center',
@@ -311,7 +311,7 @@ export function Empty({ title, body }: { title: string; body: string }) {
       <Text
         style={{
           fontFamily: fonts.heading,
-          fontSize: 20,
+          fontSize: 21,
           lineHeight: 26,
           color: colors.ink,
           textAlign: 'center',

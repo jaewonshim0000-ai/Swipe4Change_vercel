@@ -40,6 +40,16 @@ export const colors = {
   tabIdle: '#9EA393',
   onDark: '#C9CEBF',
   onImage: '#E1E4DA',
+  /** Muted track and unselected outline. */
+  stone: '#B9BEAF',
+  placeholder: '#8C9086',
+  /** "Sign here" behind the signature pad. */
+  watermark: '#A9AE9F',
+  errorSoft: '#FBEDEA',
+  warnSoft: '#FBF6EC',
+  warnLine: '#E8D6B5',
+  /** Toast text on the dark toast. */
+  onDarkBright: '#F7F7F2',
   heart: '#B4492F',
   heartLight: '#FFB4A2',
   blue: '#405E82',
@@ -93,14 +103,11 @@ export const frost = (alpha = 0.2): ViewStyle => ({
 /** A top-to-bottom image scrim, given the design's gradient stops. */
 export const scrim = (stops: string) => gradient(`linear-gradient(180deg, ${stops})`);
 
-export const tokens = {
-  space: [0, 8, 16, 24, 32, 40, 48],
-  radius: 16,
-  featureRadius: 24,
-  font: { body: 16, small: 14, title: 40, hero: 56 },
-  phone: { gutter: 18, cardPad: 18, cardGap: 11, deckImage: 156 },
-  shadow: shadows.card,
-};
+/** Every font size in the app; inline sizes must be one of these (tests/design-tokens.test.ts). */
+export const typeScale: readonly number[] = [11, 12, 13, 14.5, 16, 18, 21, 24, 27, 30, 34, 46];
+/** Corner radii: ticks, chips, inputs, cards, feature cards, the deck, and 999 for pills/circles. */
+export const radii: readonly number[] = [4, 8, 14, 20, 24, 30, 999];
+
 export const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   between: {
@@ -152,7 +159,7 @@ export const styles = StyleSheet.create({
   },
   body: { fontFamily: fonts.body, fontSize: 14.5, lineHeight: 23, color: colors.secondary },
   muted: { fontFamily: fonts.body, fontSize: 13, lineHeight: 20, color: colors.muted },
-  small: { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 18, color: colors.muted },
+  small: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted },
   micro: { fontFamily: fonts.body, fontSize: 11, lineHeight: 17, color: colors.outline },
   label: {
     fontFamily: fonts.semibold,
@@ -167,7 +174,7 @@ export const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 13,
     minHeight: 48,
-    fontSize: 15.5,
+    fontSize: 16,
     color: colors.ink,
     backgroundColor: colors.field,
   },

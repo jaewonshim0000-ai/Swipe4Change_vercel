@@ -95,7 +95,7 @@ export function PetitionRow({
       >
         <Cover
           source={petitionImage(p)}
-          style={{ width: detail ? 98 : 96, height: detail ? 122 : 112, borderRadius: 18 }}
+          style={{ width: detail ? 98 : 96, height: detail ? 122 : 112, borderRadius: 20 }}
         />
         <View
           style={{ flex: 1, minWidth: 0, gap: 6, paddingVertical: 4, paddingRight: detail ? 2 : 4 }}
@@ -123,7 +123,7 @@ export function PetitionRow({
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 16,
+                  borderRadius: 999,
                   backgroundColor: colors.field,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -149,7 +149,7 @@ export function PetitionRow({
               numberOfLines={1}
               style={{
                 fontFamily: fonts.body,
-                fontSize: 11.5,
+                fontSize: 12,
                 lineHeight: 16,
                 color: colors.accent,
               }}
@@ -161,7 +161,7 @@ export function PetitionRow({
             <Bar pct={(100 * p.count) / p.goal} height={5} label="Signature goal progress" />
             <Text
               numberOfLines={1}
-              style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted }}
+              style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}
             >
               {p.count.toLocaleString()} of {p.goal.toLocaleString()} ·{' '}
               {detail ? `${daysLeft(p, now)}d left` : p.city}
@@ -183,7 +183,7 @@ export function CollectionCard({ petition: p, badge }: { petition: Petition; bad
       style={{
         width: 206,
         height: 252,
-        borderRadius: 26,
+        borderRadius: 24,
         overflow: 'hidden',
         backgroundColor: colors.dark,
         boxShadow: '0px 16px 30px -20px rgba(32,38,26,0.55)',
@@ -195,13 +195,13 @@ export function CollectionCard({ petition: p, badge }: { petition: Petition; bad
       />
       <Scrim stops="rgba(18,20,15,0) 30%, rgba(18,20,15,0.88) 100%" />
       <View style={{ position: 'absolute', top: 12, left: 12 }}>
-        <GlassPill text={badge} style={{ fontFamily: fonts.semibold, fontSize: 10.5 }} />
+        <GlassPill text={badge} style={{ fontFamily: fonts.semibold, fontSize: 11 }} />
       </View>
       <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14, gap: 7 }}>
         <Text
           style={{
             fontFamily: fonts.heading,
-            fontSize: 17,
+            fontSize: 18,
             lineHeight: 20,
             letterSpacing: -0.4,
             color: colors.white,
@@ -240,7 +240,7 @@ export function Progress({
         <Text
           style={{
             fontFamily: fonts.display,
-            fontSize: 32,
+            fontSize: 34,
             lineHeight: 34,
             letterSpacing: -1,
             color: colors.ink,
@@ -254,7 +254,7 @@ export function Progress({
             signatures
           </Text>
         </Text>
-        <Text style={{ fontFamily: fonts.medium, fontSize: 12.5, color: colors.muted }}>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: colors.muted }}>
           of {p.goal.toLocaleString()}
         </Text>
       </View>

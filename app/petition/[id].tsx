@@ -54,6 +54,7 @@ import {
   petitionImage,
 } from '../../src/components/kit';
 import { Glyph } from '../../src/components/glyph';
+import { topicColors } from '../../src/components/theme';
 import { anim, kf, reducedMotion } from '../../src/components/motion';
 import {
   Button,
@@ -73,9 +74,9 @@ const card = { backgroundColor: colors.white, borderRadius: 24, padding: 18, gap
 const cardTitle = { fontFamily: fonts.heading, fontSize: 18, lineHeight: 22.5, color: colors.ink };
 const supporterColors = [
   [colors.pale, colors.accent],
-  ['#E6EDF7', '#405E82'],
-  ['#F4E5E2', '#78504F'],
-  ['#EDE6F4', '#66517C'],
+  [topicColors.Education.soft, topicColors.Education.accent],
+  [topicColors['Public spaces'].soft, topicColors['Public spaces'].accent],
+  [topicColors.Accessibility.soft, topicColors.Accessibility.accent],
 ];
 
 /** Counts from 60% up to the real figure on arrival, and eases to each new count after that. */
@@ -232,12 +233,12 @@ function PetitionPage({
     },
     {
       label: myOffer ? 'Volunteering' : 'Volunteer',
-      icon: <Text style={{ fontSize: 17 }}>✋</Text>,
+      icon: <Text style={{ fontSize: 18 }}>✋</Text>,
       onPress: () => needAccount(() => setOffering(true)),
     },
     {
       label: 'Report',
-      icon: <Text style={{ fontSize: 17, color: colors.muted }}>⚑</Text>,
+      icon: <Text style={{ fontSize: 18, color: colors.muted }}>⚑</Text>,
       onPress: () => needAccount(() => setReport(true)),
     },
   ];
@@ -275,10 +276,10 @@ function PetitionPage({
               backgroundColor: 'rgba(18,20,15,0.55)',
               color: colors.white,
               fontFamily: fonts.medium,
-              fontSize: 10,
+              fontSize: 11,
               paddingVertical: 4,
               paddingHorizontal: 8,
-              borderRadius: 6,
+              borderRadius: 8,
               overflow: 'hidden',
             }}
           >
@@ -324,7 +325,7 @@ function PetitionPage({
             style={{
               width: 40,
               height: 4,
-              borderRadius: 2,
+              borderRadius: 999,
               backgroundColor: colors.handle,
               alignSelf: 'center',
               marginBottom: 16,
@@ -367,7 +368,7 @@ function PetitionPage({
             style={[
               {
                 fontFamily: fonts.display,
-                fontSize: 31,
+                fontSize: 30,
                 lineHeight: 33,
                 letterSpacing: -1.2,
                 color: colors.ink,
@@ -383,7 +384,7 @@ function PetitionPage({
             style={[
               {
                 fontFamily: fonts.body,
-                fontSize: 15,
+                fontSize: 14.5,
                 lineHeight: 23,
                 color: colors.secondary,
                 marginBottom: 6,
@@ -395,7 +396,7 @@ function PetitionPage({
           </Animated.Text>
           <Animated.Text
             style={[
-              { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 19, color: colors.muted },
+              { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.muted },
               anim(kf.in, 550, { delay: 260 }),
             ]}
           >
@@ -413,7 +414,7 @@ function PetitionPage({
             style={[
               card,
               {
-                borderRadius: 26,
+                borderRadius: 24,
                 marginTop: 16,
                 boxShadow: '0px 12px 28px -18px rgba(32,38,26,0.4)',
               },
@@ -575,7 +576,7 @@ function PetitionPage({
               {
                 marginTop: 12,
                 backgroundColor: colors.dark,
-                borderRadius: 26,
+                borderRadius: 24,
                 padding: 18,
                 gap: 8,
               },
@@ -593,7 +594,7 @@ function PetitionPage({
               <Text
                 style={{
                   fontFamily: fonts.semibold,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   letterSpacing: 1.3,
                   textTransform: 'uppercase',
                   color: colors.pale,
@@ -610,7 +611,7 @@ function PetitionPage({
                     paddingHorizontal: 10,
                   }}
                 >
-                  <Text style={{ fontFamily: fonts.semibold, fontSize: 10.5, color: colors.pale }}>
+                  <Text style={{ fontFamily: fonts.semibold, fontSize: 11, color: colors.pale }}>
                     {levelLabels[office.level]}
                   </Text>
                 </View>
@@ -629,7 +630,7 @@ function PetitionPage({
             <Text
               style={{
                 fontFamily: fonts.body,
-                fontSize: 12.5,
+                fontSize: 13,
                 lineHeight: 19,
                 color: colors.onDark,
               }}
@@ -676,7 +677,7 @@ function PetitionPage({
                         style={{
                           width: 28,
                           height: 28,
-                          borderRadius: 14,
+                          borderRadius: 999,
                           backgroundColor: colors.pale,
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -704,7 +705,7 @@ function PetitionPage({
                 ))}
                 <View style={card}>
                   <Text style={cardTitle}>Who can sign</Text>
-                  <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+                  <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
                     {requirementLabel(p, s.communities)}
                   </Text>
                   <Text style={styles.small}>
@@ -738,7 +739,7 @@ function PetitionPage({
                           gap: 11,
                           alignItems: 'center',
                           backgroundColor: colors.quiet,
-                          borderRadius: 16,
+                          borderRadius: 14,
                           paddingVertical: 11,
                           paddingHorizontal: 12,
                         }}
@@ -747,7 +748,7 @@ function PetitionPage({
                           style={{
                             width: 34,
                             height: 34,
-                            borderRadius: 11,
+                            borderRadius: 14,
                             backgroundColor: colors.white,
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -768,7 +769,7 @@ function PetitionPage({
                           </Text>
                           <Text
                             numberOfLines={1}
-                            style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted }}
+                            style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}
                           >
                             {e.url.replace(/^https?:\/\//, '').split('/')[0]}
                           </Text>
@@ -796,7 +797,7 @@ function PetitionPage({
                               {
                                 width: 18,
                                 height: 18,
-                                borderRadius: 9,
+                                borderRadius: 999,
                                 backgroundColor: hit ? colors.sage : colors.white,
                                 borderWidth: 2,
                                 borderColor: hit ? colors.sage : colors.handle,
@@ -810,7 +811,7 @@ function PetitionPage({
                               <Text
                                 style={{
                                   fontFamily: fonts.bold,
-                                  fontSize: 9,
+                                  fontSize: 11,
                                   lineHeight: 11,
                                   color: colors.white,
                                 }}
@@ -833,7 +834,7 @@ function PetitionPage({
                           <Text
                             style={{
                               fontFamily: fonts.semibold,
-                              fontSize: 14,
+                              fontSize: 14.5,
                               lineHeight: 18,
                               color: colors.ink,
                             }}
@@ -866,7 +867,7 @@ function PetitionPage({
                         <Text
                           style={{
                             fontFamily: fonts.body,
-                            fontSize: 13.5,
+                            fontSize: 13,
                             lineHeight: 21,
                             color: colors.secondary,
                           }}
@@ -901,13 +902,17 @@ function PetitionPage({
                         card,
                         official
                           ? { backgroundColor: colors.soft }
-                          : { backgroundColor: '#FBF6EC', borderWidth: 1, borderColor: '#E8D6B5' },
+                          : {
+                              backgroundColor: colors.warnSoft,
+                              borderWidth: 1,
+                              borderColor: colors.warnLine,
+                            },
                       ]}
                     >
                       <Text
                         style={{
                           fontFamily: fonts.semibold,
-                          fontSize: 10,
+                          fontSize: 11,
                           letterSpacing: 1.1,
                           textTransform: 'uppercase',
                           color: official ? colors.success : colors.warning,
@@ -932,7 +937,7 @@ function PetitionPage({
                       <Text
                         style={{
                           fontFamily: fonts.body,
-                          fontSize: 13.5,
+                          fontSize: 13,
                           lineHeight: 21,
                           color: colors.secondary,
                         }}
@@ -960,7 +965,7 @@ function PetitionPage({
                   {supporters.map((x) => (
                     <Text
                       key={x.id}
-                      style={{ fontFamily: fonts.body, fontSize: 13.5, color: colors.secondary }}
+                      style={{ fontFamily: fonts.body, fontSize: 13, color: colors.secondary }}
                     >
                       ✓ {x.displayName}
                     </Text>
@@ -1052,7 +1057,7 @@ function PetitionPage({
                         <Text
                           style={{
                             fontFamily: fonts.semibold,
-                            fontSize: 10.5,
+                            fontSize: 11,
                             letterSpacing: 0.8,
                             textTransform: 'uppercase',
                             color: colors.accent,
@@ -1067,7 +1072,7 @@ function PetitionPage({
                         <Text
                           style={{
                             fontFamily: fonts.body,
-                            fontSize: 13.5,
+                            fontSize: 13,
                             lineHeight: 21,
                             color: colors.secondary,
                           }}
@@ -1112,7 +1117,7 @@ function PetitionPage({
                         <Text
                           style={{
                             fontFamily: fonts.semibold,
-                            fontSize: 10.5,
+                            fontSize: 11,
                             letterSpacing: 0.8,
                             textTransform: 'uppercase',
                             color: colors.accent,
@@ -1182,7 +1187,7 @@ function PetitionPage({
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               numberOfLines={1}
-              style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.white }}
+              style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}
             >
               {pendingSign
                 ? 'Confirming your signature…'
@@ -1194,7 +1199,7 @@ function PetitionPage({
             </Text>
             <Text
               numberOfLines={1}
-              style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.onDark }}
+              style={{ fontFamily: fonts.body, fontSize: 12, color: colors.onDark }}
             >
               {signed
                 ? 'Share to grow your ripple'
@@ -1215,7 +1220,7 @@ function PetitionPage({
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.dark }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.dark }}>
                 {signed ? 'Share link' : 'Sign petition'}
               </Text>
             </Press>
@@ -1404,9 +1409,7 @@ function OfficialContact({ recipient, city }: { recipient: string; city: string 
   const link = o.contactForm ?? o.url;
   return (
     <View style={{ gap: 2 }}>
-      <Text
-        style={{ fontFamily: fonts.body, fontSize: 12.5, lineHeight: 19, color: colors.onDark }}
-      >
+      <Text style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.onDark }}>
         {o.office} for {o.district}
         {o.phone ? ` · ${o.phone}` : ''}
         {o.email ? ` · ${o.email}` : ''}

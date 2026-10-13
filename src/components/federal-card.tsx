@@ -28,7 +28,7 @@ export function KindBadge({ kind }: { kind: 'petition' | 'federal' }) {
       <Text
         style={{
           fontFamily: fonts.semibold,
-          fontSize: 10.5,
+          fontSize: 11,
           letterSpacing: 0.9,
           textTransform: 'uppercase',
           color: colors.white,
@@ -60,7 +60,7 @@ export function FederalCard({
       style={{
         width: wide ? '100%' : 240,
         minHeight: wide ? 0 : 210,
-        borderRadius: 26,
+        borderRadius: 24,
         backgroundColor: colors.white,
         padding: 16,
         gap: 10,
@@ -90,7 +90,7 @@ export function FederalCard({
       <Text
         style={{
           fontFamily: fonts.semibold,
-          fontSize: 12.5,
+          fontSize: 13,
           color: left <= 7 ? colors.orange : colors.accent,
         }}
       >

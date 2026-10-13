@@ -146,7 +146,7 @@ export default function Profile() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 20, color: colors.accent }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 21, color: colors.accent }}>
                 {initialsOf(p.name)}
               </Text>
             </View>
@@ -165,7 +165,7 @@ export default function Profile() {
               {p.name}
             </Text>
             <Text
-              style={{ fontFamily: fonts.body, fontSize: 12.5, color: colors.muted, marginTop: 3 }}
+              style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 3 }}
             >
               {isDemo ? 'Fictional demo account' : 'Community member'} · {p.city}
             </Text>
@@ -175,7 +175,7 @@ export default function Profile() {
           <Text
             style={{
               fontFamily: fonts.body,
-              fontSize: 13.5,
+              fontSize: 13,
               lineHeight: 21,
               color: colors.secondary,
               marginTop: 12,
@@ -196,7 +196,7 @@ export default function Profile() {
               style={{
                 flex: 1,
                 backgroundColor: colors.quiet,
-                borderRadius: 16,
+                borderRadius: 14,
                 paddingVertical: 10,
                 paddingHorizontal: 8,
                 alignItems: 'center',
@@ -215,7 +215,7 @@ export default function Profile() {
               <Text
                 style={{
                   fontFamily: fonts.medium,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   color: colors.muted,
                   marginTop: 4,
                 }}
@@ -255,7 +255,7 @@ export default function Profile() {
                 {
                   width: 148,
                   minHeight: 196,
-                  borderRadius: 22,
+                  borderRadius: 24,
                   padding: 14,
                   paddingTop: 16,
                   gap: 6,
@@ -277,7 +277,7 @@ export default function Profile() {
               <Text
                 style={{
                   fontFamily: fonts.semibold,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   lineHeight: 17,
                   color: b.earned ? colors.ink : colors.secondary,
                   textAlign: 'center',
@@ -312,7 +312,7 @@ export default function Profile() {
                 <Text
                   style={{
                     fontFamily: fonts.semibold,
-                    fontSize: 10.5,
+                    fontSize: 11,
                     color: b.earned ? tone.accent : colors.muted,
                   }}
                 >
@@ -362,7 +362,7 @@ export default function Profile() {
                 <Text
                   style={{
                     fontFamily: fonts.heading,
-                    fontSize: 14,
+                    fontSize: 14.5,
                     lineHeight: 18,
                     color: colors.ink,
                   }}
@@ -372,7 +372,7 @@ export default function Profile() {
                 <Text
                   style={{
                     fontFamily: fonts.body,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     color: colors.muted,
                     marginTop: 3,
                   }}
@@ -447,7 +447,7 @@ export default function Profile() {
           <Text
             style={{
               fontFamily: fonts.semibold,
-              fontSize: 10.5,
+              fontSize: 11,
               letterSpacing: 1.3,
               textTransform: 'uppercase',
               color: colors.muted,
@@ -472,19 +472,19 @@ export default function Profile() {
               justifyContent: 'space-between',
               gap: 12,
               backgroundColor: colors.white,
-              borderRadius: 22,
+              borderRadius: 24,
               paddingVertical: 14,
               paddingHorizontal: 16,
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.ink }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
                 Simulate next write failure
               </Text>
               <Text
                 style={{
                   fontFamily: fonts.body,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   color: colors.muted,
                   marginTop: 2,
                 }}
@@ -498,7 +498,7 @@ export default function Profile() {
             title="Reset all local demo data"
             variant="danger"
             onPress={() => setReset(true)}
-            style={{ marginTop: 10, borderRadius: 22 }}
+            style={{ marginTop: 10, borderRadius: 24 }}
           />
         </>
       )}
@@ -513,7 +513,7 @@ export default function Profile() {
           title="Delete account"
           variant="danger"
           onPress={() => setDeleting(true)}
-          style={{ marginTop: 10, borderRadius: 22 }}
+          style={{ marginTop: 10, borderRadius: 24 }}
         />
       )}
 
@@ -579,7 +579,7 @@ export default function Profile() {
                 key={r.id}
                 style={{ backgroundColor: colors.white, borderRadius: 20, padding: 14, gap: 8 }}
               >
-                <Text style={[styles.label, { fontSize: 10 }]}>{r.status}</Text>
+                <Text style={[styles.label, { fontSize: 11 }]}>{r.status}</Text>
                 <Text style={styles.body}>{r.reason}</Text>
                 {!!r.screening && (
                   <Text style={styles.small}>

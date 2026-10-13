@@ -73,7 +73,7 @@ export function SignatureTrend({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
         {trendSources.map((s, i) => (
           <View key={s} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: series[i] }} />
+            <View style={{ width: 10, height: 10, borderRadius: 4, backgroundColor: series[i] }} />
             <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.secondary }}>
               {trendSourceLabels[s]} {bySource[s]}
             </Text>

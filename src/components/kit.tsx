@@ -163,7 +163,7 @@ export function TopicPill({ topic, soft = false }: { topic: Topic; soft?: boolea
 export function GlassPill({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
   return (
     <View style={[{ borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }, frost()]}>
-      <Text style={[{ fontFamily: fonts.medium, fontSize: 11.5, color: colors.white }, style]}>
+      <Text style={[{ fontFamily: fonts.medium, fontSize: 12, color: colors.white }, style]}>
         {text}
       </Text>
     </View>
@@ -202,10 +202,10 @@ export function Bar({
           {
             width: `${width}%`,
             height: '100%',
-            borderRadius: 9,
+            borderRadius: 8,
             transformOrigin: 'left',
             backgroundColor:
-              tone === 'light' ? colors.pale : tone === 'muted' ? '#B9BEAF' : colors.sage,
+              tone === 'light' ? colors.pale : tone === 'muted' ? colors.stone : colors.sage,
           },
           tone === 'big'
             ? gradient(`linear-gradient(90deg, ${colors.sage}, ${colors.accent})`)
@@ -612,7 +612,7 @@ export function StepBars({ count, current }: { count: number; current: number })
           style={{
             flex: 1,
             height: 4,
-            borderRadius: 2,
+            borderRadius: 999,
             backgroundColor: colors.idle,
             overflow: 'hidden',
           }}
@@ -636,7 +636,7 @@ export function Radio({ on }: { on: boolean }) {
       style={{
         width: 20,
         height: 20,
-        borderRadius: 10,
+        borderRadius: 999,
         marginTop: 1,
         borderWidth: 2,
         borderColor: on ? colors.dark : colors.radio,
@@ -646,7 +646,7 @@ export function Radio({ on }: { on: boolean }) {
       }}
     >
       {on && (
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.white }} />
+        <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: colors.white }} />
       )}
     </View>
   );
@@ -716,7 +716,7 @@ export function Sheet({
             style={{
               width: 40,
               height: 4,
-              borderRadius: 2,
+              borderRadius: 999,
               backgroundColor: colors.handle,
               alignSelf: 'center',
               marginBottom: 14,
@@ -846,7 +846,7 @@ export function ToastHost() {
           bottom: (aboveBar ? 108 : 34) + insets.bottom,
           zIndex: 90,
           backgroundColor: colors.dark,
-          borderRadius: 18,
+          borderRadius: 20,
           paddingHorizontal: 16,
           paddingVertical: 13,
           boxShadow: '0px 16px 32px -12px rgba(18,20,15,0.55)',
@@ -854,7 +854,14 @@ export function ToastHost() {
         anim(kf.toast, 2600, { ease: 'ease' }),
       ]}
     >
-      <Text style={{ fontFamily: fonts.medium, fontSize: 13, lineHeight: 19, color: '#F7F7F2' }}>
+      <Text
+        style={{
+          fontFamily: fonts.medium,
+          fontSize: 13,
+          lineHeight: 19,
+          color: colors.onDarkBright,
+        }}
+      >
         {t.text}
       </Text>
     </Animated.View>
@@ -895,13 +902,13 @@ export function DrawnCheck({
 }
 
 const confettiColors = [
-  '#899878',
-  '#E4E6C3',
-  '#755329',
-  '#405E82',
-  '#66517C',
-  '#3D6546',
-  '#8B6B37',
+  colors.sage,
+  colors.pale,
+  topicColors['Safer streets'].accent,
+  topicColors.Education.accent,
+  topicColors.Accessibility.accent,
+  topicColors.Environment.accent,
+  colors.orange,
 ];
 const pieces = Array.from({ length: 16 }, (_, i) => {
   const a = (i / 16) * Math.PI * 2;
@@ -943,7 +950,7 @@ export function Confetti() {
               width: p.w,
               height: p.w * 0.6,
               marginLeft: -p.w / 2,
-              borderRadius: 2,
+              borderRadius: 4,
               backgroundColor: p.color,
             },
             anim(p.keyframes, 1000, { delay: 250 }),
@@ -962,7 +969,7 @@ export function Switch({ on }: { on: boolean }) {
         {
           width: 50,
           height: 30,
-          borderRadius: 15,
+          borderRadius: 999,
           padding: 3,
           backgroundColor: on ? colors.dark : colors.idle,
         },
@@ -974,7 +981,7 @@ export function Switch({ on }: { on: boolean }) {
           {
             width: 24,
             height: 24,
-            borderRadius: 12,
+            borderRadius: 999,
             backgroundColor: colors.white,
             boxShadow: '0px 1px 4px rgba(0,0,0,0.25)',
             transform: [{ translateX: on ? 20 : 0 }],

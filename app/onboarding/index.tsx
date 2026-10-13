@@ -93,7 +93,7 @@ export default function Onboarding() {
                   style={[
                     {
                       height: 118,
-                      borderRadius: 22,
+                      borderRadius: 24,
                       overflow: 'hidden',
                       transform: [{ scale: on ? 1 : 0.97 }],
                       filter: on ? 'saturate(1)' : 'saturate(0.55)',
@@ -115,7 +115,7 @@ export default function Onboarding() {
                         right: 10,
                         width: 26,
                         height: 26,
-                        borderRadius: 13,
+                        borderRadius: 999,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: on ? colors.white : 'rgba(255,255,255,0.3)',
@@ -136,7 +136,7 @@ export default function Onboarding() {
                       right: 12,
                       bottom: 11,
                       fontFamily: fonts.semibold,
-                      fontSize: 14,
+                      fontSize: 14.5,
                       lineHeight: 17,
                       color: colors.white,
                     }}
@@ -152,7 +152,7 @@ export default function Onboarding() {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        borderRadius: 22,
+                        borderRadius: 24,
                         borderWidth: 3,
                         borderColor: on ? colors.dark : 'rgba(28,31,25,0)',
                       },
@@ -172,7 +172,7 @@ export default function Onboarding() {
         style={{
           marginTop: 18,
           backgroundColor: colors.white,
-          borderRadius: 22,
+          borderRadius: 24,
           paddingVertical: 14,
           paddingHorizontal: 16,
           flexDirection: 'row',
@@ -183,13 +183,13 @@ export default function Onboarding() {
       >
         <Glyph name="pin" size={18} color={colors.accent} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
             Approximate city and state
           </Text>
           <Text
             style={{
               fontFamily: fonts.semibold,
-              fontSize: 15,
+              fontSize: 14.5,
               color: city ? colors.ink : colors.muted,
               paddingTop: 3,
             }}
@@ -201,7 +201,7 @@ export default function Onboarding() {
           Change
         </Text>
       </Pressable>
-      <Text style={[styles.micro, { fontSize: 11.5, paddingHorizontal: 6, paddingTop: 10 }]}>
+      <Text style={[styles.micro, { fontSize: 12, paddingHorizontal: 6, paddingTop: 10 }]}>
         Only your city and state are saved — never your exact location or political affiliation.
       </Text>
       <CitySheet visible={picking} onClose={() => setPicking(false)} onPick={setCity} />
@@ -214,7 +214,7 @@ export default function Onboarding() {
           autoComplete="name"
           placeholder="First and last name"
         />
-        <Text style={[styles.micro, { fontSize: 11.5, paddingHorizontal: 6 }]}>
+        <Text style={[styles.micro, { fontSize: 12, paddingHorizontal: 6 }]}>
           Public on petitions, updates and posts you write. When you sign, you choose your full
           name, first name and initial, or anonymous.
         </Text>
@@ -236,7 +236,7 @@ export default function Onboarding() {
           style={{
             width: 24,
             height: 24,
-            borderRadius: 7,
+            borderRadius: 8,
             borderWidth: 2,
             borderColor: colors.dark,
             backgroundColor: agreed ? colors.dark : colors.white,
@@ -248,7 +248,7 @@ export default function Onboarding() {
             <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.white }}>✓</Text>
           )}
         </View>
-        <Text style={[styles.body, { flex: 1, fontSize: 14 }]}>
+        <Text style={[styles.body, { flex: 1, fontSize: 14.5 }]}>
           I’m 13 or older and agree to the Terms and Privacy Policy
         </Text>
       </Pressable>
@@ -277,7 +277,7 @@ export default function Onboarding() {
           opacity: selected.length < 3 ? 0.4 : 1,
         }}
       >
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}>
           {selected.length < 3 ? `Pick ${3 - selected.length} more` : 'Find my community →'}
         </Text>
       </Press>

@@ -104,7 +104,7 @@ export default function Community() {
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 10.5,
+                fontSize: 11,
                 letterSpacing: 1.2,
                 textTransform: 'uppercase',
                 color: colors.pale,
@@ -116,7 +116,7 @@ export default function Community() {
               accessibilityRole="header"
               style={{
                 fontFamily: fonts.display,
-                fontSize: 29,
+                fontSize: 30,
                 lineHeight: 31,
                 letterSpacing: -1,
                 color: colors.white,
@@ -140,7 +140,7 @@ export default function Community() {
           <Text
             style={{
               fontFamily: fonts.body,
-              fontSize: 14,
+              fontSize: 14.5,
               lineHeight: 22.5,
               color: colors.secondary,
             }}
@@ -158,12 +158,12 @@ export default function Community() {
             ].map((x) => (
               <View
                 key={x.label}
-                style={{ flex: 1, backgroundColor: colors.white, borderRadius: 18, padding: 12 }}
+                style={{ flex: 1, backgroundColor: colors.white, borderRadius: 20, padding: 12 }}
               >
                 <Text
                   style={{
                     fontFamily: fonts.display,
-                    fontSize: 22,
+                    fontSize: 21,
                     lineHeight: 24,
                     color: colors.ink,
                   }}
@@ -208,7 +208,7 @@ export default function Community() {
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 14,
+                fontSize: 14.5,
                 color: joined ? colors.accent : colors.white,
               }}
             >

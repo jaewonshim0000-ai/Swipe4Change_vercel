@@ -112,7 +112,7 @@ function TabBar({ state, navigation }: TabBarProps) {
                   style={[
                     {
                       fontFamily: fonts.semibold,
-                      fontSize: 12.5,
+                      fontSize: 13,
                       color: on ? colors.dark : colors.tabIdle,
                       maxWidth: wide || on ? 110 : 0,
                       opacity: wide || on ? 1 : 0,
@@ -161,7 +161,7 @@ export default function Layout() {
               gap: 8,
             }}
           >
-            <Text style={{ fontFamily: fonts.display, fontSize: 22, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.display, fontSize: 21, color: colors.ink }}>
               Swipe4Change
             </Text>
             <AuthButtons />

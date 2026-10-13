@@ -91,13 +91,13 @@ export function RipplePanel({
   const total = (mine?.direct ?? 0) + (mine?.further ?? 0);
   const signed = s.signed.includes(p.id);
   return (
-    <View style={{ backgroundColor: colors.white, borderRadius: 26, padding: 18, gap: 12 }}>
+    <View style={{ backgroundColor: colors.white, borderRadius: 24, padding: 18, gap: 12 }}>
       <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
         <RippleRings moving={signed && total > 0} />
         <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-          <Text style={[styles.label, { fontSize: 10.5, letterSpacing: 1.3 }]}>Your ripple</Text>
+          <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.3 }]}>Your ripple</Text>
           <Text
-            style={{ fontFamily: fonts.heading, fontSize: 17, lineHeight: 21, color: colors.ink }}
+            style={{ fontFamily: fonts.heading, fontSize: 18, lineHeight: 21, color: colors.ink }}
           >
             {!signed
               ? 'Sign first, then start a ripple'
@@ -137,9 +137,9 @@ export function RippleSummary({ snapshot: s }: { snapshot: Snapshot }) {
       <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
         <RippleRings moving={total > 0} size={88} />
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-          <Text style={[styles.label, { fontSize: 10.5, letterSpacing: 1.3 }]}>Your ripple</Text>
+          <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.3 }]}>Your ripple</Text>
           <Text
-            style={{ fontFamily: fonts.display, fontSize: 26, lineHeight: 28, color: colors.ink }}
+            style={{ fontFamily: fonts.display, fontSize: 27, lineHeight: 28, color: colors.ink }}
           >
             {total}
           </Text>
@@ -169,7 +169,7 @@ export function RippleSummary({ snapshot: s }: { snapshot: Snapshot }) {
               <Text numberOfLines={1} style={styles.cardTitle}>
                 {petition.title}
               </Text>
-              <Text style={[styles.small, { fontSize: 11.5 }]}>
+              <Text style={[styles.small, { fontSize: 12 }]}>
                 {r.direct} through you · {r.further} further
               </Text>
             </View>

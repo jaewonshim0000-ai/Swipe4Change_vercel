@@ -41,21 +41,26 @@ export function SimilarPetitions({
             gap: 12,
             minHeight: 64,
             backgroundColor: colors.quiet,
-            borderRadius: 18,
+            borderRadius: 20,
             padding: 8,
           }}
         >
           <Cover source={petitionImage(p)} style={{ width: 52, height: 52, borderRadius: 14 }} />
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <Text
-              style={{ fontFamily: fonts.heading, fontSize: 14, lineHeight: 18, color: colors.ink }}
+              style={{
+                fontFamily: fonts.heading,
+                fontSize: 14.5,
+                lineHeight: 18,
+                color: colors.ink,
+              }}
             >
               {p.title}
             </Text>
-            <Text style={[styles.small, { fontSize: 11.5, lineHeight: 16 }]}>
+            <Text style={[styles.small, { fontSize: 12, lineHeight: 16 }]}>
               {p.count.toLocaleString()} of {p.goal.toLocaleString()} · to {p.recipient}
             </Text>
-            <Text style={[styles.micro, { fontSize: 10.5, lineHeight: 15 }]}>
+            <Text style={[styles.micro, { fontSize: 11, lineHeight: 15 }]}>
               {reasons.join(' · ')}
             </Text>
           </View>

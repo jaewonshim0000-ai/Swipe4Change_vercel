@@ -26,13 +26,13 @@ export function Post({
       <Initials text={avatar ?? initialsOf(e.author)} size={36} />
       <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
         <View style={{ flexDirection: 'row', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
             {e.author}
           </Text>
           <Text
             style={{
               fontFamily: fonts.semibold,
-              fontSize: 9.5,
+              fontSize: 11,
               letterSpacing: 0.8,
               textTransform: 'uppercase',
               color: colors.accent,
@@ -49,7 +49,7 @@ export function Post({
         <Text
           style={{
             fontFamily: e.removed ? fonts.italic : fonts.body,
-            fontSize: 13.5,
+            fontSize: 13,
             lineHeight: 21,
             color: e.removed ? colors.muted : colors.secondary,
           }}
@@ -178,13 +178,13 @@ export function Composer({
         multiline
         style={{
           flex: 1,
-          borderRadius: 18,
+          borderRadius: 20,
           paddingVertical: 12,
           paddingHorizontal: 14,
           minHeight: 48,
           maxHeight: 140,
           fontFamily: fonts.body,
-          fontSize: 14,
+          fontSize: 14.5,
           lineHeight: 20,
           color: colors.ink,
           backgroundColor: bare ? 'transparent' : colors.field,
@@ -197,7 +197,7 @@ export function Composer({
         style={{
           width: 48,
           height: 48,
-          borderRadius: 24,
+          borderRadius: 999,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: ready ? colors.dark : colors.idle,

@@ -72,7 +72,7 @@ export default function Communities() {
       <Text accessibilityRole="header" style={[styles.title, { marginTop: 8, marginBottom: 6 }]}>
         Your people, nearby.
       </Text>
-      <Text style={[styles.muted, { fontSize: 13.5, lineHeight: 21, marginBottom: 16 }]}>
+      <Text style={[styles.muted, { fontSize: 13, lineHeight: 21, marginBottom: 16 }]}>
         {isDemo ? 'Local groups in a fictional town.' : 'Local groups near you.'} Members vote on
         which petitions their community backs, and some petitions only members can sign.
       </Text>
@@ -89,7 +89,7 @@ export default function Communities() {
                 <View
                   style={{
                     backgroundColor: colors.white,
-                    borderRadius: 28,
+                    borderRadius: 30,
                     overflow: 'hidden',
                     boxShadow: '0px 12px 28px -18px rgba(32,38,26,0.4)',
                   }}
@@ -109,7 +109,7 @@ export default function Communities() {
                         right: 16,
                         bottom: 12,
                         fontFamily: fonts.heading,
-                        fontSize: 20,
+                        fontSize: 21,
                         lineHeight: 24,
                         letterSpacing: -0.5,
                         color: colors.white,
@@ -181,7 +181,7 @@ export default function Communities() {
                         <Text
                           style={{
                             fontFamily: fonts.semibold,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             color: on ? colors.accent : colors.white,
                           }}
                         >
@@ -202,14 +202,14 @@ export default function Communities() {
           style={{
             borderWidth: 1.5,
             borderStyle: 'dashed',
-            borderColor: '#B9BEAF',
+            borderColor: colors.stone,
             minHeight: 54,
             borderRadius: 24,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.accent }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
             + Create a community
           </Text>
         </Pressable>

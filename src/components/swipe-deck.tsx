@@ -74,7 +74,7 @@ function Stamp({
           top: 70,
           paddingVertical: 8,
           paddingHorizontal: 16,
-          borderRadius: 12,
+          borderRadius: 14,
           borderWidth: 3,
           borderColor: color,
           backgroundColor: 'rgba(255,255,255,0.92)',
@@ -242,7 +242,7 @@ export function SwipeDeck({
       >
         <Text
           accessibilityRole="header"
-          style={{ fontFamily: fonts.heading, fontSize: 22, lineHeight: 26, color: colors.ink }}
+          style={{ fontFamily: fonts.heading, fontSize: 21, lineHeight: 26, color: colors.ink }}
         >
           You’re all caught up
         </Text>
@@ -270,7 +270,7 @@ export function SwipeDeck({
               marginTop: 6,
             }}
           >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.white }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.white }}>
               Revisit passed
             </Text>
           </Press>
@@ -287,7 +287,7 @@ export function SwipeDeck({
             justifyContent: 'center',
           }}
         >
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
             Explore more →
           </Text>
         </Press>
@@ -514,7 +514,7 @@ export function SwipeDeck({
                       numberOfLines={4}
                       style={{
                         fontFamily: fonts.heading,
-                        fontSize: 25,
+                        fontSize: 24,
                         lineHeight: 28,
                         letterSpacing: -0.8,
                         color: colors.white,
@@ -549,7 +549,7 @@ export function SwipeDeck({
                     <Text
                       style={{
                         fontFamily: fonts.body,
-                        fontSize: 11.5,
+                        fontSize: 12,
                         lineHeight: 16,
                         color: colors.onDark,
                       }}
@@ -564,7 +564,7 @@ export function SwipeDeck({
                   numberOfLines={2}
                   style={{
                     fontFamily: fonts.body,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     lineHeight: 16,
                     color: colors.onDark,
                     paddingTop: 2,
@@ -604,7 +604,7 @@ export function SwipeDeck({
                 paddingHorizontal: 12,
               }}
             >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 11.5, color: colors.accent }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.accent }}>
                 ↺ Undo
               </Text>
             </Pressable>

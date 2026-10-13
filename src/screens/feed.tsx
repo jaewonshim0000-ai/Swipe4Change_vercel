@@ -72,7 +72,7 @@ const sectionTitle = {
 };
 const note = {
   fontFamily: fonts.body,
-  fontSize: 12.5,
+  fontSize: 13,
   lineHeight: 18,
   color: colors.muted,
   marginTop: 3,
@@ -189,7 +189,7 @@ function Ticker({ lines }: { lines: string[] }) {
             flex: 1,
             minWidth: 0,
             fontFamily: fonts.medium,
-            fontSize: 12.5,
+            fontSize: 13,
             color: colors.secondary,
           },
           anim(tick % 2 ? kf.tickA : kf.tickB, 500),
@@ -240,7 +240,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
         <Text
           style={{
             fontFamily: fonts.semibold,
-            fontSize: 10.5,
+            fontSize: 11,
             letterSpacing: 0.9,
             textTransform: 'uppercase',
             color: colors.white,
@@ -263,7 +263,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
             right: 12,
             width: 42,
             height: 42,
-            borderRadius: 21,
+            borderRadius: 999,
             alignItems: 'center',
             justifyContent: 'center',
           },
@@ -277,7 +277,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
         <Text
           style={{
             fontFamily: fonts.heading,
-            fontSize: 25,
+            fontSize: 24,
             lineHeight: 28,
             letterSpacing: -0.8,
             color: colors.white,
@@ -287,7 +287,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
         </Text>
         <Text
           numberOfLines={2}
-          style={{ fontFamily: fonts.body, fontSize: 12.5, lineHeight: 18, color: '#E9EBE4' }}
+          style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.onImage }}
         >
           ↳{' '}
           {update
@@ -338,17 +338,17 @@ function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void 
       {recipe.map((r, i) => (
         <View key={r.label} style={{ paddingVertical: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
               {r.label}
             </Text>
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
               {r.pct}%
             </Text>
           </View>
           <View
             style={{
               height: 8,
-              borderRadius: 8,
+              borderRadius: 999,
               backgroundColor: colors.track,
               overflow: 'hidden',
               marginTop: 7,
@@ -367,7 +367,7 @@ function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void 
               ]}
             />
           </View>
-          <Text style={[styles.small, { fontSize: 11.5, marginTop: 5 }]}>{r.note}</Text>
+          <Text style={[styles.small, { fontSize: 12, marginTop: 5 }]}>{r.note}</Text>
         </View>
       ))}
       <Text
@@ -376,7 +376,7 @@ function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void 
           {
             fontSize: 12,
             backgroundColor: colors.white,
-            borderRadius: 18,
+            borderRadius: 20,
             paddingVertical: 12,
             paddingHorizontal: 14,
             marginTop: 8,
@@ -425,7 +425,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           accessibilityLabel="Profile"
           scale={0.94}
           onPress={() => router.push(s.profile ? '/(tabs)/profile' : '/(auth)/sign-in')}
-          style={{ borderRadius: 23, boxShadow: '0px 6px 16px -8px rgba(32,38,26,0.4)' }}
+          style={{ borderRadius: 24, boxShadow: '0px 6px 16px -8px rgba(32,38,26,0.4)' }}
         >
           <Initials
             text={s.profile ? initialsOf(s.profile.name) : '?'}
@@ -455,13 +455,13 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           >
             <Text
               numberOfLines={1}
-              style={{ flexShrink: 1, fontFamily: fonts.body, fontSize: 12.5, color: colors.muted }}
+              style={{ flexShrink: 1, fontFamily: fonts.body, fontSize: 13, color: colors.muted }}
             >
               {s.profile?.city
                 ? `${local.length} active causes near ${s.profile.city.split(',')[0]}`
                 : 'Choose your approximate location'}
             </Text>
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.accent }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
               · Change
             </Text>
           </Pressable>
@@ -473,7 +473,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           style={{
             width: 46,
             height: 46,
-            borderRadius: 23,
+            borderRadius: 999,
             backgroundColor: colors.white,
             alignItems: 'center',
             justifyContent: 'center',
@@ -490,7 +490,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
                   right: 9,
                   minWidth: 17,
                   height: 17,
-                  borderRadius: 9,
+                  borderRadius: 999,
                   backgroundColor: colors.orange,
                   borderWidth: 2,
                   borderColor: colors.white,
@@ -502,7 +502,12 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
               ]}
             >
               <Text
-                style={{ fontFamily: fonts.bold, fontSize: 9, lineHeight: 11, color: colors.white }}
+                style={{
+                  fontFamily: fonts.bold,
+                  fontSize: 11,
+                  lineHeight: 11,
+                  color: colors.white,
+                }}
               >
                 {unread}
               </Text>
@@ -524,7 +529,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           accessibilityRole="header"
           style={{
             fontFamily: fonts.display,
-            fontSize: 23,
+            fontSize: 24,
             lineHeight: 25,
             letterSpacing: -0.7,
             color: colors.ink,
@@ -533,7 +538,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           For you
         </Text>
         <Pressable accessibilityRole="button" onPress={() => setWhy(true)} style={{ padding: 4 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.accent }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
             Why these?
           </Text>
         </Pressable>
@@ -583,7 +588,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
           onPress={() => router.push(`/community/${community.id}`)}
           style={{
             backgroundColor: colors.white,
-            borderRadius: 26,
+            borderRadius: 24,
             padding: 16,
             flexDirection: 'row',
             gap: 14,
@@ -601,7 +606,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
                 left: 6,
                 right: 6,
                 bottom: 6,
-                borderRadius: 23,
+                borderRadius: 24,
               }}
             />
           </View>
@@ -609,7 +614,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 15,
+                fontSize: 14.5,
                 lineHeight: 19.5,
                 color: colors.ink,
               }}
@@ -620,7 +625,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
               numberOfLines={2}
               style={{
                 fontFamily: fonts.body,
-                fontSize: 12.5,
+                fontSize: 13,
                 lineHeight: 18,
                 color: colors.muted,
               }}
@@ -636,7 +641,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
         style={{
           marginTop: 14,
           backgroundColor: colors.dark,
-          borderRadius: 28,
+          borderRadius: 30,
           padding: 22,
           gap: 10,
           overflow: 'hidden',
@@ -797,7 +802,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                   flex: 1,
                   minWidth: 0,
                   fontFamily: fonts.body,
-                  fontSize: 15,
+                  fontSize: 14.5,
                   color: colors.ink,
                   paddingVertical: 12,
                 }}
@@ -810,13 +815,13 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                   style={{
                     width: 26,
                     height: 26,
-                    borderRadius: 13,
+                    borderRadius: 999,
                     backgroundColor: colors.canvas,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.muted }}>
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 14.5, color: colors.muted }}>
                     ×
                   </Text>
                 </Pressable>
@@ -829,7 +834,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
               style={{
                 width: 52,
                 height: 52,
-                borderRadius: 26,
+                borderRadius: 999,
                 backgroundColor: colors.dark,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -845,7 +850,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                       right: -2,
                       width: 19,
                       height: 19,
-                      borderRadius: 10,
+                      borderRadius: 999,
                       backgroundColor: colors.pale,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -853,7 +858,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                     anim(kf.pop, 300, { ease: 'ease' }),
                   ]}
                 >
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 10, color: colors.dark }}>
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: colors.dark }}>
                     {count}
                   </Text>
                 </Animated.View>
@@ -929,7 +934,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
             style={{
               paddingVertical: 10,
               fontFamily: fonts.medium,
-              fontSize: 12.5,
+              fontSize: 13,
               color: colors.muted,
             }}
           >
@@ -985,7 +990,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
               style={{
                 width: 168,
                 backgroundColor: colors.white,
-                borderRadius: 22,
+                borderRadius: 24,
                 padding: 14,
                 gap: 6,
                 boxShadow: '0px 10px 24px -16px rgba(32,38,26,0.35)',
@@ -995,7 +1000,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 19,
+                  borderRadius: 999,
                   backgroundColor: topicColors[c.topic].soft,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1014,14 +1019,14 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
               <Text
                 style={{
                   fontFamily: fonts.semibold,
-                  fontSize: 14,
+                  fontSize: 14.5,
                   lineHeight: 17.5,
                   color: colors.ink,
                 }}
               >
                 {c.name}
               </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
                 {c.members} members
               </Text>
             </Press>

@@ -64,7 +64,7 @@ export default function Notifications() {
             onPress={() => markRead(items.map((n) => n.id))}
             style={{ minHeight: 44, justifyContent: 'center' }}
           >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.accent }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
               Mark all read
             </Text>
           </Pressable>
@@ -90,9 +90,9 @@ export default function Notifications() {
                         flexDirection: 'row',
                         gap: 12,
                         alignItems: 'flex-start',
-                        borderRadius: 22,
+                        borderRadius: 24,
                         padding: 14,
-                        backgroundColor: done ? '#F6F7F3' : colors.white,
+                        backgroundColor: done ? colors.quiet : colors.white,
                       },
                       done ? null : { boxShadow: '0px 10px 24px -16px rgba(32,38,26,0.4)' },
                       transition(['backgroundColor'], 300),
@@ -102,7 +102,7 @@ export default function Notifications() {
                       style={{
                         width: 40,
                         height: 40,
-                        borderRadius: 20,
+                        borderRadius: 999,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: done ? colors.track : colors.dark,
@@ -111,7 +111,7 @@ export default function Notifications() {
                       <Text
                         style={{
                           fontFamily: fonts.semibold,
-                          fontSize: 15,
+                          fontSize: 14.5,
                           color: done ? colors.muted : colors.pale,
                         }}
                       >
@@ -122,7 +122,7 @@ export default function Notifications() {
                       <Text
                         style={{
                           fontFamily: fonts.semibold,
-                          fontSize: 13.5,
+                          fontSize: 13,
                           lineHeight: 18,
                           color: colors.ink,
                         }}
@@ -132,7 +132,7 @@ export default function Notifications() {
                       <Text
                         style={{
                           fontFamily: fonts.body,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           lineHeight: 19,
                           color: colors.muted,
                         }}

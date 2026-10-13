@@ -181,7 +181,7 @@ function ScoreRing({ score }: { score: number }) {
           animatedProps={props}
         />
       </Svg>
-      <Text style={{ fontFamily: fonts.display, fontSize: 19, color: colors.ink }}>{score}</Text>
+      <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink }}>{score}</Text>
     </View>
   );
 }
@@ -466,7 +466,7 @@ function Create({
         >
           {steps[step][0]}
         </Text>
-        <Text style={[styles.body, { fontSize: 14, color: colors.muted, marginBottom: 16 }]}>
+        <Text style={[styles.body, { fontSize: 14.5, color: colors.muted, marginBottom: 16 }]}>
           {steps[step][1]}
         </Text>
         {step === 0 && (
@@ -592,7 +592,7 @@ function Create({
                     alignItems: 'center',
                     gap: 10,
                     backgroundColor: colors.quiet,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     paddingVertical: 10,
                     paddingHorizontal: 12,
                   }}
@@ -746,7 +746,7 @@ function Create({
                 />
               </View>
             </View>
-            <Text style={[styles.micro, { fontSize: 11.5 }]}>
+            <Text style={[styles.micro, { fontSize: 12 }]}>
               Signing rules lock after the first signature. Closes {draft.deadline}.
             </Text>
           </View>
@@ -810,7 +810,7 @@ function Create({
                 <Text style={styles.label}>
                   {draft.topic} · {draft.city} · {community?.name}
                 </Text>
-                <Text style={[styles.title, { fontSize: 26, lineHeight: 28 }]}>
+                <Text style={[styles.title, { fontSize: 27, lineHeight: 28 }]}>
                   {draft.title || 'Untitled petition'}
                 </Text>
                 <Text style={styles.body}>{draft.action}</Text>
@@ -849,7 +849,7 @@ function Create({
                   style={{
                     width: 44,
                     height: 44,
-                    borderRadius: 22,
+                    borderRadius: 999,
                     backgroundColor: colors.pale,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -858,7 +858,7 @@ function Create({
                   <DrawnCheck size={22} color={colors.dark} delay={200} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
+                  <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}>
                     {held ? 'Saved · not public yet' : 'Published · Change starter earned'}
                   </Text>
                   <Text
@@ -883,13 +883,13 @@ function Create({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <ScoreRing score={analysis.score} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.label, { fontSize: 10.5, letterSpacing: 1.2 }]}>
+            <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.2 }]}>
               Writing check · local rules
             </Text>
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 15,
+                fontSize: 14.5,
                 lineHeight: 20,
                 color: colors.ink,
                 marginTop: 4,
@@ -898,7 +898,7 @@ function Create({
               {scoreLabel}
             </Text>
             <Text
-              style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted, marginTop: 2 }}
+              style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 }}
             >
               Reading grade {clarity.words && clarity.grade ? clarity.grade : '—'} · target{' '}
               {TARGET_GRADE} or below
@@ -931,7 +931,7 @@ function Create({
           <Animated.View
             key={sg.field}
             style={[
-              { backgroundColor: colors.quiet, borderRadius: 16, padding: 12, gap: 8 },
+              { backgroundColor: colors.quiet, borderRadius: 14, padding: 12, gap: 8 },
               anim(kf.in, 350),
             ]}
           >
@@ -942,7 +942,7 @@ function Create({
               numberOfLines={6}
               style={{
                 fontFamily: fonts.heading,
-                fontSize: 15,
+                fontSize: 14.5,
                 lineHeight: 19.5,
                 color: colors.ink,
               }}
@@ -970,7 +970,7 @@ function Create({
             }}
           />
         )}
-        <Text style={[styles.micro, { fontSize: 10.5 }]}>
+        <Text style={[styles.micro, { fontSize: 11 }]}>
           Advisory only. This score and these tips use simple rules on your own words. The ✦ helpers
           use AI (Claude) and only suggest; nothing here checks your facts.
         </Text>
@@ -1034,7 +1034,7 @@ function Create({
         onCancel={() => setConfirm(false)}
         onConfirm={publish}
       >
-        <View style={{ backgroundColor: colors.white, borderRadius: 18, padding: 14, gap: 6 }}>
+        <View style={{ backgroundColor: colors.white, borderRadius: 20, padding: 14, gap: 6 }}>
           <Text style={styles.cardTitle}>{draft.title}</Text>
           <Text style={styles.small}>
             To {draft.recipient} · {draft.city}
