@@ -1,5 +1,9 @@
 import { Text } from 'react-native';
 import { Panel, Page, styles } from '../src/components/ui';
+import { isDemo } from '../src/data/provider';
+
+/** A dedicated contact address for the people running the app (set in Vercel), if any. */
+const contact = process.env.EXPO_PUBLIC_CONTACT_EMAIL;
 
 /**
  * Terms and privacy in plain language. Every statement here describes what the code actually
@@ -12,6 +16,16 @@ const sections: [string, string[]][] = [
       'Swipe4Change is a student project built for the Congressional App Challenge. It is not a government service and is not affiliated with any office, party or campaign.',
     ],
   ],
+  ...(isDemo
+    ? []
+    : ([
+        [
+          'Public beta',
+          [
+            'Swipe4Change is in a public beta. Sign-in is open to the first 100 accounts. When the full version launches, accounts may need to sign up again, and petitions and signatures from the beta may not carry over.',
+          ],
+        ],
+      ] satisfies [string, string[]][])),
   [
     'Who can use it',
     [
@@ -62,7 +76,11 @@ const sections: [string, string[]][] = [
   ],
   [
     'Questions',
-    ['Open an issue at github.com/Dankguy17/petitionv2/issues. Last updated October 8, 2026.'],
+    [
+      contact
+        ? `Email ${contact}. To flag a petition, use Report a concern on its page. Last updated October 12, 2026.`
+        : 'To flag a petition, use Report a concern on its page. Last updated October 12, 2026.',
+    ],
   ],
 ];
 

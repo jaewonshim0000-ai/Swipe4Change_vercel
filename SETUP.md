@@ -91,29 +91,54 @@ Smoke test with two real accounts (two browsers, or a private window):
 5. As B, Profile → **Delete account**, type `DELETE`. B is signed out; A's petition loses B's
    signature; B's sign-in no longer works.
 
-## 6. Publish the website (EAS Hosting)
+## 6. Publish the website (Vercel, you)
 
-Once, in your own terminal:
-
-```sh
-npx eas-cli@latest login
-npx eas-cli@latest init
-```
-
-Then, whenever you want to publish the current code:
+Before the first deploy, check the exact build Vercel will make, on your machine:
 
 ```sh
-npm run deploy:web
+npm run preview:web
 ```
 
-It exports the web build with the public values from `.env` and deploys it to a free
-`https://<name>.expo.app` address. The development-only `/api` routes refuse to run there; the
-live app uses the Supabase Edge Functions instead.
+It builds the single-page web app as Vercel does and serves it at `http://localhost:4173`, with
+the same fallback that makes links like `/petition/…` open directly. It uses the values in your
+`.env`, so with step 3 done it talks to your real Supabase and Clerk.
 
-Clerk **development** mode works on that address but shows a "Development mode" badge and allows
-about 100 users. For a real launch, buy a domain, create a Clerk **production** instance, add the
-DNS records Clerk lists, then repeat steps 1.2–1.5 and 2.2 with the production values. No code
-changes are needed.
+Then, once, at [vercel.com](https://vercel.com):
+
+1. **Add New → Project**, import the GitHub repository `Dankguy17/petitionv2`. Vercel reads
+   `vercel.json` (build `npx expo export --platform web`, output `dist`), so leave the framework
+   preset as **Other** and change nothing else.
+2. **Environment Variables** (all environments), the same public values as your `.env`:
+   `EXPO_PUBLIC_BACKEND=supabase`, `EXPO_PUBLIC_SUPABASE_URL`,
+   `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, and optionally
+   `EXPO_PUBLIC_CONTACT_EMAIL` (shown publicly on the Terms page; use an address made for the
+   app). **Never** add `ANTHROPIC_API_KEY`, `OPENSTATES_API_KEY` or any secret key here: anything
+   in the web build is public. Those live only in Supabase (step 4).
+3. **Deploy.** The site is at `https://<project>.vercel.app`. From then on every push to `main`
+   redeploys it, and other branches get their own preview addresses. Changing an environment
+   variable needs a redeploy (Deployments → ⋯ → Redeploy), because the values are built in.
+4. Repeat the step 5 smoke test on the live address, and open a petition link in a fresh tab to
+   check that deep links load directly.
+
+### The beta, and leaving it
+
+On a `vercel.app` address Clerk can only run its **development** instance: a development notice
+on sign-in, at most **100 accounts**, and those accounts cannot move to a production instance.
+The app says so in a **Beta** label, on the sign-in screen and on the Terms page.
+
+To leave the beta: buy a domain (Vercel sells them, with DNS in the same dashboard), add it to the
+Vercel project, create a Clerk **production** instance, add the DNS records Clerk lists, then
+repeat steps 1.2–1.5 and 2.2 with the production values and update the Vercel variables. No code
+changes. Beta accounts sign up again; their old rows stay in Supabase but no longer match a
+sign-in.
+
+### Free-tier limits worth knowing
+
+- A free Supabase project **pauses after about a week without activity**; resume it from the
+  dashboard, or move to a paid plan before promoting the app.
+- Set a **monthly spending limit** on the Anthropic key: every publication and report is
+  screened by Claude, and "Write it for me" and the recipient finder call it too.
+- Vercel's free Hobby plan is for non-commercial projects, which this is.
 
 ## Before inviting people
 

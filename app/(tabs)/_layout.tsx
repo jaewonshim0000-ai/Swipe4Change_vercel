@@ -1,11 +1,12 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router';
 import { Glyph, GlyphName } from '../../src/components/glyph';
 import { colors, fonts } from '../../src/components/theme';
 import { AuthButtons } from '../../src/components/auth-buttons';
+import { Wordmark } from '../../src/components/wordmark';
 import { isDemo, useBackend, useSnapshot } from '../../src/data/provider';
 import { transition } from '../../src/components/motion';
 
@@ -43,17 +44,9 @@ function TabBar({ state, navigation }: TabBarProps) {
       }}
     >
       {wide && (
-        <Text
-          style={{
-            fontFamily: fonts.display,
-            fontSize: 24,
-            color: colors.white,
-            paddingHorizontal: 20,
-            flex: 1,
-          }}
-        >
-          Swipe4Change
-        </Text>
+        <View style={{ paddingHorizontal: 20, flex: 1 }}>
+          <Wordmark size={24} color={colors.white} />
+        </View>
       )}
       {state.routes.map((route, i) => {
         const tab = tabs[route.name];
@@ -161,9 +154,7 @@ export default function Layout() {
               gap: 8,
             }}
           >
-            <Text style={{ fontFamily: fonts.display, fontSize: 21, color: colors.ink }}>
-              Swipe4Change
-            </Text>
+            <Wordmark size={21} />
             <AuthButtons />
           </View>
         </View>

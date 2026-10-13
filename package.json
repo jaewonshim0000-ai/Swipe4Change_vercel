@@ -67,14 +67,14 @@
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
     "export:web": "expo export --platform web",
-    "deploy:web": "expo export --platform web && npx eas-cli@latest deploy --prod",
     "seed": "tsx scripts/seed.ts",
     "test:db": "tsx scripts/test-database.ts",
     "types:db": "tsx scripts/generate-types.ts",
     "supabase:push:preview": "supabase db push --dry-run",
     "supabase:push": "supabase db push",
     "supabase:login": "supabase login",
-    "supabase:link": "supabase link"
+    "supabase:link": "supabase link",
+    "preview:web": "tsx scripts/preview-web.ts"
   },
   "private": true
 }

@@ -242,7 +242,7 @@ Browsing is public: opening `/` lands on Home without requiring login. Guests ha
 
 The app keeps Clerk for authentication and uses Supabase for persistent data through the existing typed RPC adapter. There is no second Supabase Auth session. Setup errors render an actionable screen instead of silently switching to fictional data. Queries wait for Clerk hydration, and every Clerk session owns a separate TanStack Query cache, including private manager queries.
 
-**Setting up a live deployment:** follow [SETUP.md](SETUP.md). It creates a fresh Clerk application and Supabase project, sets the session-token claims (`role`, `email_verified`, `name`), pushes the migrations, deploys the Edge Functions and publishes the website on EAS Hosting. The fictional seed is never pushed to a live project.
+**Setting up a live deployment:** follow [SETUP.md](SETUP.md). It creates a fresh Clerk application and Supabase project, sets the session-token claims (`role`, `email_verified`, `name`), pushes the migrations, deploys the Edge Functions and publishes the website on Vercel as a public beta (`vercel.json`; `npm run preview:web` builds and serves the identical site locally). The fictional seed is never pushed to a live project.
 
 The snapshot RPC refreshes each person's private record from their signed Clerk token on every load: `email_verified` (when the claim is present) and, while it is still the placeholder `Community member`, their display name. Grant real community ownership/moderator roles through trusted provisioning, and provision production collaborators administratively in `petition_collaborators` rather than through the demo's fictional picker.
 

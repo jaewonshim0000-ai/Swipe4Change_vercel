@@ -11,10 +11,11 @@ Current as of October 12, 2026. Every account, community, office, signature and 
 - **Welcome screen** with three demo accounts (Maya the student organizer, Sam the approved local resident, Jordan the new member) — no password needed.
 - **Explore first:** browse every public petition as a guest before signing in.
 - **Real sign-in** through Clerk (email or Google) when the Supabase backend is enabled; see [SETUP.md](SETUP.md).
+- **Public beta on the web** ✦ new — the live site runs on Vercel at a `vercel.app` address, labelled **Beta**, with up to 100 accounts until a custom domain arrives. Links to any page, including petitions, communities and posters, open directly, and unknown addresses get a proper “Page not found”.
 - **Onboarding:** your display name, at least three interests (or skip) and your city, plus a required “I’m 13 or older and agree to the Terms and Privacy Policy”. An exact address is never asked for.
 - **Plain-language Terms and Privacy** page describing exactly what is stored.
 - **Real city picker:** type-ahead search of real US cities, or **Use my current location** once. Only "City, ST" is saved — the position is rounded to about a kilometre, used for one lookup and discarded. In the demo only, the fictional towns are offered as labelled sample cities.
-- **Deep links** open any petition or community directly (`swipe4change://`, with the old `lookaware://` still working).
+- **Deep links** open any petition or community directly, on the web and in the app (`swipe4change://`, with the old `lookaware://` still working).
 
 ## 2. Discover petitions
 
