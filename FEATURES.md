@@ -1,8 +1,8 @@
 # Swipe4Change — Feature List
 
-Current as of October 11, 2026. Every account, community, office, signature and response in the demo is fictional.
+Current as of October 12, 2026. Every account, community, office, signature and response in the demo is fictional.
 
-**At a glance:** one Expo / React Native app for iOS, Android and web · works fully offline as a local demo with three sample accounts · switches to a real Supabase + Clerk backend with one environment variable · 172 unit and UI tests and a PostgreSQL integration test.
+**At a glance:** one Expo / React Native app for iOS, Android and web · works fully offline as a local demo with three sample accounts · switches to a real Supabase + Clerk backend with one environment variable · 200 unit and UI tests and a PostgreSQL integration test.
 
 ---
 
@@ -22,6 +22,7 @@ Current as of October 11, 2026. Every account, community, office, signature and 
 
 - Greeting with the number of active causes near your city, and **Change** opens the city picker in place.
 - **Swipe deck** on every screen size — right to sign (opens the signing review; only your confirmation records a signature), left to pass, up to read more. The card sits centered with no buttons under it: tap it to read, screen readers get Read, Pass, Sign and Save as card actions, and the web keyboard uses ← → ↑. Passes can be undone, and a first-run tip explains the gestures. When you run out, **Explore more** takes you to Explore.
+- **Swipe feel** ✦ new — a quick flick commits a short swipe, a cancelled drag springs back, and on phones a light tick marks the moment a drag crosses its line. Saving taps and a confirmed signature buzzes.
 - **Why these?** shows the exact ranking recipe as a table.
 
 **Explore holds every other way to find petitions**
@@ -55,6 +56,7 @@ Current as of October 11, 2026. Every account, community, office, signature and 
   - **Progress:** milestones, the delivery record, and recorded responses with their verification status.
   - **Activity:** organizer updates, the structured discussion (question / idea / experience), community backing and public edit history.
 - **Save** (saving is following), **Share**, **Volunteer**, **Donate** (when the organizer linked a fundraising page), **Report a concern**.
+- **Print a poster** ✦ new (web) — a printable poster with the title, the requested change, its recipient and a QR code that opens the petition. Once you have signed, the code carries your ripple link, so poster signatures count in your ripple.
 - **Spam filter at publication:** every petition is checked by Claude as it is published and whenever its wording changes, for spam, threats, insults, hateful language and nonsense (gibberish, test posts, jokes with no request). Flagged petitions are saved but held out of public view with the reason; editing the wording rechecks it and clean wording goes public. Keyword rules decide when the model can't be reached. Blunt or angry civic speech stays up.
 - **Verified email to publish:** saving drafts needs none; publishing does, which keeps throwaway accounts from flooding the app.
 - **AI report review:** reporting sends the petition's wording (never the reporter or their reason) to Claude. If it finds spam, threats, insults, hateful language or nonsense, the petition is hidden from the public until a person reviews it; otherwise it stays up and the report waits for a reviewer. Reports can't hide a clean petition. Keyword rules take over if the model can't be reached.
@@ -114,6 +116,7 @@ Current as of October 11, 2026. Every account, community, office, signature and 
 - **At a glance:** progress, update/discussion counts, how many communities back it, and how many signatures came through supporter shares.
 - **Signatures, last 14 days** ✦ new — a daily bar chart of real signatures, split into share links, community members and everyone else, with this week against the week before. Tap a day for its breakdown. Counts only: organizers never see who signed how, and fictional sample signatures are not charted.
 - Publish a saved draft.
+- **Collect signatures in person** ✦ new — print the QR code poster (web).
 - **Delivery:** preview the delivery packet, then record how and where it was sent (email, online portal, in person, posted mail).
 - **Volunteer roster:** names, chosen roles and notes; organizer-only, with no contact details.
 - **Donation link:** optionally link your own external fundraising page; every change is public edit history.
@@ -192,15 +195,16 @@ Current as of October 11, 2026. Every account, community, office, signature and 
 - Reduced-motion support for the swipe deck, progress animation and ripple rings.
 - Keyboard-usable on web: the focused swipe card takes ← to pass, → to sign and ↑ or Enter to read.
 - Responsive layouts from 320-pixel phones to desktop, with phone-specific layouts below 760 points.
-- A shared design system: sage/olive civic palette, Newsreader headings, Work Sans body text, and centralized tokens.
+- A shared design system: sage/olive civic palette, Newsreader headings, Work Sans body text, one 12-step type scale, seven corner radii and named colours, kept that way by a test. One line-icon set throughout, with no emoji standing in for icons.
+- Haptic feedback on phones (swipe commit line, save, confirmed signature); none on the web.
 - Friendly empty, loading and error states, and confirmation before signing, publishing, reporting, closing or archiving.
 
 ## 15. Under the hood
 
 - **Stack:** Expo SDK 57, React Native 0.86, React 19, strict TypeScript, Expo Router, TanStack Query, React Hook Form + Zod, Clerk, Supabase, and the Anthropic SDK (Claude) on the server only.
 - **Two backends, one contract:** a persistent offline local adapter and a Supabase RPC adapter share the same typed commands, so the whole app runs either way.
-- **Database:** row-level security on all 23 exposed tables with default-deny, writes only through authorized functions, row locks while signing, and a database-level unique signature constraint. A recursive query computes ripples and returns counts only.
-- **Tests:** 172 unit and UI tests across 32 suites; a PostgreSQL integration test (PGlite) that runs every migration and the seed, then exercises permissions, privacy and the ripple rules.
+- **Database:** row-level security on all 24 exposed tables with default-deny, writes only through authorized functions, row locks while signing, and a database-level unique signature constraint. A recursive query computes ripples and returns counts only.
+- **Tests:** 200 unit and UI tests across 41 suites; a PostgreSQL integration test (PGlite) that runs every migration and the seed, then exercises permissions, privacy and the ripple rules.
 - **Repeatable seed:** 12 petitions across 5 topics and 4 communities, from one typed factory shared by the demo and the SQL seed.
 
 ## Deliberately not included
