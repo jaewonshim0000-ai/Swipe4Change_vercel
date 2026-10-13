@@ -8,7 +8,7 @@ import { daysLeft, milestoneLabel } from '../domain/discovery';
 import { useCommand } from '../data/provider';
 import { recordSignal } from '../data/signals';
 import { Bar, Cover, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
-import { stag } from './motion';
+import { haptic, stag } from './motion';
 import { colors, fonts } from './theme';
 
 /**
@@ -43,6 +43,7 @@ export function useSave(s: Snapshot) {
       return;
     }
     const was = s.saved.includes(p.id);
+    haptic('tap');
     mutation.mutate(
       { type: 'save', petitionId: p.id },
       {

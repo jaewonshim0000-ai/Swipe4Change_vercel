@@ -1,4 +1,5 @@
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import {
   css,
   cubicBezier,
@@ -24,6 +25,21 @@ AccessibilityInfo.addEventListener?.('reduceMotionChanged', (value) => {
   reduced = value;
 });
 export const reducedMotion = () => reduced;
+
+/**
+ * A short vibration on phones: a tick as a swipe crosses its commit line, a tap on save, and a
+ * success buzz once a signature is confirmed. The web has no haptics, so it does nothing there.
+ */
+export function haptic(kind: 'tick' | 'tap' | 'success') {
+  if (Platform.OS === 'web') return;
+  void Promise.resolve(
+    kind === 'tick'
+      ? Haptics.selectionAsync()
+      : kind === 'tap'
+        ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+        : Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+  ).catch(() => undefined);
+}
 
 const rise = (y: number) => ({
   from: { opacity: 0, transform: [{ translateY: y }] },

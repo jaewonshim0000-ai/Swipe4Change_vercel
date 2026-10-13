@@ -29,6 +29,8 @@ test.each([
 test('colours are named in the theme, not hard-coded in screens', () => {
   const off = sources
     .filter(({ path }) => !path.endsWith('theme.ts'))
-    .flatMap(({ path, text }) => (text.match(/'#[0-9a-f]{3,8}'/gi) ?? []).map((c) => `${path}: ${c}`));
+    .flatMap(({ path, text }) =>
+      (text.match(/'#[0-9a-f]{3,8}'/gi) ?? []).map((c) => `${path}: ${c}`),
+    );
   expect(off).toEqual([]);
 });

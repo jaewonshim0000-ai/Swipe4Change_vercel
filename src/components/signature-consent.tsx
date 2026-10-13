@@ -21,7 +21,7 @@ import {
 } from './kit';
 import { Glyph } from './glyph';
 import { Medal, badgeLook } from './badge-medal';
-import { anim, kf } from './motion';
+import { anim, haptic, kf } from './motion';
 import { Button, Notice, colors, fonts, styles } from './ui';
 
 const titles = ['Read the full request', 'How should your name appear?', 'Sign and confirm'];
@@ -123,6 +123,7 @@ export function SignatureConsent({
         ...(via ? { via } : {}),
       });
       void forgetVia(petition.id);
+      haptic('success');
       setDone(true);
       onRecorded?.();
     } catch (e) {

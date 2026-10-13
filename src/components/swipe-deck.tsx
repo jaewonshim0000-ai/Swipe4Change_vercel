@@ -15,6 +15,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -31,12 +32,27 @@ import { useSave } from './petition-card';
 import { Bar, GlassPill, Press, Scrim, TopicPill, toast, petitionImage, topicImage } from './kit';
 import { Glyph } from './glyph';
 import { KindBadge } from './federal-card';
-import { anim, kf } from './motion';
+import { anim, haptic, kf } from './motion';
 import { colors, fonts } from './theme';
 
 type Direction = 'pass' | 'support' | 'learn';
 /** The design's release easing, `cubic-bezier(.2,.8,.2,1)` over 380ms. */
 const release = { duration: 380, easing: Easing.bezier(0.2, 0.8, 0.2, 1) };
+/** A cancelled drag springs home with a slight overshoot instead of easing back. */
+const snapBack = { damping: 15, stiffness: 190, mass: 0.9 };
+/** Release speed, in points per millisecond, that commits a short drag. */
+const FLICK = 0.6;
+
+/**
+ * Which way a drag ended: far enough that way, or a quick flick that way. Null springs the card
+ * back. Velocities are points per millisecond at release.
+ */
+export function swipeIntent(x: number, y: number, vx = 0, vy = 0): Direction | null {
+  if (x > 100 || (x > 30 && vx > FLICK)) return 'support';
+  if (x < -100 || (x < -30 && vx < -FLICK)) return 'pass';
+  if (y < -90 || (y < -30 && vy < -FLICK && Math.abs(x) < 60)) return 'learn';
+  return null;
+}
 const imageOf = (item: DeckItem) =>
   item.kind === 'petition' ? petitionImage(item.petition) : topicImage(item.rule.topic);
 /** Petitions open their own page; federal rules open theirs, where commenting starts. */
@@ -169,6 +185,9 @@ export function SwipeDeck({
   const dx = useSharedValue(0);
   const dy = useSharedValue(0);
   const origin = useRef({ x: 0, y: 0 });
+  /** The latest drag sample, for release velocity, and the commit zone the drag is in. */
+  const last = useRef({ x: 0, y: 0, t: 0, vx: 0, vy: 0 });
+  const zone = useRef<Direction | null>(null);
   const save = useSave(snapshot);
   useEffect(() => {
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -192,10 +211,14 @@ export function SwipeDeck({
     dx.set(reduceMotion ? x : withTiming(x, release));
     dy.set(reduceMotion ? y : withTiming(y, release));
   }
+  function springBack() {
+    dx.set(reduceMotion ? 0 : withSpring(0, snapBack));
+    dy.set(reduceMotion ? 0 : withSpring(0, snapBack));
+  }
   function act(direction: Direction) {
     if (!current || busy) return;
     if (petition && !snapshot.profile && direction === 'support') {
-      settle(0, 0);
+      springBack();
       router.push('/(auth)/sign-in');
       return;
     }
@@ -341,25 +364,52 @@ export function SwipeDeck({
             onMoveShouldSetResponder={() => true}
             onResponderGrant={(e) => {
               origin.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+              last.current = { x: 0, y: 0, t: e.nativeEvent.timestamp, vx: 0, vy: 0 };
+              zone.current = null;
             }}
             onResponderMove={(e) => {
               if (busy) return;
-              dx.set(e.nativeEvent.pageX - origin.current.x);
-              dy.set(Math.min(40, e.nativeEvent.pageY - origin.current.y));
+              const x = e.nativeEvent.pageX - origin.current.x;
+              const y = e.nativeEvent.pageY - origin.current.y;
+              const t = e.nativeEvent.timestamp;
+              const dt = Math.max(1, t - last.current.t);
+              last.current = {
+                x,
+                y,
+                t,
+                vx: (x - last.current.x) / dt,
+                vy: (y - last.current.y) / dt,
+              };
+              // A tick each time the drag crosses into a commit zone, so letting go is no surprise.
+              const into = swipeIntent(x, y);
+              if (into !== zone.current) {
+                if (into) haptic('tick');
+                zone.current = into;
+              }
+              dx.set(x);
+              dy.set(Math.min(40, y));
             }}
             onResponderRelease={(e) => {
               const x = e.nativeEvent.pageX - origin.current.x;
               const y = e.nativeEvent.pageY - origin.current.y;
-              if (x > 100) act('support');
-              else if (x < -100) act('pass');
-              else if (y < -90) act('learn');
-              else {
-                settle(0, 0);
+              // A finger that stopped before lifting has no flick left in it.
+              const moving = e.nativeEvent.timestamp - last.current.t < 80;
+              const intent = swipeIntent(
+                x,
+                y,
+                moving ? last.current.vx : 0,
+                moving ? last.current.vy : 0,
+              );
+              if (intent) {
+                if (intent !== zone.current) haptic('tick');
+                act(intent);
+              } else {
+                springBack();
                 if (Math.abs(x) < 6 && Math.abs(y) < 6) router.push(pageOf(current));
               }
             }}
             onResponderTerminationRequest={() => false}
-            onResponderTerminate={() => settle(0, 0)}
+            onResponderTerminate={() => springBack()}
             style={[
               {
                 flex: 1,
