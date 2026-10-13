@@ -61,6 +61,10 @@ test('community owners appoint moderators, and only members qualify', async () =
   const { adapter: a } = setup();
   await a.signIn(demoIds.maya);
   const owned = (await a.load()).communities.find((c) => c.ownerId === demoIds.maya)!;
+  // Sam starts as a seeded member; once he leaves he no longer qualifies.
+  await a.signIn(demoIds.sam);
+  await a.execute({ type: 'join', communityId: owned.id });
+  await a.signIn(demoIds.maya);
   await expect(
     a.execute({ type: 'moderator', communityId: owned.id, profileId: demoIds.sam, grant: true }),
   ).rejects.toThrow(/current member/);
@@ -88,8 +92,8 @@ test('a community post can be retracted by its author or a moderator, leaving a 
   const { adapter: a } = setup();
   await a.signIn(demoIds.maya);
   const owned = (await a.load()).communities.find((c) => c.ownerId === demoIds.maya)!;
+  // Sam is a seeded member of Maya's community.
   await a.signIn(demoIds.sam);
-  await a.execute({ type: 'join', communityId: owned.id });
   await a.execute({
     type: 'communityPost',
     communityId: owned.id,

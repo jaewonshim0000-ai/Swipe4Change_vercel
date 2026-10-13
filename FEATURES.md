@@ -36,7 +36,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 **For You: a feed that learns from what you do** ✦ new
 
-- **Base score** for a new account: 35% interests · 30% approximate location · 20% joined communities · 10% recency/activity · 5% endorsements.
+- **Base score** for a new account: 35% interests · 30% approximate location · 20% joined communities (including petitions your community voted to back) · 10% recency/activity · 5% community backing.
 - **Behaviour on top:** signing, volunteering, swiping right, saving, sharing, discussing, reading for a while and opening each count toward "more like this" (strongest first); passing counts against. Older activity fades (two-week half-life).
 - **Hidden hashtags by AI:** Claude tags every petition from its wording (lighting, bus stops, campus, libraries…), reusing a shared vocabulary so related petitions match, and retags it when the wording changes. The feed learns specific issues across topics. Tags are never shown; word matching stands in until a petition is tagged.
 - Activity can move a card up to 60 points and earns more say the more you use the app. Each card says why it is there ("Like “…”, which you signed").
@@ -53,7 +53,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - **Story / Progress / Activity** tabs:
   - **Story:** the change requested, why it matters, and the organizer's labelled sources.
   - **Progress:** milestones, the delivery record, and recorded responses with their verification status.
-  - **Activity:** organizer updates, the structured discussion (question / idea / experience), community endorsements and public edit history.
+  - **Activity:** organizer updates, the structured discussion (question / idea / experience), community backing and public edit history.
 - **Save** (saving is following), **Share**, **Volunteer**, **Donate** (when the organizer linked a fundraising page), **Report a concern**.
 - **Spam filter at publication:** every petition is checked by Claude as it is published and whenever its wording changes, for spam, threats, insults, hateful language and nonsense (gibberish, test posts, jokes with no request). Flagged petitions are saved but held out of public view with the reason; editing the wording rechecks it and clean wording goes public. Keyword rules decide when the model can't be reached. Blunt or angry civic speech stays up.
 - **Verified email to publish:** saving drafts needs none; publishing does, which keeps throwaway accounts from flooding the app.
@@ -110,7 +110,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 ## 7. Organizer dashboard (Manage)
 
-- **At a glance:** progress, update/discussion/endorsement counts, and how many signatures came through supporter shares.
+- **At a glance:** progress, update/discussion counts, how many communities back it,, and how many signatures came through supporter shares.
 - Publish a saved draft.
 - **Delivery:** preview the delivery packet, then record how and where it was sent (email, online portal, in person, posted mail).
 - **Volunteer roster:** names, chosen roles and notes; organizer-only, with no contact details.
@@ -149,12 +149,14 @@ Current as of September 27, 2026. Every account, community, office, signature an
   - **Campaign updates:** a read-only feed of the community's petition updates.
   - **Reports:** the moderator queue.
 - **Moderation:** owners appoint moderators from real members. Removed posts leave a visible “removed” note instead of a gap. Reporting a post never reveals who reported it.
-- **Community endorsements:** a community owner can endorse a petition on the community's behalf.
+- **Community backing by member vote:** on any active petition, members of each community you belong to vote yes or no on whether the community backs it. Three yes votes with more yes than no back it, and the vote closes. Backing shows as **Backed by …** on the swipe card, petition page and community page, goes into the packet sent to the recipient with its tally, ranks the petition as the community's own for its members, and notifies the organizers. Only totals and your own vote are ever shown.
+- **Members-only petitions:** a petition that only community members can sign says **Members of … only** on its card, and each community page lists them with a join prompt. Community cards show how many members-only and backed petitions each community has.
+- Community pages group petitions into **Members-only**, **Up for a vote**, **Backed by …** and **Active campaigns**.
 
 ## 11. Notifications
 
 - An in-app inbox for everything that happens on petitions you **saved, signed or volunteered for**: organizer updates, material edits, milestones (25/50/75/100%), deliveries, recorded responses, closures.
-- Organizers also hear about new signatures (by the public name the signer chose), endorsements, discussion, volunteer offers and eligibility requests.
+- Organizers also hear about new signatures (by the public name the signer chose), community backing, discussion, volunteer offers and eligibility requests.
 - Plus ripple growth, moderator changes, and eligibility decisions.
 
 ## 12. Profile

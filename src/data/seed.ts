@@ -72,7 +72,7 @@ export function seedProfiles(): Profile[] {
       name: 'Sam Rivera',
       city: 'Riverton, CA',
       interests: ['Environment', 'Public spaces', 'Accessibility'],
-      joined: [communityId(2), communityId(4)],
+      joined: [communityId(1), communityId(2), communityId(4)],
       onboarded: false,
       emailVerified: true,
       locationApproved: true,
@@ -83,7 +83,7 @@ export function seedProfiles(): Profile[] {
       name: 'Jordan Lee',
       city: 'Brookside, CA',
       interests: ['Education', 'Accessibility', 'Safer streets'],
-      joined: [communityId(3)],
+      joined: [communityId(1), communityId(3)],
       onboarded: false,
       emailVerified: false,
       locationApproved: false,
@@ -91,6 +91,16 @@ export function seedProfiles(): Profile[] {
     },
   ];
 }
+/**
+ * Fictional backing votes: two Riverton students members already said yes to the raised
+ * crosswalk, so one more yes from a member backs it in the demo.
+ */
+export const seedVotes = [demoIds.sam, demoIds.jordan].map((userId) => ({
+  petitionId: petitionId(6),
+  communityId: communityId(1),
+  userId,
+  support: true,
+}));
 const stories: [string, string, Topic, number, Verification, number, number][] = [
   [
     'A brighter walk home starts here',
@@ -390,6 +400,13 @@ export function seedPetitions(): Petition[] {
               },
             ]
           : [],
+      // The flagship's sample endorsement predates voting, so it carries no tally.
+      backing:
+        i === 0
+          ? [{ communityId: communityId(1), yes: 0, no: 0, backedAt: date }]
+          : i === 5
+            ? [{ communityId: communityId(1), yes: seedVotes.length, no: 0 }]
+            : [],
       discussion:
         i === 0
           ? [

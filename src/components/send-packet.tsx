@@ -33,7 +33,7 @@ export function SendPacket({
     p,
     null,
     s.signatures.filter((x) => x.petitionId === p.id).map((x) => x.displayName),
-    s.communities.find((c) => c.id === p.communityId)?.name ?? 'an independent organizer',
+    s.communities,
   );
   const text = lines.join('\n');
   const form = official?.contactForm ?? official?.url;

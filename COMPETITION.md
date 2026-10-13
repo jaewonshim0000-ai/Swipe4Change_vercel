@@ -22,13 +22,13 @@ Target: **2 minutes 50 seconds**. Start in the local demo as Maya with onboardin
 
 **1:35–2:15 — Turn a concern into a clear request.** Open Create. In **Write it for me ✦**, describe the problem in plain words and let the AI draft the petition (with an API key; otherwise type the fields). Point out that it asks questions instead of inventing facts, and that every field stays editable. Pick the city and an elected official or use **Find the right recipient ✦**. Show the writing check and readability score. Publish through the final confirmation: the spam filter checks it, and it can be signed straight away. Say: “Anyone can start a petition, whatever their writing skills, and spam never reaches the feed.”
 
-**2:15–2:35 — Follow-through.** Back on Eastbridge, open **Progress**: the delivery packet sent at 500 signatures and the verified fictional response recorded against it. In **Activity**, show the organizer update, student question, endorsement and public edit history.
+**2:15–2:35 — Follow-through.** Back on Eastbridge, open **Progress**: the delivery packet sent at 500 signatures and the verified fictional response recorded against it. In **Activity**, show the organizer update, student question, community backing and public edit history.
 
 **2:35–2:50 — Personal impact and control.** On Profile, show the ripple, badges, and saved/signed petitions. Name the five technical ideas: explainable ranking, private eligibility checks, user-controlled public identity, database duplicate prevention, and count-only ripple attribution.
 
 ## Backup demonstration
 
-If time is short, use the flagship petition’s existing updates, edit history, endorsement, milestone, discussion, delivery and response, and show the ripple rules in `tests/ripple.test.ts`. If a network or credential is unavailable, the local demo works without either. To demonstrate resilience, Profile → Simulate next write failure and attempt a save. The temporary state rolls back and the user sees a clear retry message.
+If time is short, use the flagship petition’s existing updates, edit history, community backing, milestone, discussion, delivery and response, and show the ripple rules in `tests/ripple.test.ts`. If a network or credential is unavailable, the local demo works without either. To demonstrate resilience, Profile → Simulate next write failure and attempt a save. The temporary state rolls back and the user sees a clear retry message.
 
 ## Responsible design
 

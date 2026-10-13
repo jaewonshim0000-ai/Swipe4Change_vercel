@@ -17,8 +17,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { Petition, Snapshot, verificationLabels } from '../domain/model';
-import { daysLeft, milestoneLabel } from '../domain/discovery';
+import { Petition, Snapshot } from '../domain/model';
+import { backerNames, daysLeft, milestoneLabel, requirementLabel } from '../domain/discovery';
 import {
   DeckItem,
   FederalRule,
@@ -486,7 +486,7 @@ export function SwipeDeck({
                         color: colors.onImage,
                       }}
                     >
-                      {petition.city} · {verificationLabels[petition.verification]}
+                      {petition.city} · {requirementLabel(petition, snapshot.communities)}
                     </Text>
                   </View>
                   <View style={{ marginTop: 2 }}>
@@ -504,6 +504,14 @@ export function SwipeDeck({
                       {milestoneLabel(petition)}
                     </Text>
                   </View>
+                  {backerNames(petition, snapshot.communities).length > 0 && (
+                    <Text
+                      numberOfLines={1}
+                      style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.white }}
+                    >
+                      ★ Backed by {backerNames(petition, snapshot.communities).join(', ')}
+                    </Text>
+                  )}
                 </>
               ) : (
                 rule && (

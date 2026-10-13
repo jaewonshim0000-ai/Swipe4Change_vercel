@@ -19,6 +19,14 @@ export type Tables = {
     archived: boolean;
     created_at: string;
   }>;
+  community_backing_votes: Table<{
+    petition_id: string;
+    community_id: string;
+    user_id: string;
+    support: boolean;
+    created_at: string;
+    updated_at: string;
+  }>;
   community_members: Table<{
     id: string;
     community_id: string;
@@ -142,6 +150,8 @@ export type Tables = {
     sample_volunteers: number;
     hidden: boolean;
     ai_tags: string | null;
+    screening: string;
+    held_for: string | null;
   }>;
   post_reports: Table<{
     id: string;

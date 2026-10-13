@@ -2,7 +2,7 @@ import { fixtureSubmission } from '../tests/signature-fixture';
 import { PGlite } from '@electric-sql/pglite';
 import { readdirSync, readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { demoIds, petitionId, seedPetitions } from '../src/data/seed';
+import { communityId, demoIds, petitionId, seedPetitions } from '../src/data/seed';
 import type { CommunityPost, Snapshot } from '../src/domain/model';
 import type Anthropic from '@anthropic-ai/sdk';
 import { ReviewQueue, ReviewStore, runReview } from '../supabase/functions/_shared/review';
@@ -22,7 +22,7 @@ async function run() {
   const tables = await db.query<{ tablename: string; rowsecurity: boolean }>(
     `select tablename,rowsecurity from pg_tables where schemaname='public'`,
   );
-  assert.equal(tables.rows.length, 23);
+  assert.equal(tables.rows.length, 24);
   assert(tables.rows.every((t) => t.rowsecurity));
   await db.query(
     `insert into private.principals(profile_id,clerk_subject,email_verified,location_approved) values($1,'clerk_maya',true,false),($2,'clerk_sam',true,true),($3,'clerk_jordan',false,false)`,
@@ -1092,6 +1092,65 @@ async function run() {
   await auth('clerk_sam');
   await db.query('select public.claim_civic_lookup()');
 
+  // Community backing: members vote, and three yes with more yes than no backs the petition.
+  const crossing = petitionId(6);
+  const riverton = communityId(1);
+  const backing = async () => (await snapshot()).petitions.find((p) => p.id === crossing)!.backing;
+  await auth('', 'anon');
+  assert.deepEqual(await backing(), [{ communityId: riverton, yes: 2, no: 0 }]);
+  await auth('clerk_maya');
+  await assert.rejects(
+    () => command({ type: 'endorse', petitionId: crossing, communityId: riverton }),
+    /member vote/,
+  );
+  await assert.rejects(
+    () =>
+      command({
+        type: 'backVote',
+        petitionId: crossing,
+        communityId: communityId(2),
+        support: true,
+      }),
+    /Only members/,
+  );
+  assert.equal(
+    await command({
+      type: 'backVote',
+      petitionId: crossing,
+      communityId: riverton,
+      support: false,
+    }),
+    null,
+  );
+  assert.deepEqual(await backing(), [{ communityId: riverton, yes: 2, no: 1 }]);
+  assert.deepEqual((await snapshot()).backingVotes, [
+    { petitionId: crossing, communityId: riverton, support: false },
+  ]);
+  // Changing the no to a yes makes three: the community backs it and the vote closes.
+  assert.equal(
+    await command({ type: 'backVote', petitionId: crossing, communityId: riverton, support: true }),
+    'backed',
+  );
+  const decided = (await snapshot()).petitions.find((p) => p.id === crossing)!;
+  assert.equal(decided.backing[0].yes, 3);
+  assert(decided.backing[0].backedAt);
+  assert(decided.endorsements.some((e) => e.body.includes('voted to back this (3 yes · 0 no)')));
+  await assert.rejects(
+    () =>
+      command({ type: 'backVote', petitionId: crossing, communityId: riverton, support: false }),
+    /already backs/,
+  );
+  // Individual votes are never readable directly; only totals and your own votes leave the server.
+  const peek = await db
+    .query('select * from public.community_backing_votes')
+    .catch(() => ({ rows: [] }));
+  assert.equal(peek.rows.length, 0);
+  await auth('clerk_sam');
+  s = await snapshot();
+  assert(s.notifications.some((n) => n.body.includes('Riverton students voted to back')));
+  assert(s.backingVotes.every((v) => v.support));
+
+
   // Live accounts: signed Clerk claims refresh email verification and the placeholder name.
   const claims = async (c: Record<string, unknown>) => {
     current = { subject: String(c.sub), role: 'authenticated' };
@@ -1135,6 +1194,12 @@ async function run() {
   await command({ type: 'save', petitionId: petitionId(1) });
   await command({ type: 'join', communityId: seedPetitions()[0].communityId });
   await command({
+    type: 'backVote',
+    petitionId: adaPetition,
+    communityId: seedPetitions()[0].communityId,
+    support: true,
+  });
+  await command({
     type: 'discussion',
     petitionId: open,
     body: 'I walk this route every morning and it is dark.',
@@ -1151,6 +1216,7 @@ async function run() {
        (select count(*) from public.community_members where user_id=$1)::int members,
        (select count(*) from public.user_interests where user_id=$1)::int interests,
        (select count(*) from public.notifications where user_id=$1)::int notes,
+       (select count(*) from public.community_backing_votes where user_id=$1)::int votes,
        (select count(*) from private.principals where profile_id=$1)::int principals,
        (select count(*) from public.discussion_posts where author_id=$1)::int posts,
        (select count(*) from public.signatures where petition_id=$2)::int others,
@@ -1164,6 +1230,7 @@ async function run() {
     members: 0,
     interests: 0,
     notes: 0,
+    votes: 0,
     principals: 0,
     posts: 1,
     others: 1,
@@ -1182,7 +1249,7 @@ async function run() {
 
   await db.close();
   console.log(
-    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, organizer-only petition photos on the public record, signed claims that refresh email verification and the starting name, and account deletion that keeps public writing unattributed.',
+    'PostgreSQL integration passed: migration, repeatable seed, 24 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, organizer-only petition photos on the public record, signed claims that refresh email verification and the starting name, account deletion that keeps public writing unattributed, and community backing by private member vote.',
   );
 }
 void run().catch((error) => {

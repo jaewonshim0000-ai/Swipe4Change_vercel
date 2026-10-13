@@ -18,16 +18,16 @@ import {
   VolunteerRole,
   deliveryMethodLabels,
   identityLabels,
-  verificationLabels,
   volunteerRoleLabels,
   volunteerRoles,
 } from '../../src/domain/model';
 import { milestones, reachedMilestones } from '../../src/domain/rules';
-import { milestoneLabel } from '../../src/domain/discovery';
+import { milestoneLabel, requirementLabel } from '../../src/domain/discovery';
 import { findOffice, levelLabels } from '../../src/domain/recipients';
 import { officialNamed } from '../../supabase/functions/_shared/officials';
 import { isSampleCity, useOfficials } from '../../src/data/civic-lookup';
 import { HeldNotice } from '../../src/components/held-notice';
+import { CommunityBacking } from '../../src/components/community-backing';
 import { MySignature, SignatureConsent } from '../../src/components/signature-consent';
 import { RipplePanel, rememberVia } from '../../src/components/ripple';
 import { Progress, share, useSave } from '../../src/components/petition-card';
@@ -568,6 +568,8 @@ function PetitionPage({
               </View>
             )}
 
+          <CommunityBacking p={p} s={s} />
+
           <Animated.View
             style={[
               {
@@ -703,7 +705,7 @@ function PetitionPage({
                 <View style={card}>
                   <Text style={cardTitle}>Who can sign</Text>
                   <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
-                    {verificationLabels[p.verification]}
+                    {requirementLabel(p, s.communities)}
                   </Text>
                   <Text style={styles.small}>
                     {p.verification === 'custom'
@@ -1099,27 +1101,8 @@ function PetitionPage({
                   {p.endorsements.length ? (
                     p.endorsements.map((e) => <Post key={e.id} entry={e} />)
                   ) : (
-                    <Text style={styles.muted}>No endorsements yet.</Text>
+                    <Text style={styles.muted}>No community has voted to back this yet.</Text>
                   )}
-                  {s.communities
-                    .filter((c) => c.ownerId === s.profile?.id)
-                    .map((c) => (
-                      <Button
-                        key={c.id}
-                        title={`Endorse as ${c.name}`}
-                        variant="secondary"
-                        disabled={
-                          mutation.isPending || p.endorsements.some((e) => e.author === c.name)
-                        }
-                        style={{ backgroundColor: colors.quiet }}
-                        onPress={() =>
-                          run(
-                            { type: 'endorse', petitionId: p.id, communityId: c.id },
-                            'Community endorsement added.',
-                          )
-                        }
-                      />
-                    ))}
                 </View>
                 <View style={card}>
                   <Text style={cardTitle}>Edit history</Text>
@@ -1215,7 +1198,7 @@ function PetitionPage({
             >
               {signed
                 ? 'Share to grow your ripple'
-                : `${milestoneLabel(p)} · ${verificationLabels[p.verification]}`}
+                : `${milestoneLabel(p)} · ${requirementLabel(p, s.communities)}`}
             </Text>
           </View>
           {(signed || p.status === 'active') && (

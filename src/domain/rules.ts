@@ -274,12 +274,25 @@ export function analyzeDraft(d: Partial<Draft>) {
         : 'Relevant local public service department',
   };
 }
+/**
+ * A community backs a petition once at least three members vote yes and yes outnumbers no. A
+ * fixed floor rather than a share of members: sample headcounts never vote, and a new community
+ * of five should be able to decide as well as one of five hundred.
+ */
+export const backingQuorum = 3;
+export const backingReached = (yes: number, no: number) => yes >= backingQuorum && yes > no;
+/** Communities that voted to back the petition. */
+export const backers = (p: Petition) =>
+  p.backing.filter((b) => b.backedAt).map((b) => b.communityId);
 /** The explainable base score a new account sees. Behaviour is layered on top in for-you.ts. */
 export function scorePetition(p: Petition, profile: Profile | null, now = Date.now()) {
+  const own = !!profile?.joined.includes(p.communityId);
+  // A petition your community voted to back counts as one of your community's own.
+  const backed = !own && backers(p).some((id) => profile?.joined.includes(id));
   const factors = {
     interests: profile?.interests.includes(p.topic) ? 35 : 0,
     location: sameCity(profile?.city, p.city) ? 30 : 0,
-    community: profile?.joined.includes(p.communityId) ? 20 : 0,
+    community: own || backed ? 20 : 0,
     activity: 10 * Math.max(0, 1 - (now - Date.parse(p.createdAt)) / (30 * 86400000)),
     endorsements: 5 * Math.min(1, p.endorsements.length / 3),
   };
@@ -289,8 +302,7 @@ export function scorePetition(p: Petition, profile: Profile | null, now = Date.n
     reasons: [
       factors.interests ? 'Matches your interests' : '',
       factors.location ? `Near ${p.city}` : '',
-      factors.community ? 'From your community' : '',
-      factors.endorsements ? 'Community endorsed' : '',
+      own ? 'From your community' : backed ? 'Backed by your community' : '',
     ].filter(Boolean),
   };
 }

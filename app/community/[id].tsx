@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { isDemo, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import { demoIds } from '../../src/data/seed';
+import { backers } from '../../src/domain/rules';
 import {
   Button,
   Empty,
@@ -47,6 +48,33 @@ export default function Community() {
   const moderates = owner || (!!s.profile && c.moderators.includes(s.profile.id));
   const petitions = s.petitions.filter((p) => p.communityId === id);
   const active = petitions.filter((p) => p.status === 'active');
+  const open = s.petitions.filter((p) => p.status === 'active');
+  const sections = [
+    {
+      title: 'Members-only petitions',
+      note: joined
+        ? 'Only members of this community can sign these.'
+        : 'Only members can sign these. Join to add your name.',
+      list: active.filter((p) => p.verification === 'community'),
+    },
+    {
+      title: 'Up for a vote',
+      note: joined
+        ? `Members are deciding whether ${c.name} backs these. Open one to vote.`
+        : `Members are deciding whether ${c.name} backs these.`,
+      list: open.filter((p) => p.backing.some((b) => b.communityId === c.id && !b.backedAt)),
+    },
+    {
+      title: `Backed by ${c.name}`,
+      note: 'Members voted to back these. The backing goes into each packet sent to the recipient.',
+      list: open.filter((p) => backers(p).includes(c.id)),
+    },
+    {
+      title: 'Active campaigns',
+      note: '',
+      list: active.filter((p) => p.verification !== 'community'),
+    },
+  ];
   const completed = petitions.filter((p) => p.status === 'closed' || p.status === 'successful');
   const events = (posts.data ?? []).filter((p) => p.kind === 'event' && !p.removed).length;
   return (
@@ -199,15 +227,19 @@ export default function Community() {
             joined={joined}
             moderates={moderates}
           />
-          {active.length > 0 && (
-            <View style={{ gap: 12, marginTop: 24 }}>
-              <Text accessibilityRole="header" style={styles.h2}>
-                Active campaigns
-              </Text>
-              {active.map((p, i) => (
-                <PetitionRow key={p.id} petition={p} snapshot={s} index={i} />
-              ))}
-            </View>
+          {sections.map(
+            (x) =>
+              x.list.length > 0 && (
+                <View key={x.title} style={{ gap: 12, marginTop: 24 }}>
+                  <Text accessibilityRole="header" style={styles.h2}>
+                    {x.title}
+                  </Text>
+                  {!!x.note && <Text style={styles.small}>{x.note}</Text>}
+                  {x.list.map((p, i) => (
+                    <PetitionRow key={p.id} petition={p} snapshot={s} index={i} />
+                  ))}
+                </View>
+              ),
           )}
           {completed.length > 0 && (
             <View style={{ gap: 12, marginTop: 24 }}>

@@ -40,7 +40,7 @@ export default function Packet() {
     p,
     delivery,
     s.signatures.filter((x) => x.petitionId === p.id).map((x) => x.displayName),
-    s.communities.find((c) => c.id === p.communityId)?.name ?? 'an independent organizer',
+    s.communities,
   );
   const title = p.title;
   function output() {
