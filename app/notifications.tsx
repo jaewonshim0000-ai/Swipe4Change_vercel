@@ -27,6 +27,7 @@ const kinds: Record<string, { title: string; glyph: string }> = {
   close: { title: 'Petition closed', glyph: '⚑' },
   status: { title: 'Petition status', glyph: '⚑' },
   ripple: { title: 'Your ripple grew', glyph: '◎' },
+  community: { title: 'Your community', glyph: '⌂' },
 };
 
 export default function Notifications() {
@@ -156,7 +157,8 @@ export default function Notifications() {
         )}
       </View>
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18 }]}>
-        Petitions you save, sign or volunteer for send their updates here. In-app only in this demo.
+        Petitions you save, sign or volunteer for, and communities you join, send their updates
+        here. In-app only in this demo.
       </Text>
     </Screen>
   );

@@ -707,6 +707,47 @@ async function run() {
       }),
     /already reviewed/,
   );
+  // Members hear from the people who run a community: the owner's event and announcement reach
+  // Sam. The author, a member's own event and the private organizer room notify no one.
+  const heard = async (who: string) => {
+    await auth(who);
+    return (await snapshot()).notifications
+      .filter((n) => n.kind === 'community' && n.body.startsWith('Riverton working group'))
+      .map((n) => n.body);
+  };
+  await command({
+    type: 'communityPost',
+    communityId: space,
+    body: 'Lighting audit results are in. Thank you all.',
+    kind: 'announcement',
+    space: 'announcements',
+    channel: '',
+  });
+  await command({
+    type: 'communityPost',
+    communityId: space,
+    body: 'Moderators only: prep call before the walk.',
+    kind: 'event',
+    space: 'organizers',
+    channel: '',
+    eventAt: '2026-10-03T18:30:00Z',
+    location: 'Online (fictional)',
+  });
+  assert.deepEqual(await heard('clerk_sam'), [
+    'Riverton working group announcement: Lighting audit results are in. Thank you all.',
+    'Riverton working group event: Walk the unlit stretch together.',
+  ]);
+  await command({
+    type: 'communityPost',
+    communityId: space,
+    body: 'A member-run study meetup after class.',
+    kind: 'event',
+    space: 'discussion',
+    channel: '',
+    eventAt: '2026-10-05T18:30:00Z',
+    location: 'Riverton library (fictional)',
+  });
+  assert.deepEqual(await heard('clerk_jordan'), [], 'authors and member events notify no one');
 
   // Delivery: the point where a petition becomes a document somebody sent.
   await auth('clerk_maya');
@@ -970,6 +1011,18 @@ async function run() {
 
   // Publication check: a new petition stays out of public view until the review has read it.
   // Flagged wording is held with its reasons for the organizer; fixed wording goes public.
+  // Sam belongs to the community these are published into, so he hears about each new campaign
+  // once it is public: never while it waits for its check, and never while it is held.
+  await auth('clerk_sam');
+  const homeCommunity = seedPetitions()[0].communityId;
+  if (!(await snapshot()).profile!.joined.includes(homeCommunity))
+    await command({ type: 'join', communityId: homeCommunity });
+  const campaigns = async () => {
+    await auth('clerk_sam');
+    return (await snapshot()).notifications
+      .filter((n) => n.body.startsWith('New campaign in Riverton students'))
+      .map((n) => n.body);
+  };
   autoCheck = false;
   await auth('clerk_jordan');
   await assert.rejects(
@@ -993,6 +1046,7 @@ async function run() {
   assert.equal(held.checking, true);
   await auth('clerk_sam');
   assert(!(await snapshot()).petitions.some((p) => [joke, fresh].includes(p.id)), 'unchecked');
+  assert(!(await campaigns()).some((b) => b.includes('A fresh petition')), 'not before its check');
   await assert.rejects(() => db.query('select public.ai_publish_queue()'), /permission denied/);
   assert.equal((await runReview(store, model, { tags: false })).checked, 2);
   await auth('clerk_sam');
@@ -1001,6 +1055,12 @@ async function run() {
     'clean wording goes public',
   );
   assert(!(await snapshot()).petitions.some((p) => p.id === joke), 'flagged wording stays held');
+  assert(
+    (await campaigns()).includes(
+      'New campaign in Riverton students: “A fresh petition waiting for its check”.',
+    ),
+  );
+  assert(!(await campaigns()).some((b) => b.includes('qwfp')), 'held wording is not announced');
   await auth('clerk_maya');
   held = (await snapshot()).petitions.find((p) => p.id === joke)!;
   assert.deepEqual(held.heldFor, ['nonsense']);
@@ -1021,6 +1081,11 @@ async function run() {
   assert(
     (await snapshot()).petitions.some((p) => p.id === joke),
     'public once fixed',
+  );
+  assert.equal(
+    (await campaigns()).filter((b) => b.includes('Light the path between the bus stop')).length,
+    1,
+    'announced once, when the fixed wording goes public',
   );
   autoCheck = true;
 
@@ -1112,7 +1177,7 @@ async function run() {
 
   await db.close();
   console.log(
-    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters and signature trends, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, and organizer-only petition photos on the public record.',
+    'PostgreSQL integration passed: migration, repeatable seed, 23 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters and signature trends, community spaces with a private organizer room and events, member notifications for announcements, events and new campaigns, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, and organizer-only petition photos on the public record.',
   );
 }
 void run().catch((error) => {

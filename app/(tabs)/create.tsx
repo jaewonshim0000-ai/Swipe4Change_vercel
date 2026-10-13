@@ -125,12 +125,13 @@ const white = { backgroundColor: colors.white, borderRadius: 24, padding: 16, ga
 
 export default function CreateRoute() {
   const q = useSnapshot();
-  const params = useLocalSearchParams<{ draftId?: string }>();
+  const params = useLocalSearchParams<{ draftId?: string; communityId?: string }>();
   if (q.isPending) return <Loading variant="form" />;
   return (
     <Create
-      key={`${q.data?.profile?.id ?? 'guest'}-${params.draftId ?? ''}`}
+      key={`${q.data?.profile?.id ?? 'guest'}-${params.draftId ?? ''}-${params.communityId ?? ''}`}
       selectedDraftId={params.draftId}
+      communityId={params.communityId}
     />
   );
 }
@@ -180,7 +181,14 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-function Create({ selectedDraftId }: { selectedDraftId?: string }) {
+function Create({
+  selectedDraftId,
+  communityId,
+}: {
+  selectedDraftId?: string;
+  /** Opened from a community page: a fresh draft for that community and its city. */
+  communityId?: string;
+}) {
   const q = useSnapshot();
   const command = useCommand();
   const { adapter } = useBackend();
@@ -191,11 +199,12 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   );
   const hydrated = useRef(false);
   const [initialSnapshot] = useState(q.data);
-  const home = initialSnapshot?.profile?.joined[0];
-  const homeCity = initialSnapshot?.profile?.city || undefined;
+  const [picked] = useState(() => initialSnapshot?.communities.find((c) => c.id === communityId));
+  const home = picked?.id ?? initialSnapshot?.profile?.joined[0];
+  const homeCity = picked?.city || initialSnapshot?.profile?.city || undefined;
   // A draft picked from Profile is already in the snapshot, so it restores on the first render.
   const [saved] = useState(() => initialSnapshot?.drafts?.find((d) => d.id === selectedDraftId));
-  const [ready, setReady] = useState(!!saved || selectedDraftId === 'new');
+  const [ready, setReady] = useState(!!saved || selectedDraftId === 'new' || !!picked);
   const [step, setStep] = useState(saved?.step ?? 0);
   const [template, setTemplate] = useState('');
   const [preview, setPreview] = useState(0);
@@ -216,7 +225,9 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
       ? 'Restored your private draft.'
       : selectedDraftId && selectedDraftId !== 'new'
         ? 'This draft is unavailable. Start a new draft from your profile.'
-        : '',
+        : picked
+          ? `Starting a petition with ${picked.name}. You can change the community in step 2.`
+          : '',
   );
   const form = useForm<Draft>({
     resolver: zodResolver(draftSchema),
@@ -230,7 +241,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   const draftKey = `lookaware.draft.${q.data?.profile?.id ?? 'guest'}`;
   // Otherwise pick up the on-device backup of whatever was being written last.
   useEffect(() => {
-    if (!initialSnapshot?.profile || hydrated.current || selectedDraftId) return;
+    if (!initialSnapshot?.profile || hydrated.current || selectedDraftId || picked) return;
     hydrated.current = true;
     let active = true;
     void AsyncStorage.getItem(draftKey)
@@ -251,7 +262,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
     return () => {
       active = false;
     };
-  }, [initialSnapshot, selectedDraftId, draftKey, form, home, homeCity]);
+  }, [initialSnapshot, selectedDraftId, picked, draftKey, form, home, homeCity]);
   const backup = JSON.stringify(draft);
   useEffect(() => {
     if (!ready) return;

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ViewProps,
   ViewStyle,
 } from 'react-native';
 import Animated, {
@@ -21,7 +22,7 @@ import { Petition, Snapshot, verificationLabels } from '../domain/model';
 import { daysLeft, milestoneLabel } from '../domain/discovery';
 import { recordSignal } from '../data/signals';
 import { useSave } from './petition-card';
-import { Bar, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
+import { Bar, GlassPill, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
 import { Glyph } from './glyph';
 import { anim, kf } from './motion';
 import { colors, fonts } from './theme';
@@ -132,45 +133,13 @@ function Behind({
   );
 }
 
-function DeckButton({
-  label,
-  glyph,
-  color,
-  onPress,
-  big = false,
-  children,
-}: {
-  label: string;
-  glyph?: string;
-  color: string;
-  onPress: () => void;
-  big?: boolean;
-  children?: React.ReactNode;
-}) {
-  const size = big ? 70 : 58;
-  return (
-    <Press
-      accessibilityLabel={label}
-      onPress={onPress}
-      scale={0.92}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: big ? colors.dark : colors.white,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 3,
-        boxShadow: '0px 10px 22px -12px rgba(18,20,15,0.5)',
-      }}
-    >
-      {children ?? <Text style={{ fontSize: 19, lineHeight: 21, color }}>{glyph}</Text>}
-      <Text style={{ fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 0.3, color }}>
-        {label}
-      </Text>
-    </Press>
-  );
-}
+/** Web keyboard equivalents of the swipes, matching the on-screen hint. */
+const keys: Record<string, Direction> = {
+  ArrowLeft: 'pass',
+  ArrowRight: 'support',
+  ArrowUp: 'learn',
+  Enter: 'learn',
+};
 
 export function SwipeDeck({
   petitions,
@@ -323,9 +292,34 @@ export function SwipeDeck({
           ))
           .reverse()}
         <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 5 }, top]}>
+          {/* No buttons under the card: screen readers get these as actions, and the web
+              keyboard gets the arrow keys from the hint below. */}
           <View
-            accessibilityLabel="Swipe artwork left to pass, right to support or up to read more"
-            accessibilityHint="Or use the Pass, Read, Save and Sign buttons below."
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`${current.title}. ${current.action}. ${current.city}, ${verificationLabels[current.verification]}. ${current.count.toLocaleString()} of ${current.goal.toLocaleString()} signatures, ${daysLeft(current, now)} days left.`}
+            accessibilityHint="Swipe left to pass, right to sign or up to read. More actions are available."
+            accessibilityActions={[
+              { name: 'activate', label: 'Read' },
+              { name: 'pass', label: 'Pass' },
+              { name: 'sign', label: 'Sign' },
+              { name: 'save', label: saved ? 'Unsave' : 'Save' },
+            ]}
+            onAccessibilityAction={(e) => {
+              const name = e.nativeEvent.actionName;
+              if (name === 'save') save(current);
+              else act(name === 'pass' ? 'pass' : name === 'sign' ? 'support' : 'learn');
+            }}
+            {...(Platform.OS === 'web'
+              ? ({
+                  focusable: true,
+                  onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+                    if (!keys[e.key]) return;
+                    e.preventDefault();
+                    act(keys[e.key]);
+                  },
+                } as unknown as ViewProps)
+              : null)}
             onStartShouldSetResponder={() => true}
             onMoveShouldSetResponder={() => true}
             onResponderGrant={(e) => {
@@ -497,24 +491,9 @@ export function SwipeDeck({
           justifyContent: 'center',
           alignItems: 'center',
           gap: 14,
-          paddingTop: 16,
-          paddingBottom: 4,
-        }}
-      >
-        <DeckButton label="Pass" glyph="✕" color={colors.muted} onPress={() => act('pass')} />
-        <DeckButton label="Read" glyph="↑" color={colors.blue} onPress={() => act('learn')} />
-        <DeckButton label="Save" color={colors.heart} onPress={() => save(current)}>
-          <Heart on={saved} dark size={19} />
-        </DeckButton>
-        <DeckButton label="Sign" glyph="✓" color={colors.pale} big onPress={() => act('support')} />
-      </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 14,
           minHeight: 36,
+          // Clears the cards behind, which peek out up to 32pt below the top card.
+          paddingTop: 44,
         }}
       >
         <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.outline }}>

@@ -745,10 +745,13 @@ export function Screen({
   onScroll,
   footer,
   wide = false,
+  fill = false,
 }: {
   children: React.ReactNode;
   /** Wider canvas for discovery grids on desktop browsers. */
   wide?: boolean;
+  /** Stretch content to the screen's height, so a `flex: 1` child can center itself. */
+  fill?: boolean;
   /** Leaves room for the floating tab bar (or a floating action bar). */
   tabs?: boolean;
   gutter?: number;
@@ -785,6 +788,7 @@ export function Screen({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
+          flexGrow: fill ? 1 : undefined,
           paddingTop: top ? (insets.top > 0 ? insets.top + 6 : 28) : 0,
           paddingBottom: (tabs ? 120 : 60) + insets.bottom,
           paddingHorizontal: desktop && gutter > 0 ? 32 : gutter,

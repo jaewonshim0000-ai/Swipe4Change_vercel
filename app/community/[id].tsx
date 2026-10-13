@@ -191,6 +191,15 @@ export default function Community() {
             Your role: {owner ? 'Owner' : moderates ? 'Moderator' : joined ? 'Member' : 'Visitor'} ·
             the owner and moderators run announcements and moderation
           </Text>
+          <Button
+            title="Start a petition here"
+            icon="add"
+            variant="secondary"
+            style={{ marginTop: 10 }}
+            onPress={() =>
+              router.push({ pathname: '/(tabs)/create', params: { communityId: c.id } })
+            }
+          />
           {m.error && <Notice error text={m.error.message} />}
           <CommunityWorkspace
             community={c}

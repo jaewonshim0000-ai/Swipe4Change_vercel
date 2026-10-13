@@ -177,10 +177,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
         boxShadow: '0px 22px 40px -22px rgba(32,38,26,0.55)',
       }}
     >
-      <KenBurns
-        source={petitionImage(p)}
-        label="Illustrative theme image, not petition evidence"
-      />
+      <KenBurns source={petitionImage(p)} label="Illustrative theme image, not petition evidence" />
       <Scrim stops="rgba(18,20,15,0.25) 0%, rgba(18,20,15,0) 28%, rgba(18,20,15,0.5) 55%, rgba(18,20,15,0.9) 100%" />
       <View
         style={[
@@ -372,7 +369,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
     );
   }
   return (
-    <Screen wide>
+    <Screen wide fill>
       <Animated.View
         style={[{ flexDirection: 'row', alignItems: 'center', gap: 12 }, anim(kf.in, 500)]}
       >
@@ -493,7 +490,16 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           </Text>
         </Pressable>
       </View>
-      <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
+      {/* Takes the height left above the tab bar and centers the card in it. */}
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          width: '100%',
+          maxWidth: 540,
+          alignSelf: 'center',
+        }}
+      >
         <SwipeDeck petitions={ranked} snapshot={s} reasons={reasons} />
       </View>
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>

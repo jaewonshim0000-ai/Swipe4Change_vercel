@@ -78,8 +78,7 @@ test('swiping passes reversibly, supports and learns without signing', async () 
       <SwipeDeck petitions={snapshot.petitions} snapshot={snapshot} />
     </QueryClientProvider>,
   );
-  const artwork = () =>
-    screen.getByLabelText('Swipe artwork left to pass, right to support or up to read more');
+  const artwork = () => screen.getByLabelText(/signatures, \d+ days left\.$/);
   const event = (pageX: number, pageY = 50) => ({ nativeEvent: { pageX, pageY } });
   await fireEvent(artwork(), 'responderGrant', event(200));
   await fireEvent(artwork(), 'responderRelease', event(30));
@@ -95,6 +94,18 @@ test('swiping passes reversibly, supports and learns without signing', async () 
   await fireEvent(artwork(), 'responderGrant', event(50, 300));
   await fireEvent(artwork(), 'responderRelease', event(50, 100));
   expect(router.push).toHaveBeenCalledWith(`/petition/${snapshot.petitions[0].id}`);
+  // With no buttons under the card, screen readers reach the same moves as card actions.
+  const action = (actionName: string) =>
+    fireEvent(artwork(), 'accessibilityAction', { nativeEvent: { actionName } });
+  expect(artwork().props.accessibilityLabel).toMatch(new RegExp(`^${snapshot.petitions[0].title}`));
+  await action('pass');
+  await waitFor(() => expect(screen.queryByText(snapshot.petitions[0].title)).toBeNull());
+  await fireEvent.press(screen.getByLabelText('Undo last pass'));
+  jest.mocked(router.push).mockClear();
+  await action('sign');
+  expect(router.push).toHaveBeenCalledWith(`/petition/${snapshot.petitions[0].id}?sign=1`);
+  await action('activate');
+  expect(router.push).toHaveBeenLastCalledWith(`/petition/${snapshot.petitions[0].id}`);
   expect((await localAdapter.load()).signed).toEqual([]);
   await view.unmount();
   client.clear();

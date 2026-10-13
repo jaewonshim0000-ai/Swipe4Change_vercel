@@ -1,5 +1,5 @@
 import { LocalAdapter, Storage } from '../src/data/local';
-import { demoIds } from '../src/data/seed';
+import { demoIds, seedPetitions } from '../src/data/seed';
 import type { Command } from '../src/domain/model';
 
 type PostCommand = Extract<Command, { type: 'communityPost' }>;
@@ -152,4 +152,84 @@ test('a short report reason is refused', async () => {
   await expect(
     a.execute({ type: 'reportPost', communityId: id, postId: target.id, reason: 'bad' }),
   ).rejects.toThrow(/at least 10 characters/);
+});
+
+const heard = async (a: LocalAdapter, who: string) => {
+  await a.signIn(who);
+  return (await a.load()).notifications
+    .filter((n) => n.kind === 'community' && !n.body.startsWith('You '))
+    .map((n) => n.body);
+};
+
+test('members hear the owner’s announcements and events, never members’ events or the organizer room', async () => {
+  const a = setup();
+  const id = await community(a);
+  await a.signIn(demoIds.jordan);
+  await a.execute(
+    post(id, {
+      body: 'Lighting audit results are in. Thank you all.',
+      kind: 'announcement',
+      space: 'announcements',
+    }),
+  );
+  await a.execute(
+    post(id, {
+      body: 'Moderators only: prep call before the walk.',
+      kind: 'event',
+      space: 'organizers',
+      eventAt: '2026-10-03T18:30',
+      location: 'Online',
+    }),
+  );
+  expect(await heard(a, demoIds.sam)).toEqual([
+    'Riverton working group announcement: Lighting audit results are in. Thank you all.',
+  ]);
+  await a.execute(
+    post(id, {
+      body: 'A member-run study meetup after class.',
+      kind: 'event',
+      eventAt: '2026-10-05T18:30',
+      location: 'Riverton library',
+    }),
+  );
+  expect(await heard(a, demoIds.jordan)).toEqual([]);
+});
+
+test('a new campaign is announced to its community once, when it is first public', async () => {
+  const a = setup();
+  const draft = seedPetitions()[0];
+  await a.signIn(demoIds.sam);
+  await a.execute({ type: 'join', communityId: draft.communityId });
+  await a.signIn(demoIds.maya);
+  // Drafts stay quiet; publishing announces.
+  const quiet = (await a.execute({ type: 'create', draft, publish: false })) as string;
+  await a.execute({ type: 'publish', petitionId: quiet });
+  // Spam is held, so it waits; fixing the wording announces it, and only once.
+  const held = (await a.execute({
+    type: 'create',
+    draft: { ...draft, title: 'Fix the path lights now', summary: 'Crypto giveaway! Click here.' },
+    publish: true,
+  })) as string;
+  expect(await heard(a, demoIds.sam)).toEqual([
+    'New campaign in Riverton students: “A brighter walk home starts here”.',
+  ]);
+  await a.signIn(demoIds.maya);
+  await a.execute({
+    type: 'edit',
+    petitionId: held,
+    patch: { summary: draft.summary },
+    reason: 'Removed the promotional text.',
+  });
+  await a.execute({
+    type: 'edit',
+    petitionId: held,
+    patch: { title: 'Fix the path lights before winter' },
+    reason: 'Clearer title.',
+  });
+  expect(await heard(a, demoIds.sam)).toEqual([
+    'New campaign in Riverton students: “Fix the path lights now”.',
+    'New campaign in Riverton students: “A brighter walk home starts here”.',
+  ]);
+  // The organizer is never told about their own campaign.
+  expect(await heard(a, demoIds.maya)).toEqual([]);
 });
