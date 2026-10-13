@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useCommand, useSnapshot } from '../../src/data/provider';
 import { Topic, topics } from '../../src/domain/model';
-import { communitySchema } from '../../src/domain/rules';
+import { backers, communitySchema } from '../../src/domain/rules';
 import {
   Button,
   Field,
@@ -73,15 +73,17 @@ export default function Communities() {
         Your people, nearby.
       </Text>
       <Text style={[styles.muted, { fontSize: 13.5, lineHeight: 21, marginBottom: 16 }]}>
-        Local groups in a fictional town. Owners endorse petitions and moderate their own space.
+        Local groups in a fictional town. Members vote on which petitions their community backs, and
+        some petitions only members can sign.
       </Text>
       <View style={{ gap: 14 }}>
         <ResponsiveGrid>
           {s.communities.map((c, i) => {
             const on = !!s.profile?.joined.includes(c.id);
-            const campaigns = s.petitions.filter(
-              (p) => p.communityId === c.id && p.status === 'active',
-            ).length;
+            const live = s.petitions.filter((p) => p.status === 'active');
+            const own = live.filter((p) => p.communityId === c.id);
+            const membersOnly = own.filter((p) => p.verification === 'community').length;
+            const backed = live.filter((p) => backers(p).includes(c.id)).length;
             return (
               <Animated.View key={c.id} style={stag(i)}>
                 <View
@@ -145,7 +147,14 @@ export default function Communities() {
                           color: colors.secondary,
                         }}
                       >
-                        {c.members} members · {campaigns} campaigns
+                        {[
+                          `${c.members} members`,
+                          `${own.length} campaigns`,
+                          membersOnly ? `${membersOnly} members-only` : '',
+                          backed ? `${backed} backed` : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </Text>
                       <Press
                         accessibilityLabel={on ? `Leave ${c.name}` : `Join ${c.name}`}

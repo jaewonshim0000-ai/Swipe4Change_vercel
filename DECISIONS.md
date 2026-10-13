@@ -269,3 +269,11 @@ An organizer may split a requested action into one to three asks and compare eac
 - Spam is checked at publication and on every rewording, not only after a report, so it never reaches the feed. A flagged petition is held rather than rejected, because a false positive should cost the organizer an edit, not their work. "Nonsense" joins the categories; the prompt keeps blunt civic speech up.
 - Hosted publication is trustworthy: the database, not the app, marks a new petition pending and hidden, and only the service-role Edge Function records the result, for the exact wording it read (`updated_at` guard). A public petition stays up while a rewording is rechecked.
 - A verified email is required to publish (not to draft), raising the cost of throwaway spam accounts. The owner chose this over a daily limit, duplicate checks and photo screening.
+
+## Community backing by member vote (October 8)
+
+- Communities had discussion, events and moderation but no say in outcomes: an endorsement was one owner's click. Backing is now a member vote, so a community's support means its members decided it, and that decision travels with the petition (card, page, ranking and the packet the recipient receives).
+- The rule is a fixed floor, three yes votes and more yes than no, not a share of members: fictional sample headcounts never vote, and a five-person community should be able to decide. Votes can change until the community backs the petition; then the vote closes and an endorsement records the tally.
+- Votes are private. The hosted table has row-level security with no policies; the snapshot publishes totals plus each person's own votes. The owner's one-click endorse is refused.
+- The seed adds Sam and Jordan to Riverton students and gives the members-only crosswalk petition their two yes votes, so the demo's third vote backs it. The flagship's older sample endorsement shows as backing without a tally.
+- Members-only petitions already worked; they are now named on cards ("Members of … only") and listed on each community page so membership visibly matters for signing.

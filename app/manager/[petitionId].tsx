@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { isDemo, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import {
+  backers,
   canManage,
   changedFields,
   describeEdit,
@@ -139,8 +140,8 @@ export default function Manager() {
         </View>
         <Progress petition={p} />
         <Text style={styles.muted}>
-          {p.updates.length} updates · {p.discussion.length} discussion posts ·{' '}
-          {p.endorsements.length} endorsements
+          {p.updates.length} updates · {p.discussion.length} discussion posts · {backers(p).length}{' '}
+          communities backing
         </Text>
         <Text style={styles.small}>
           {p.viaShares > 0

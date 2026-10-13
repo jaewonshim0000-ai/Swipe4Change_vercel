@@ -164,7 +164,7 @@ test('the packet carries public names only, and never private data', async () =>
     p,
     null,
     s.signatures.filter((x) => x.petitionId === p.id).map((x) => x.displayName),
-    'Riverton students',
+    s.communities,
   );
   expect(text).toContain(p.title.toUpperCase());
   expect(text).toContain(p.action);
@@ -176,7 +176,7 @@ test('the packet carries public names only, and never private data', async () =>
     { ...p, sampleCount: 0, recipient: 'Seattle Department of Transportation' },
     null,
     [],
-    'Riverton students',
+    s.communities,
   );
   expect(real).not.toContain('FICTIONAL');
   expect(real).toContain('not a legal ballot petition');
@@ -193,7 +193,7 @@ test('the packet renders a delivery snapshot when one is given', async () => {
   await a.signIn(demoIds.maya);
   await a.execute({ type: 'deliver', petitionId: id, method: 'portal', note: 'Portal ref 9912.' });
   const p = (await a.load()).petitions.find((x) => x.id === id)!;
-  const text = packetText(p, p.deliveries[0], ['Someone Else Entirely'], 'Riverton students');
+  const text = packetText(p, p.deliveries[0], ['Someone Else Entirely'], []);
   expect(text).toContain('Portal ref 9912.');
   expect(text).toContain('Sam Rivera');
   expect(text).not.toContain('Someone Else Entirely');

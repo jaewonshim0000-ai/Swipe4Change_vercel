@@ -13,6 +13,7 @@ const snapshot: Snapshot = {
   saved: [],
   ripple: null,
   volunteering: [],
+  backingVotes: [],
   signatures: [],
   reports: [],
   notifications: [],

@@ -37,6 +37,7 @@ import {
   signingError,
   communityPostSchema,
   volunteerSchema,
+  backingReached,
 } from '../domain/rules';
 import { profileSchema } from '../domain/personalization';
 import { screenLabels, screenPetition } from '../domain/content-screen';
@@ -50,7 +51,14 @@ import type { CivicAi } from './ai';
 import type { LookupRequest } from '../../supabase/functions/_shared/lookup';
 import { fromBase64, stripJpegMetadata } from '../domain/jpeg';
 import { z } from 'zod';
-import { demoIds, petitionId, seedCommunities, seedPetitions, seedProfiles } from './seed';
+import {
+  demoIds,
+  petitionId,
+  seedCommunities,
+  seedPetitions,
+  seedProfiles,
+  seedVotes,
+} from './seed';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -82,6 +90,8 @@ interface LocalState {
   requests: PrivateRequest[];
   posts: Record<string, CommunityPost[]>;
   postReports?: (PostReport & { userId: string })[];
+  /** Backing votes, one per member, community and petition. Optional for older saved demos. */
+  votes?: { petitionId: string; communityId: string; userId: string; support: boolean }[];
   notifications: Record<string, Entry[]>;
 }
 export const STORAGE_KEY = 'lookaware.demo.v1';
@@ -110,6 +120,7 @@ const initial = (): LocalState => ({
   requests: [],
   posts: {},
   postReports: [],
+  votes: seedVotes.map((v) => ({ ...v })),
   notifications: {},
 });
 export class LocalAdapter implements Adapter {
@@ -198,6 +209,7 @@ export class LocalAdapter implements Adapter {
                 x.petitionId === p.id && now - Date.parse(x.signedAt ?? '') < VELOCITY_WINDOW_MS,
             ).length,
           deliveries: p.deliveries ?? [],
+          backing: p.backing ?? [],
           volunteerCount:
             p.sampleVolunteers + (s.volunteers ?? []).filter((v) => v.petitionId === p.id).length,
           responses: p.responses.filter(
@@ -217,6 +229,9 @@ export class LocalAdapter implements Adapter {
         .filter((v) => v.userId === s.session)
         .map((v) => ({ petitionId: v.petitionId, roles: v.roles, note: v.note })),
       signed: s.signatures.filter((x) => x.userId === s.session).map((x) => x.petitionId),
+      backingVotes: (s.votes ?? [])
+        .filter((v) => v.userId === s.session)
+        .map(({ userId: _private, ...v }) => v),
       // The signing timestamp stays private: an exact time would let anyone correlate an
       // "anonymous" supporter with whoever was visibly active on the app at that moment.
       signatures: s.signatures.map(
@@ -679,6 +694,7 @@ export class LocalAdapter implements Adapter {
           updates: [],
           edits: [],
           endorsements: [],
+          backing: [],
           discussion: [],
           responses: [],
           viaShares: 0,
@@ -875,17 +891,41 @@ export class LocalAdapter implements Adapter {
         );
         return;
       }
-      if (c.type === 'endorse') {
-        const community = communities.find((x) => x.id === c.communityId && x.ownerId === user.id);
-        if (!community) throw new Error('Only a community owner may endorse on its behalf.');
-        if (p.endorsements.some((e) => e.author === community.name))
-          throw new Error('This community has already endorsed the petition.');
+      if (c.type === 'backVote') {
+        const community = communities.find((x) => x.id === c.communityId);
+        if (!community) throw new Error('Community not found.');
+        if (!user.joined.includes(community.id))
+          throw new Error('Only members of this community can vote on backing it.');
+        if (p.status !== 'active' || p.hidden)
+          throw new Error('This petition is not open for a community vote.');
+        const backing = (p.backing ??= []);
+        let tally = backing.find((b) => b.communityId === community.id);
+        if (tally?.backedAt) throw new Error('This community already backs this petition.');
+        const votes = (s.votes ??= []).filter(
+          (v) => !(v.petitionId === p.id && v.communityId === community.id && v.userId === user.id),
+        );
+        votes.push({
+          petitionId: p.id,
+          communityId: community.id,
+          userId: user.id,
+          support: c.support,
+        });
+        s.votes = votes;
+        const cast = votes.filter((v) => v.petitionId === p.id && v.communityId === community.id);
+        if (!tally) backing.push((tally = { communityId: community.id, yes: 0, no: 0 }));
+        tally.yes = cast.filter((v) => v.support).length;
+        tally.no = cast.length - tally.yes;
+        if (!backingReached(tally.yes, tally.no)) return;
+        tally.backedAt = new Date().toISOString();
         p.endorsements.push({
-          ...entry(`${community.name} endorses this requested action.`, 'endorsement'),
+          ...entry(
+            `${community.name} members voted to back this (${tally.yes} yes · ${tally.no} no).`,
+            'endorsement',
+          ),
           author: community.name,
         });
-        notify(managers(p), `${community.name} endorsed “${p.title}”.`, 'endorsement');
-        return;
+        notify(managers(p), `${community.name} voted to back “${p.title}”.`, 'endorsement');
+        return 'backed';
       }
       if (!canManage(p, user))
         throw new Error('Only the owner or an authorized collaborator can manage this petition.');

@@ -1,6 +1,6 @@
 import { prepareSubmission } from './signature-fixture';
 import { LocalAdapter, Storage } from '../src/data/local';
-import { demoIds, seedPetitions } from '../src/data/seed';
+import { communityId, demoIds, seedPetitions } from '../src/data/seed';
 
 import { crossedMilestone, reachedMilestones } from '../src/domain/rules';
 function setup() {
@@ -23,7 +23,7 @@ async function publish(a: LocalAdapter) {
 }
 const bodies = async (a: LocalAdapter) => (await a.load()).notifications.map((n) => n.body);
 
-test('organizers are told about signatures, discussion, endorsements and eligibility requests', async () => {
+test('organizers are told about signatures, discussion, community backing and eligibility requests', async () => {
   const { adapter: a } = setup();
   const id = await publish(a);
   await a.signIn(demoIds.sam);
@@ -39,16 +39,21 @@ test('organizers are told about signatures, discussion, endorsements and eligibi
     body: 'Where does the route start?',
     kind: 'question',
   });
-  await a.execute({
-    type: 'endorse',
-    petitionId: id,
-    communityId: (await a.load()).communities[1].id,
-  });
+  // Three Riverton students members vote yes, so the community backs it.
+  for (const voter of [demoIds.maya, demoIds.sam, demoIds.jordan]) {
+    await a.signIn(voter);
+    await a.execute({
+      type: 'backVote',
+      petitionId: id,
+      communityId: communityId(1),
+      support: true,
+    });
+  }
   await a.signIn(demoIds.maya);
   const maya = await bodies(a);
   expect(maya.some((b) => b.includes('Anonymous supporter signed'))).toBe(true);
   expect(maya.some((b) => b.includes('posted a question'))).toBe(true);
-  expect(maya.some((b) => b.includes('endorsed'))).toBe(true);
+  expect(maya.some((b) => b.includes('Riverton students voted to back'))).toBe(true);
   // An anonymous signer's real name never reaches the organizer.
   expect(maya.some((b) => b.includes('Sam Rivera') && b.includes('signed'))).toBe(false);
 });

@@ -17,8 +17,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { Petition, Snapshot, verificationLabels } from '../domain/model';
-import { daysLeft, milestoneLabel } from '../domain/discovery';
+import { Petition, Snapshot } from '../domain/model';
+import { backerNames, daysLeft, milestoneLabel, requirementLabel } from '../domain/discovery';
 import { recordSignal } from '../data/signals';
 import { useSave } from './petition-card';
 import { Bar, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
@@ -455,7 +455,7 @@ export function SwipeDeck({
                     color: colors.onImage,
                   }}
                 >
-                  {current.city} · {verificationLabels[current.verification]}
+                  {current.city} · {requirementLabel(current, snapshot.communities)}
                 </Text>
               </View>
               <View style={{ marginTop: 2 }}>
@@ -473,6 +473,14 @@ export function SwipeDeck({
                   {milestoneLabel(current)}
                 </Text>
               </View>
+              {backerNames(current, snapshot.communities).length > 0 && (
+                <Text
+                  numberOfLines={1}
+                  style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.white }}
+                >
+                  ★ Backed by {backerNames(current, snapshot.communities).join(', ')}
+                </Text>
+              )}
               {!!reasons?.get(current.id)?.[0] && (
                 <Text
                   numberOfLines={2}
