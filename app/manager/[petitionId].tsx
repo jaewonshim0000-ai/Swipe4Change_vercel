@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -179,6 +179,24 @@ export default function Manager() {
         )}
         <HeldNotice petition={p} />
       </Panel>
+      {/* Posters print from the web: a phone's app link would not open for people scanning. */}
+      {Platform.OS === 'web' && p.status === 'active' && (
+        <Panel>
+          <Text style={styles.h2}>Collect signatures in person</Text>
+          <Text style={styles.muted}>
+            Print a poster with a QR code that opens this petition, and put it where the people
+            affected will see it.
+          </Text>
+          <View style={styles.row}>
+            <Button
+              title="Print a poster"
+              icon="qr-code-outline"
+              variant="secondary"
+              onPress={() => router.push(`/poster/${p.id}`)}
+            />
+          </View>
+        </Panel>
+      )}
       <Panel>
         <Text style={styles.h2}>Send it to the recipient</Text>
         <Text style={styles.muted}>

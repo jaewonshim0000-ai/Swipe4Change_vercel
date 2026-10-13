@@ -1,6 +1,6 @@
 import { readingFrame } from '../../src/components/responsive';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Linking, Pressable, Text, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -1155,6 +1155,17 @@ function PetitionPage({
           <View style={{ marginTop: 14 }}>
             <RipplePanel petition={p} snapshot={s} />
           </View>
+          {/* Posters print from the web: a phone's app link would not open for people scanning. */}
+          {Platform.OS === 'web' && p.status === 'active' && (
+            <View style={{ alignItems: 'center', marginTop: 8 }}>
+              <Button
+                title="Print a poster with a QR code"
+                icon="qr-code-outline"
+                variant="ghost"
+                onPress={() => router.push(`/poster/${p.id}`)}
+              />
+            </View>
+          )}
           <Text
             style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 8 }]}
           >

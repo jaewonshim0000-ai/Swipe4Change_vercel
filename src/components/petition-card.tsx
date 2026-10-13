@@ -12,16 +12,20 @@ import { haptic, stag } from './motion';
 import { colors, fonts } from './theme';
 
 /**
- * Once you have signed, your share link carries your ripple code, so everyone who signs through it
- * joins your ripple. Before that it is a plain link: a ripple only credits people who signed.
+ * A petition's link. Once you have signed, it carries your ripple code, so everyone who signs
+ * through it joins your ripple. Before that it is a plain link: a ripple only credits signers.
  */
+export function petitionLink(p: Petition, s: Snapshot, origin: string) {
+  const via = s.ripple && s.signed.includes(p.id) ? `?via=${s.ripple.code}` : '';
+  return `${origin}/petition/${p.id}${via}`;
+}
+
 export async function sharePetition(p: Petition, s: Snapshot) {
   void recordSignal(s.profile, p.id, 'share');
-  const via = s.ripple && s.signed.includes(p.id) ? `?via=${s.ripple.code}` : '';
-  const url = `${Platform.OS === 'web' ? window.location.origin : 'swipe4change:/'}/petition/${p.id}${via}`;
+  const url = petitionLink(p, s, Platform.OS === 'web' ? window.location.origin : 'swipe4change:/');
   if (Platform.OS === 'web') {
     await Clipboard.setStringAsync(url);
-    return via
+    return url.includes('?via=')
       ? 'Link copied — it carries your private ripple code.'
       : 'Petition link copied. Share it with your community.';
   }
