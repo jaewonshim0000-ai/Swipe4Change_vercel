@@ -46,9 +46,7 @@ export function DraftWriter({ form }: { form: UseFormReturn<Draft> }) {
         marginBottom: 14,
       }}
     >
-      <Text style={[styles.label, { fontSize: 10.5, letterSpacing: 1.2 }]}>
-        Write it for me ✦ AI
-      </Text>
+      <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.2 }]}>Write it for me ✦ AI</Text>
       <Text
         style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.secondary }}
       >
@@ -74,11 +72,11 @@ export function DraftWriter({ form }: { form: UseFormReturn<Draft> }) {
           <Notice text="Drafted below. Read each field and change anything that isn’t quite right." />
           {writer.data.questions.length > 0 && (
             <View style={{ gap: 2 }}>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.secondary }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
                 Make it stronger by adding:
               </Text>
               {writer.data.questions.map((q) => (
-                <Text key={q} style={[styles.muted, { fontSize: 12.5 }]}>
+                <Text key={q} style={[styles.muted, { fontSize: 13 }]}>
                   • {q}
                 </Text>
               ))}

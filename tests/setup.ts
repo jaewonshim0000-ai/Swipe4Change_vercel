@@ -17,6 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () => {
 jest.mock('@clerk/expo', () => ({
   ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
   useAuth: jest.fn(),
+  useUser: jest.fn(() => ({ user: null })),
 }));
 jest.mock('@clerk/expo/token-cache', () => ({ tokenCache: {} }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => `mock-${Math.random()}` }));

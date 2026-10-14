@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Notice, colors, fonts } from '../../src/components/ui';
 import { ClerkLogin } from '../../src/components/clerk-login';
+import { Wordmark, betaNotice } from '../../src/components/wordmark';
 import { isDemo, useBackend, useSnapshot } from '../../src/data/provider';
 import { useResponsiveLayout } from '../../src/components/responsive';
 import { demoIds } from '../../src/data/seed';
@@ -53,9 +54,7 @@ export default function Welcome() {
             gap: 8,
           }}
         >
-          <Text style={{ fontFamily: fonts.display, fontSize: 24, color: colors.ink }}>
-            Swipe4Change
-          </Text>
+          <Wordmark size={24} />
           <Button
             title="Back to browsing"
             variant="ghost"
@@ -143,7 +142,10 @@ export default function Welcome() {
             ) : q.data?.profile ? (
               <Button title="Continue to your feed" onPress={() => router.replace('/')} />
             ) : (
-              <ClerkLogin mode={signingUp ? 'sign-up' : 'sign-in'} />
+              <>
+                <Notice text={betaNotice} />
+                <ClerkLogin mode={signingUp ? 'sign-up' : 'sign-in'} />
+              </>
             )}
             {!!error && <Notice error text={error} />}
           </View>

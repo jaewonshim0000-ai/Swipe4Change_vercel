@@ -58,3 +58,66 @@ test('scopes private receipt and moderation reads to the requested resource', as
 test('empty snapshot fails instead of falling back to fictional data', async () => {
   await expect(createSupabaseAdapter(async () => null).load()).rejects.toThrow('No data returned');
 });
+test('deleting an account removes the owner’s photos, then the account records', async () => {
+  const order: string[] = [];
+  const remove = jest.fn(async () => {
+    order.push('photos');
+    return { data: [], error: null };
+  });
+  jest.mocked(createClient).mockReturnValue({
+    rpc,
+    functions: { invoke },
+    storage: { from: () => ({ remove }) },
+  } as unknown as ReturnType<typeof createClient>);
+  const photo = (name: string) => ({
+    url: `https://example.supabase.co/storage/v1/object/public/petition-photos/${name}`,
+    alt: 'A dark path',
+  });
+  rpc.mockImplementation(async (name: string, args: unknown) => {
+    if (name === 'lookaware_snapshot')
+      return {
+        data: {
+          profile: { id: 'me' },
+          notifications: [],
+          petitions: [
+            { id: 'a', ownerId: 'me', photo: photo('mine.jpg') },
+            { id: 'b', ownerId: 'someone', photo: photo('theirs.jpg') },
+            { id: 'c', ownerId: 'me' },
+          ],
+        },
+        error: null,
+      };
+    order.push(`${name} ${JSON.stringify(args)}`);
+    return { data: null, error: null };
+  });
+  await createSupabaseAdapter(async () => 'token').deleteAccount();
+  expect(remove).toHaveBeenCalledWith(['mine.jpg']);
+  expect(order).toEqual(['photos', 'lookaware_command {"command":{"type":"delete_account"}}']);
+});
+test('a photo that cannot be removed stops the deletion before any record is touched', async () => {
+  jest.mocked(createClient).mockReturnValue({
+    rpc,
+    functions: { invoke },
+    storage: {
+      from: () => ({ remove: async () => ({ data: null, error: { message: 'offline' } }) }),
+    },
+  } as unknown as ReturnType<typeof createClient>);
+  rpc.mockResolvedValue({
+    data: {
+      profile: { id: 'me' },
+      notifications: [],
+      petitions: [
+        {
+          id: 'a',
+          ownerId: 'me',
+          photo: { url: 'https://x.supabase.co/storage/v1/object/public/petition-photos/m.jpg' },
+        },
+      ],
+    },
+    error: null,
+  });
+  await expect(createSupabaseAdapter(async () => 'token').deleteAccount()).rejects.toThrow(
+    /photos could not be removed/,
+  );
+  expect(rpc).not.toHaveBeenCalledWith('lookaware_command', expect.anything());
+});

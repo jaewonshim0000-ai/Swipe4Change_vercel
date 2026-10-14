@@ -33,7 +33,7 @@ export function SendPacket({
     p,
     null,
     s.signatures.filter((x) => x.petitionId === p.id).map((x) => x.displayName),
-    s.communities.find((c) => c.id === p.communityId)?.name ?? 'an independent organizer',
+    s.communities,
   );
   const text = lines.join('\n');
   const form = official?.contactForm ?? official?.url;
@@ -77,8 +77,8 @@ export function SendPacket({
   return (
     <View style={{ gap: 10 }}>
       {official && (
-        <View style={{ backgroundColor: colors.soft, borderRadius: 16, padding: 12, gap: 3 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.ink }}>
+        <View style={{ backgroundColor: colors.soft, borderRadius: 14, padding: 12, gap: 3 }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
             {official.name} · {official.office} ({official.district})
           </Text>
           {official.phone && <Text style={styles.muted}>Phone: {official.phone}</Text>}

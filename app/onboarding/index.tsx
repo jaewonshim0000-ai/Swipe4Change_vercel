@@ -4,11 +4,15 @@ import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { Topic, topics } from '../../src/domain/model';
 import { useCommand, useSnapshot } from '../../src/data/provider';
-import { Button, Notice, colors, fonts, styles } from '../../src/components/ui';
+import { Button, Field, Notice, colors, fonts, styles } from '../../src/components/ui';
 import { Press, Scrim, Screen, StepBars, toast, topicImage } from '../../src/components/kit';
 import { Glyph } from '../../src/components/glyph';
 import { CitySheet } from '../../src/components/city-picker';
 import { stag, transition } from '../../src/components/motion';
+import { profileSchema } from '../../src/domain/personalization';
+
+/** The name every new live account starts with until the person chooses their own. */
+const placeholderName = 'Community member';
 
 export default function Onboarding() {
   const q = useSnapshot();
@@ -16,8 +20,20 @@ export default function Onboarding() {
   const [selected, setSelected] = useState<Topic[]>(q.data?.profile?.interests ?? []);
   const [city, setCity] = useState(q.data?.profile?.city ?? '');
   const [picking, setPicking] = useState(false);
-  const first = q.data?.profile?.name.split(' ')[0];
-  function complete(skip = false) {
+  const profile = q.data?.profile;
+  const [name, setName] = useState(profile?.name === placeholderName ? '' : (profile?.name ?? ''));
+  const [agreed, setAgreed] = useState(false);
+  const first = profile?.name === placeholderName ? undefined : profile?.name.split(' ')[0];
+  async function complete(skip = false) {
+    const chosen = profileSchema.shape.name.safeParse(name);
+    if (!chosen.success) {
+      toast('Add your name: at least two characters.');
+      return;
+    }
+    if (!agreed) {
+      toast('Confirm you’re 13 or older and agree to the Terms to continue.');
+      return;
+    }
     if (!skip && selected.length < 3) {
       toast('Choose at least three interests, or skip.');
       return;
@@ -26,10 +42,19 @@ export default function Onboarding() {
       setPicking(true);
       return;
     }
-    command.mutate(
-      { type: 'onboard', city, interests: skip ? [] : selected },
-      { onSuccess: () => router.replace('/(tabs)') },
-    );
+    try {
+      if (profile && chosen.data !== profile.name)
+        await command.mutateAsync({
+          type: 'profile',
+          name: chosen.data,
+          bio: profile.bio ?? '',
+          useSigningHistory: profile.useSigningHistory ?? true,
+        });
+      await command.mutateAsync({ type: 'onboard', city, interests: skip ? [] : selected });
+      router.replace('/(tabs)');
+    } catch {
+      // command.error explains what went wrong below the buttons.
+    }
   }
   return (
     <Screen tabs={false} enter="slide">
@@ -68,7 +93,7 @@ export default function Onboarding() {
                   style={[
                     {
                       height: 118,
-                      borderRadius: 22,
+                      borderRadius: 24,
                       overflow: 'hidden',
                       transform: [{ scale: on ? 1 : 0.97 }],
                       filter: on ? 'saturate(1)' : 'saturate(0.55)',
@@ -90,7 +115,7 @@ export default function Onboarding() {
                         right: 10,
                         width: 26,
                         height: 26,
-                        borderRadius: 13,
+                        borderRadius: 999,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: on ? colors.white : 'rgba(255,255,255,0.3)',
@@ -111,7 +136,7 @@ export default function Onboarding() {
                       right: 12,
                       bottom: 11,
                       fontFamily: fonts.semibold,
-                      fontSize: 14,
+                      fontSize: 14.5,
                       lineHeight: 17,
                       color: colors.white,
                     }}
@@ -127,7 +152,7 @@ export default function Onboarding() {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        borderRadius: 22,
+                        borderRadius: 24,
                         borderWidth: 3,
                         borderColor: on ? colors.dark : 'rgba(28,31,25,0)',
                       },
@@ -147,7 +172,7 @@ export default function Onboarding() {
         style={{
           marginTop: 18,
           backgroundColor: colors.white,
-          borderRadius: 22,
+          borderRadius: 24,
           paddingVertical: 14,
           paddingHorizontal: 16,
           flexDirection: 'row',
@@ -158,13 +183,13 @@ export default function Onboarding() {
       >
         <Glyph name="pin" size={18} color={colors.accent} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
             Approximate city and state
           </Text>
           <Text
             style={{
               fontFamily: fonts.semibold,
-              fontSize: 15,
+              fontSize: 14.5,
               color: city ? colors.ink : colors.muted,
               paddingTop: 3,
             }}
@@ -176,16 +201,72 @@ export default function Onboarding() {
           Change
         </Text>
       </Pressable>
-      <Text style={[styles.micro, { fontSize: 11.5, paddingHorizontal: 6, paddingTop: 10 }]}>
+      <Text style={[styles.micro, { fontSize: 12, paddingHorizontal: 6, paddingTop: 10 }]}>
         Only your city and state are saved — never your exact location or political affiliation.
       </Text>
       <CitySheet visible={picking} onClose={() => setPicking(false)} onPick={setCity} />
+      <View style={{ marginTop: 18, gap: 6 }}>
+        <Field
+          label="Your name"
+          value={name}
+          onChangeText={setName}
+          maxLength={100}
+          autoComplete="name"
+          placeholder="First and last name"
+        />
+        <Text style={[styles.micro, { fontSize: 12, paddingHorizontal: 6 }]}>
+          Public on petitions, updates and posts you write. When you sign, you choose your full
+          name, first name and initial, or anonymous.
+        </Text>
+      </View>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: agreed }}
+        accessibilityLabel="I’m 13 or older and agree to the Terms and Privacy Policy"
+        onPress={() => setAgreed(!agreed)}
+        style={{
+          marginTop: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          minHeight: 44,
+        }}
+      >
+        <View
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 8,
+            borderWidth: 2,
+            borderColor: colors.dark,
+            backgroundColor: agreed ? colors.dark : colors.white,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {agreed && (
+            <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.white }}>✓</Text>
+          )}
+        </View>
+        <Text style={[styles.body, { flex: 1, fontSize: 14.5 }]}>
+          I’m 13 or older and agree to the Terms and Privacy Policy
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="link"
+        onPress={() => router.push('/legal')}
+        style={{ minHeight: 44, justifyContent: 'center', paddingLeft: 36 }}
+      >
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
+          Read the Terms and Privacy Policy ›
+        </Text>
+      </Pressable>
       <Press
         accessibilityLabel={
           selected.length < 3 ? `Pick ${3 - selected.length} more` : 'Find my community'
         }
         disabled={command.isPending}
-        onPress={() => complete()}
+        onPress={() => void complete()}
         style={{
           marginTop: 18,
           minHeight: 54,
@@ -196,7 +277,7 @@ export default function Onboarding() {
           opacity: selected.length < 3 ? 0.4 : 1,
         }}
       >
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}>
           {selected.length < 3 ? `Pick ${3 - selected.length} more` : 'Find my community →'}
         </Text>
       </Press>
@@ -204,7 +285,7 @@ export default function Onboarding() {
         title="Skip for now"
         variant="ghost"
         disabled={command.isPending}
-        onPress={() => complete(true)}
+        onPress={() => void complete(true)}
         style={{ marginTop: 4 }}
       />
       {command.error && <Notice error text={command.error.message} />}

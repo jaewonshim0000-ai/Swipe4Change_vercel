@@ -1,4 +1,5 @@
 import type { SignatureReceipt, SignatureSubmission } from './signature-record';
+import type { TrendCount } from './trend';
 import type { LookupRequest, LookupResponse } from '../../supabase/functions/_shared/lookup';
 import { petitionTopics } from '../../supabase/functions/_shared/civic-rules';
 import type { ScreenCategory } from '../../supabase/functions/_shared/civic-rules';
@@ -119,6 +120,18 @@ export interface Source {
   label: string;
   url: string;
 }
+/**
+ * One community's vote on backing a petition. Members vote yes or no; the community backs it once
+ * the rule in backingReached() is met, and the vote then closes. Only tallies are public, never
+ * who voted which way.
+ */
+export interface Backing {
+  communityId: string;
+  yes: number;
+  no: number;
+  /** When the community came to back the petition. Absent while the vote is still open. */
+  backedAt?: string;
+}
 export interface Petition {
   id: string;
   ownerId: string;
@@ -183,6 +196,8 @@ export interface Petition {
   updates: Entry[];
   edits: Entry[];
   endorsements: Entry[];
+  /** Community votes on backing this petition, open or decided. Communities with no votes are absent. */
+  backing: Backing[];
   discussion: Entry[];
   responses: Response[];
 }
@@ -273,6 +288,8 @@ export interface Snapshot {
   /** This account's own offers of help. Other people's offers are organizer-only. */
   volunteering: { petitionId: string; roles: VolunteerRole[]; note: string }[];
   signed: string[];
+  /** This account's own backing votes. Other members' votes are never sent, only tallies. */
+  backingVotes: { petitionId: string; communityId: string; support: boolean }[];
   signatures: PublicSignature[];
   reports: Report[];
   notifications: Entry[];
@@ -391,7 +408,8 @@ export type Command =
       reportId: string;
       action: 'actioned' | 'dismissed';
     }
-  | { type: 'endorse'; petitionId: string; communityId: string }
+  /** A member's yes or no on whether their community backs the petition; changeable until it does. */
+  | { type: 'backVote'; petitionId: string; communityId: string; support: boolean }
   | { type: 'report'; petitionId: string; reason: string }
   /** An empty url removes the link. */
   | { type: 'donationLink'; petitionId: string; url: string }
@@ -439,8 +457,12 @@ export interface Adapter {
   signIn(account: string): Promise<void>;
   signOut(): Promise<void>;
   reset(): Promise<void>;
+  /** Live accounts only: removes personal records and photos; public writing stays unattributed. */
+  deleteAccount(): Promise<void>;
   requests(petitionId: string): Promise<EligibilityRequest[]>;
   volunteers(petitionId: string): Promise<Volunteer[]>;
+  /** Organizer-only: real signatures per day for the last two weeks, by where they came from. */
+  signatureTrend(petitionId: string): Promise<TrendCount[]>;
   communityPosts(communityId: string): Promise<CommunityPost[]>;
   /** Moderator-only queue of reported posts in one community. */
   communityReports(communityId: string): Promise<PostReport[]>;

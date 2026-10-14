@@ -1,4 +1,4 @@
-import { Delivery, Petition, identityLabels, verificationLabels } from './model';
+import { Community, Delivery, Petition, identityLabels, verificationLabels } from './model';
 import { findOffice, levelLabels } from './recipients';
 
 /**
@@ -16,9 +16,21 @@ export function packetLines(
   p: Petition,
   delivery: Delivery | null,
   liveSignatories: string[],
-  communityName: string,
+  communities: Community[],
   now = Date.now(),
 ): string[] {
+  const communityName =
+    communities.find((c) => c.id === p.communityId)?.name ?? 'an independent organizer';
+  // Backing is a member vote, so the recipient sees which communities decided it and by how much.
+  // A delivered packet lists only backing that existed when it was sent.
+  const backing = p.backing.flatMap((b) => {
+    const decided =
+      b.backedAt && (!delivery || Date.parse(b.backedAt) <= Date.parse(delivery.deliveredAt));
+    const name = decided && communities.find((c) => c.id === b.communityId)?.name;
+    return name
+      ? [`  · ${name}${b.yes + b.no ? ` — members voted ${b.yes} yes · ${b.no} no` : ''}`]
+      : [];
+  });
   const office = findOffice(delivery?.recipient ?? p.recipient);
   const signatories = delivery ? delivery.signatories : liveSignatories;
   const count = delivery ? delivery.signatureCount : p.count;
@@ -72,6 +84,7 @@ export function packetLines(
           '',
         ]
       : []),
+    ...(backing.length ? ['BACKED BY COMMUNITIES', ...backing, ''] : []),
     'SIGNATURES',
     `${count.toLocaleString()} signatures toward a goal of ${p.goal.toLocaleString()}.`,
     ...(p.sampleCount > 0

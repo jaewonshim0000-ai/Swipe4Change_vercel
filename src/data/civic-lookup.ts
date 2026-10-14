@@ -3,9 +3,11 @@ import type { OfficialsResult } from '../../supabase/functions/_shared/officials
 import type { RecipientQuestion } from '../../supabase/functions/_shared/civic-ai';
 import { normalizeCity, sameCity, sampleCities } from '../domain/location';
 import { cityCentre } from './places';
-import { useBackend } from './provider';
+import { isDemo, useBackend } from './provider';
 
-export const isSampleCity = (city: string) => sampleCities.some((c) => sameCity(c.city, city));
+/** The demo's fictional towns. The real app treats those names like any other place. */
+export const isSampleCity = (city: string) =>
+  isDemo && sampleCities.some((c) => sameCity(c.city, city));
 
 /** Elected officials for a city: two U.S. senators, the House member, and state legislators. */
 export function useOfficials(city: string | undefined) {

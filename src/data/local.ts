@@ -37,8 +37,10 @@ import {
   signingError,
   communityPostSchema,
   volunteerSchema,
+  backingReached,
 } from '../domain/rules';
 import { profileSchema } from '../domain/personalization';
+import { countTrend } from '../domain/trend';
 import { screenLabels, screenPetition } from '../domain/content-screen';
 import {
   PetitionText,
@@ -50,7 +52,14 @@ import type { CivicAi } from './ai';
 import type { LookupRequest } from '../../supabase/functions/_shared/lookup';
 import { fromBase64, stripJpegMetadata } from '../domain/jpeg';
 import { z } from 'zod';
-import { demoIds, petitionId, seedCommunities, seedPetitions, seedProfiles } from './seed';
+import {
+  demoIds,
+  petitionId,
+  seedCommunities,
+  seedPetitions,
+  seedProfiles,
+  seedVotes,
+} from './seed';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -67,6 +76,8 @@ interface LocalState {
   receipts?: (SignatureReceipt & { userId: string })[];
   /** Who brought whom, keyed by the signature it credits. Private: only counts leave this file. */
   referrals?: { signatureId: string; referrerId: string }[];
+  /** Published petitions not yet announced to their community, because the check holds them. */
+  toAnnounce?: string[];
   drafts?: (SavedDraft & { userId: string })[];
   version: 1;
   session: string | null;
@@ -82,6 +93,8 @@ interface LocalState {
   requests: PrivateRequest[];
   posts: Record<string, CommunityPost[]>;
   postReports?: (PostReport & { userId: string })[];
+  /** Backing votes, one per member, community and petition. Optional for older saved demos. */
+  votes?: { petitionId: string; communityId: string; userId: string; support: boolean }[];
   notifications: Record<string, Entry[]>;
 }
 export const STORAGE_KEY = 'lookaware.demo.v1';
@@ -110,6 +123,7 @@ const initial = (): LocalState => ({
   requests: [],
   posts: {},
   postReports: [],
+  votes: seedVotes.map((v) => ({ ...v })),
   notifications: {},
 });
 export class LocalAdapter implements Adapter {
@@ -198,6 +212,7 @@ export class LocalAdapter implements Adapter {
                 x.petitionId === p.id && now - Date.parse(x.signedAt ?? '') < VELOCITY_WINDOW_MS,
             ).length,
           deliveries: p.deliveries ?? [],
+          backing: p.backing ?? [],
           volunteerCount:
             p.sampleVolunteers + (s.volunteers ?? []).filter((v) => v.petitionId === p.id).length,
           responses: p.responses.filter(
@@ -217,6 +232,9 @@ export class LocalAdapter implements Adapter {
         .filter((v) => v.userId === s.session)
         .map((v) => ({ petitionId: v.petitionId, roles: v.roles, note: v.note })),
       signed: s.signatures.filter((x) => x.userId === s.session).map((x) => x.petitionId),
+      backingVotes: (s.votes ?? [])
+        .filter((v) => v.userId === s.session)
+        .map(({ userId: _private, ...v }) => v),
       // The signing timestamp stays private: an exact time would let anyone correlate an
       // "anonymous" supporter with whoever was visibly active on the app at that moment.
       signatures: s.signatures.map(
@@ -265,6 +283,9 @@ export class LocalAdapter implements Adapter {
       s.session = null;
     });
   }
+  async deleteAccount() {
+    throw new Error('The demo has no real accounts. Use Reset all local demo data instead.');
+  }
   async reset() {
     const next = initial();
     for (const id of [...next.profiles.map((p) => p.id), 'guest'])
@@ -282,6 +303,27 @@ export class LocalAdapter implements Adapter {
       (s.volunteers ?? [])
         .filter((v) => v.petitionId === petitionId)
         .map(({ userId: _private, ...v }) => v),
+    );
+  }
+  /** Organizer-only day counts. Which signer arrived how never leaves this method. */
+  async signatureTrend(petitionId: string, now = Date.now()) {
+    const s = await this.read();
+    const p = s.petitions.find((p) => p.id === petitionId);
+    if (!p || !canManage(p, s.profiles.find((u) => u.id === s.session) ?? null))
+      throw new Error('Only organizers can see signature trends.');
+    const viaLink = new Set((s.referrals ?? []).map((r) => r.signatureId));
+    return countTrend(
+      s.signatures
+        .filter((x) => x.petitionId === petitionId)
+        .map((x) => ({
+          signedAt: x.signedAt,
+          source: viaLink.has(x.id)
+            ? ('link' as const)
+            : s.profiles.find((u) => u.id === x.userId)?.joined.includes(p.communityId)
+              ? ('community' as const)
+              : ('other' as const),
+        })),
+      now,
     );
   }
   /** True when the reader owns or moderates the community. */
@@ -424,6 +466,26 @@ export class LocalAdapter implements Adapter {
       /** Owner and collaborators, minus the actor. */
       const managers = (p: Petition) =>
         [p.ownerId, ...p.collaborators].filter((id) => id !== user.id);
+      /** A community's members, minus the given people. */
+      const members = (communityId: string, skip: string[]) =>
+        s.profiles
+          .filter((p) => p.joined.includes(communityId) && !skip.includes(p.id))
+          .map((p) => p.id);
+      /**
+       * A new campaign is announced to its community once, the first time it is actually public:
+       * at publication, or when wording held by the check is fixed. Restorations never re-announce.
+       */
+      const announce = (p: Petition) => {
+        if (!s.toAnnounce?.includes(p.id) || p.hidden || p.status !== 'active') return;
+        s.toAnnounce = s.toAnnounce.filter((id) => id !== p.id);
+        const community = communities.find((x) => x.id === p.communityId);
+        if (community)
+          notify(
+            members(community.id, [p.ownerId, ...p.collaborators]),
+            `New campaign in ${community.name}: “${p.title}”.`,
+            'community',
+          );
+      };
       if (c.type === 'profile') {
         Object.assign(user, profileSchema.parse(c));
         return;
@@ -526,6 +588,14 @@ export class LocalAdapter implements Adapter {
           ...(v.kind === 'event' ? { eventAt: v.eventAt, location: v.location ?? '' } : {}),
         };
         s.posts[c.communityId] = [...(s.posts[c.communityId] ?? []), post];
+        // Members hear from the people who run the community. A member's own event still lists
+        // under Events but notifies no one, and the private organizer room never does.
+        if (moderator && v.space !== 'organizers' && ['announcement', 'event'].includes(v.kind))
+          notify(
+            members(c.communityId, [user.id]),
+            `${community.name} ${v.kind}: ${post.body.length > 100 ? `${post.body.slice(0, 99)}…` : post.body}`,
+            'community',
+          );
         return;
       }
       if (c.type === 'reportPost') {
@@ -679,12 +749,17 @@ export class LocalAdapter implements Adapter {
           updates: [],
           edits: [],
           endorsements: [],
+          backing: [],
           discussion: [],
           responses: [],
           viaShares: 0,
           ...(ai.tags ? { tags: ai.tags } : {}),
         });
         screened(s.petitions[0]);
+        if (c.publish) {
+          (s.toAnnounce ??= []).push(id);
+          announce(s.petitions[0]);
+        }
         if (c.draftId)
           s.drafts = (s.drafts ?? []).filter((d) => d.id !== c.draftId || d.userId !== user.id);
         if (c.publish && !user.badges.includes('Change starter'))
@@ -875,17 +950,41 @@ export class LocalAdapter implements Adapter {
         );
         return;
       }
-      if (c.type === 'endorse') {
-        const community = communities.find((x) => x.id === c.communityId && x.ownerId === user.id);
-        if (!community) throw new Error('Only a community owner may endorse on its behalf.');
-        if (p.endorsements.some((e) => e.author === community.name))
-          throw new Error('This community has already endorsed the petition.');
+      if (c.type === 'backVote') {
+        const community = communities.find((x) => x.id === c.communityId);
+        if (!community) throw new Error('Community not found.');
+        if (!user.joined.includes(community.id))
+          throw new Error('Only members of this community can vote on backing it.');
+        if (p.status !== 'active' || p.hidden)
+          throw new Error('This petition is not open for a community vote.');
+        const backing = (p.backing ??= []);
+        let tally = backing.find((b) => b.communityId === community.id);
+        if (tally?.backedAt) throw new Error('This community already backs this petition.');
+        const votes = (s.votes ??= []).filter(
+          (v) => !(v.petitionId === p.id && v.communityId === community.id && v.userId === user.id),
+        );
+        votes.push({
+          petitionId: p.id,
+          communityId: community.id,
+          userId: user.id,
+          support: c.support,
+        });
+        s.votes = votes;
+        const cast = votes.filter((v) => v.petitionId === p.id && v.communityId === community.id);
+        if (!tally) backing.push((tally = { communityId: community.id, yes: 0, no: 0 }));
+        tally.yes = cast.filter((v) => v.support).length;
+        tally.no = cast.length - tally.yes;
+        if (!backingReached(tally.yes, tally.no)) return;
+        tally.backedAt = new Date().toISOString();
         p.endorsements.push({
-          ...entry(`${community.name} endorses this requested action.`, 'endorsement'),
+          ...entry(
+            `${community.name} members voted to back this (${tally.yes} yes · ${tally.no} no).`,
+            'endorsement',
+          ),
           author: community.name,
         });
-        notify(managers(p), `${community.name} endorsed “${p.title}”.`, 'endorsement');
-        return;
+        notify(managers(p), `${community.name} voted to back “${p.title}”.`, 'endorsement');
+        return 'backed';
       }
       if (!canManage(p, user))
         throw new Error('Only the owner or an authorized collaborator can manage this petition.');
@@ -936,6 +1035,8 @@ export class LocalAdapter implements Adapter {
         draftSchema.parse(p);
         p.status = 'active';
         screened(p);
+        (s.toAnnounce ??= []).push(p.id);
+        announce(p);
         if (!user.badges.includes('Change starter')) user.badges.push('Change starter');
         return;
       }
@@ -962,6 +1063,7 @@ export class LocalAdapter implements Adapter {
           if (ai.tags) p.tags = ai.tags;
           else delete p.tags;
           screened(p);
+          announce(p);
         }
         notify(
           followers(p),

@@ -41,16 +41,16 @@ export function ProfileEditor({ snapshot: s, onDone }: { snapshot: Snapshot; onD
           alignItems: 'center',
           gap: 12,
           backgroundColor: colors.white,
-          borderRadius: 22,
+          borderRadius: 24,
           paddingVertical: 14,
           paddingHorizontal: 16,
         }}
       >
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.ink }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
             Personalize For You using my activity
           </Text>
-          <Text style={[styles.small, { fontSize: 11.5, marginTop: 2 }]}>
+          <Text style={[styles.small, { fontSize: 12, marginTop: 2 }]}>
             Signing, saving, swiping and reading can move a petition up to 60 points. Never
             political affiliation.
           </Text>

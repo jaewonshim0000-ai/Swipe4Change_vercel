@@ -53,7 +53,7 @@ export function PhotoField({
             source={{ uri: value.uri }}
             accessibilityLabel={value.alt || 'Petition photo'}
             resizeMode="cover"
-            style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 18 }}
+            style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 20 }}
           />
           <Field
             label="Describe the photo for people using screen readers"
@@ -102,7 +102,7 @@ export function PhotoField({
           />
         </View>
       )}
-      <Text style={[styles.micro, { fontSize: 11.5 }]}>
+      <Text style={[styles.micro, { fontSize: 12 }]}>
         Show the problem, not people: avoid faces and license plates. Location data is removed from
         the photo before it leaves your device.
       </Text>

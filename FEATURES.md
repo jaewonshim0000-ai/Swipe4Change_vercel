@@ -1,8 +1,8 @@
 # Swipe4Change — Feature List
 
-Current as of September 27, 2026. Every account, community, office, signature and response in the demo is fictional.
+Current as of October 12, 2026. Every account, community, office, signature and response in the demo is fictional.
 
-**At a glance:** one Expo / React Native app for iOS, Android and web · works fully offline as a local demo with three sample accounts · switches to a real Supabase + Clerk backend with one environment variable · 102 unit tests and a PostgreSQL integration test.
+**At a glance:** one Expo / React Native app for iOS, Android and web · works fully offline as a local demo with three sample accounts · switches to a real Supabase + Clerk backend with one environment variable · 200 unit and UI tests and a PostgreSQL integration test.
 
 ---
 
@@ -10,17 +10,20 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 - **Welcome screen** with three demo accounts (Maya the student organizer, Sam the approved local resident, Jordan the new member) — no password needed.
 - **Explore first:** browse every public petition as a guest before signing in.
-- **Hosted sign-in** through Clerk when the Supabase backend is enabled.
-- **Onboarding:** pick at least three interests (or skip) and your city. An exact address is never asked for.
-- **Real city picker:** type-ahead search of real US cities, or **Use my current location** once. Only "City, ST" is saved — the position is rounded to about a kilometre, used for one lookup and discarded. The fictional demo towns are offered as labelled sample cities.
-- **Deep links** open any petition or community directly (`swipe4change://`, with the old `lookaware://` still working).
+- **Real sign-in** through Clerk (email or Google) when the Supabase backend is enabled; see [SETUP.md](SETUP.md).
+- **Public beta on the web** ✦ new — the live site runs on Vercel at a `vercel.app` address, labelled **Beta**, with up to 100 accounts until a custom domain arrives. Links to any page, including petitions, communities and posters, open directly, and unknown addresses get a proper “Page not found”.
+- **Onboarding:** your display name, at least three interests (or skip) and your city, plus a required “I’m 13 or older and agree to the Terms and Privacy Policy”. An exact address is never asked for.
+- **Plain-language Terms and Privacy** page describing exactly what is stored.
+- **Real city picker:** type-ahead search of real US cities, or **Use my current location** once. Only "City, ST" is saved — the position is rounded to about a kilometre, used for one lookup and discarded. In the demo only, the fictional towns are offered as labelled sample cities.
+- **Deep links** open any petition or community directly, on the web and in the app (`swipe4change://`, with the old `lookaware://` still working).
 
 ## 2. Discover petitions
 
 **Home is the swipe deck**
 
 - Greeting with the number of active causes near your city, and **Change** opens the city picker in place.
-- **Swipe deck** on every screen size — right to sign (opens the signing review; only your confirmation records a signature), left to pass, up to read more. Every gesture also has a labelled button, passes can be undone, and a first-run tip explains the gestures. When you run out, **Explore more** takes you to Explore.
+- **Swipe deck** on every screen size — right to sign (opens the signing review; only your confirmation records a signature), left to pass, up to read more. The card sits centered with no buttons under it: tap it to read, screen readers get Read, Pass, Sign and Save as card actions, and the web keyboard uses ← → ↑. Passes can be undone, and a first-run tip explains the gestures. When you run out, **Explore more** takes you to Explore.
+- **Swipe feel** ✦ new — a quick flick commits a short swipe, a cancelled drag springs back, and on phones a light tick marks the moment a drag crosses its line. Saving taps and a confirmed signature buzzes.
 - **Why these?** shows the exact ranking recipe as a table.
 
 **Explore holds every other way to find petitions**
@@ -30,11 +33,12 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - Full-text search across petitions and communities, with topic chips and quick filters (near you, updated this week, ending within 30 days).
 - **Filter sheet:** approximate city, signing requirement, recipient level of government, community, deadline and recent updates. Unapplied edits can be cancelled; filters clear in one tap.
 - Every result says why it matched. Phones get compact rows; wider screens get a grid.
+- **Federal rules open for comment** ✦ new: real U.S. proposals from the Federal Register on topics like road safety, the environment and parks, ranked by your interests and deadline. Each opens the official summary and a link to comment on Regulations.gov (after a leaving-the-app warning). Also on Home.
 - **Find your people:** community suggestions, your community's latest activity and a “start a petition” prompt at the foot of the page.
 
 **For You: a feed that learns from what you do** ✦ new
 
-- **Base score** for a new account: 35% interests · 30% approximate location · 20% joined communities · 10% recency/activity · 5% endorsements.
+- **Base score** for a new account: 35% interests · 30% approximate location · 20% joined communities (including petitions your community voted to back) · 10% recency/activity · 5% community backing.
 - **Behaviour on top:** signing, volunteering, swiping right, saving, sharing, discussing, reading for a while and opening each count toward "more like this" (strongest first); passing counts against. Older activity fades (two-week half-life).
 - **Hidden hashtags by AI:** Claude tags every petition from its wording (lighting, bus stops, campus, libraries…), reusing a shared vocabulary so related petitions match, and retags it when the wording changes. The feed learns specific issues across topics. Tags are never shown; word matching stands in until a petition is tagged.
 - Activity can move a card up to 60 points and earns more say the more you use the app. Each card says why it is there ("Like “…”, which you signed").
@@ -51,8 +55,9 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - **Story / Progress / Activity** tabs:
   - **Story:** the change requested, why it matters, and the organizer's labelled sources.
   - **Progress:** milestones, the delivery record, and recorded responses with their verification status.
-  - **Activity:** organizer updates, the structured discussion (question / idea / experience), community endorsements and public edit history.
+  - **Activity:** organizer updates, the structured discussion (question / idea / experience), community backing and public edit history.
 - **Save** (saving is following), **Share**, **Volunteer**, **Donate** (when the organizer linked a fundraising page), **Report a concern**.
+- **Print a poster** ✦ new (web) — a printable poster with the title, the requested change, its recipient and a QR code that opens the petition. Once you have signed, the code carries your ripple link, so poster signatures count in your ripple.
 - **Spam filter at publication:** every petition is checked by Claude as it is published and whenever its wording changes, for spam, threats, insults, hateful language and nonsense (gibberish, test posts, jokes with no request). Flagged petitions are saved but held out of public view with the reason; editing the wording rechecks it and clean wording goes public. Keyword rules decide when the model can't be reached. Blunt or angry civic speech stays up.
 - **Verified email to publish:** saving drafts needs none; publishing does, which keeps throwaway accounts from flooding the app.
 - **AI report review:** reporting sends the petition's wording (never the reporter or their reason) to Claude. If it finds spam, threats, insults, hateful language or nonsense, the petition is hidden from the public until a person reviews it; otherwise it stays up and the report waits for a reviewer. Reports can't hide a clean petition. Keyword rules take over if the model can't be reached.
@@ -105,11 +110,14 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - **A photo of the problem:** take or choose one, with a required description for screen readers. It replaces the stock topic image on every card and on the petition page. Location and other metadata are stripped on the device before upload.
 - **Card and full-page previews** before a publish confirmation.
 - **Private drafts:** save from any step, keep several, and resume or delete them from Profile.
+- **Already started?** ✦ new — while you define the change, and again before publishing, Create shows up to three open petitions that look like the same ask: same city or office, the same issue, and shared place names like a street or campus. Open one to sign or help instead of splitting supporters, or tap **Mine is different** to hide them. Advisory only, never blocks publishing, and uses fixed rules rather than AI.
 
 ## 7. Organizer dashboard (Manage)
 
-- **At a glance:** progress, update/discussion/endorsement counts, and how many signatures came through supporter shares.
+- **At a glance:** progress, update/discussion counts, how many communities back it, and how many signatures came through supporter shares.
+- **Signatures, last 14 days** ✦ new — a daily bar chart of real signatures, split into share links, community members and everyone else, with this week against the week before. Tap a day for its breakdown. Counts only: organizers never see who signed how, and fictional sample signatures are not charted.
 - Publish a saved draft.
+- **Collect signatures in person** ✦ new — print the QR code poster (web).
 - **Delivery:** preview the delivery packet, then record how and where it was sent (email, online portal, in person, posted mail).
 - **Volunteer roster:** names, chosen roles and notes; organizer-only, with no contact details.
 - **Donation link:** optionally link your own external fundraising page; every change is public edit history.
@@ -139,6 +147,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 - Browse, join or leave communities, or **create your own** — you become its owner and first member.
 - **Community page:** member and campaign stats, active and completed campaigns, recent organizer updates.
+- **Start a petition here** ✦ new — opens Create with the community and its city already chosen, as a fresh draft.
 - **Workspace zones:**
   - **Discussion:** members post questions, ideas and experiences, with optional topic channels.
   - **Announcements:** posted by the owner and moderators in the community's voice.
@@ -147,13 +156,16 @@ Current as of September 27, 2026. Every account, community, office, signature an
   - **Campaign updates:** a read-only feed of the community's petition updates.
   - **Reports:** the moderator queue.
 - **Moderation:** owners appoint moderators from real members. Removed posts leave a visible “removed” note instead of a gap. Reporting a post never reveals who reported it.
-- **Community endorsements:** a community owner can endorse a petition on the community's behalf.
+- **Community backing by member vote:** on any active petition, members of each community you belong to vote yes or no on whether the community backs it. Three yes votes with more yes than no back it, and the vote closes. Backing shows as **Backed by …** on the swipe card, petition page and community page, goes into the packet sent to the recipient with its tally, ranks the petition as the community's own for its members, and notifies the organizers. Only totals and your own vote are ever shown.
+- **Members-only petitions:** a petition that only community members can sign says **Members of … only** on its card, and each community page lists them with a join prompt. Community cards show how many members-only and backed petitions each community has.
+- Community pages group petitions into **Members-only**, **Up for a vote**, **Backed by …** and **Active campaigns**.
 
 ## 11. Notifications
 
 - An in-app inbox for everything that happens on petitions you **saved, signed or volunteered for**: organizer updates, material edits, milestones (25/50/75/100%), deliveries, recorded responses, closures.
-- Organizers also hear about new signatures (by the public name the signer chose), endorsements, discussion, volunteer offers and eligibility requests.
+- Organizers also hear about new signatures (by the public name the signer chose), community backing, discussion, volunteer offers and eligibility requests.
 - Plus ripple growth, moderator changes, and eligibility decisions.
+- **Your communities** ✦ new — members hear about announcements and events from the people who run each community they joined, and about each new campaign once, the first time it is actually public (never while the spam check holds it). A member's own event and the private organizer room notify no one.
 
 ## 12. Profile
 
@@ -165,6 +177,7 @@ Current as of September 27, 2026. Every account, community, office, signature an
 - Your communities, your private drafts, and profile editing (name, bio, signing-history personalization toggle).
 - Interests and approximate location, and the status of the private email/location checks.
 - **Your reports and appeals:** see the automatic check's result, add an appeal, or withdraw it.
+- **Delete account** (live app): removes your personal records and photos, takes your petitions out of public view, and deletes your sign-in.
 - **Demo controls:** simulate a failed write to see rollback, or reset all demo data.
 
 ## 13. Trust, privacy and safety
@@ -181,17 +194,18 @@ Current as of September 27, 2026. Every account, community, office, signature an
 
 - 44-point minimum touch targets, semantic labels and screen-reader text, and support for large system text.
 - Reduced-motion support for the swipe deck, progress animation and ripple rings.
-- Keyboard-usable on web, with every swipe mirrored by a button.
+- Keyboard-usable on web: the focused swipe card takes ← to pass, → to sign and ↑ or Enter to read.
 - Responsive layouts from 320-pixel phones to desktop, with phone-specific layouts below 760 points.
-- A shared design system: sage/olive civic palette, Newsreader headings, Work Sans body text, and centralized tokens.
+- A shared design system: sage/olive civic palette, Newsreader headings, Work Sans body text, one 12-step type scale, seven corner radii and named colours, kept that way by a test. One line-icon set throughout, with no emoji standing in for icons.
+- Haptic feedback on phones (swipe commit line, save, confirmed signature); none on the web.
 - Friendly empty, loading and error states, and confirmation before signing, publishing, reporting, closing or archiving.
 
 ## 15. Under the hood
 
 - **Stack:** Expo SDK 57, React Native 0.86, React 19, strict TypeScript, Expo Router, TanStack Query, React Hook Form + Zod, Clerk, Supabase, and the Anthropic SDK (Claude) on the server only.
 - **Two backends, one contract:** a persistent offline local adapter and a Supabase RPC adapter share the same typed commands, so the whole app runs either way.
-- **Database:** row-level security on all 23 exposed tables with default-deny, writes only through authorized functions, row locks while signing, and a database-level unique signature constraint. A recursive query computes ripples and returns counts only.
-- **Tests:** 109 unit and UI tests across 19 suites; a PostgreSQL integration test (PGlite) that runs every migration and the seed, then exercises permissions, privacy and the ripple rules.
+- **Database:** row-level security on all 24 exposed tables with default-deny, writes only through authorized functions, row locks while signing, and a database-level unique signature constraint. A recursive query computes ripples and returns counts only.
+- **Tests:** 200 unit and UI tests across 41 suites; a PostgreSQL integration test (PGlite) that runs every migration and the seed, then exercises permissions, privacy and the ripple rules.
 - **Repeatable seed:** 12 petitions across 5 topics and 4 communities, from one typed factory shared by the demo and the SQL seed.
 
 ## Deliberately not included

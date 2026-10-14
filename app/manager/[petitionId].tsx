@@ -1,9 +1,16 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { isDemo, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import {
+  isDemo,
+  offeredVerifications,
+  useBackend,
+  useCommand,
+  useSnapshot,
+} from '../../src/data/provider';
+import {
+  backers,
   canManage,
   changedFields,
   describeEdit,
@@ -20,7 +27,6 @@ import {
   identityLabels,
   identityModes,
   verificationLabels,
-  verificationModes,
   volunteerRoleLabels,
   deliveryMethods,
   deliveryMethodLabels,
@@ -44,6 +50,9 @@ import { CityField } from '../../src/components/city-picker';
 import { SendPacket } from '../../src/components/send-packet';
 import { ManagePhoto } from '../../src/components/photo-field';
 import { HeldNotice } from '../../src/components/held-notice';
+import { SignatureTrend } from '../../src/components/signature-trend';
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+
 export default function Manager() {
   const { petitionId } = useLocalSearchParams<{ petitionId: string }>();
   const q = useSnapshot();
@@ -59,6 +68,11 @@ export default function Manager() {
   const volunteers = useQuery({
     queryKey: ['volunteers', petitionId],
     queryFn: () => adapter.volunteers(petitionId),
+    enabled: !!allowed,
+  });
+  const trend = useQuery({
+    queryKey: ['trend', petitionId],
+    queryFn: () => adapter.signatureTrend(petitionId),
     enabled: !!allowed,
   });
   const [method, setMethod] = useState<(typeof deliveryMethods)[number]>('email');
@@ -139,19 +153,50 @@ export default function Manager() {
         </View>
         <Progress petition={p} />
         <Text style={styles.muted}>
-          {p.updates.length} updates · {p.discussion.length} discussion posts ·{' '}
-          {p.endorsements.length} endorsements
+          {count(p.updates.length, 'update')} · {count(p.discussion.length, 'discussion post')} ·{' '}
+          {backers(p).length === 1 ? '1 community' : `${backers(p).length} communities`} backing
         </Text>
         <Text style={styles.small}>
           {p.viaShares > 0
             ? `${p.viaShares} of ${p.count - p.sampleCount} real signatures arrived through a supporter’s share link. Supporters spreading it is working.`
             : 'No one has signed through a supporter’s link yet. Ask signers to share their link from the petition page.'}
         </Text>
+        <View style={styles.divider} />
+        {trend.isPending ? (
+          <Text style={styles.muted}>Loading the last two weeks…</Text>
+        ) : trend.error ? (
+          <Notice error text={trend.error.message} />
+        ) : (
+          // Day buckets were counted back from when the data was fetched, so label them from then.
+          <SignatureTrend
+            counts={trend.data}
+            sampleCount={p.sampleCount}
+            now={trend.dataUpdatedAt}
+          />
+        )}
         {p.status === 'draft' && (
           <Button title="Publish saved draft" onPress={() => setConfirm('publish')} />
         )}
         <HeldNotice petition={p} />
       </Panel>
+      {/* Posters print from the web: a phone's app link would not open for people scanning. */}
+      {Platform.OS === 'web' && p.status === 'active' && (
+        <Panel>
+          <Text style={styles.h2}>Collect signatures in person</Text>
+          <Text style={styles.muted}>
+            Print a poster with a QR code that opens this petition, and put it where the people
+            affected will see it.
+          </Text>
+          <View style={styles.row}>
+            <Button
+              title="Print a poster"
+              icon="qr-code-outline"
+              variant="secondary"
+              onPress={() => router.push(`/poster/${p.id}`)}
+            />
+          </View>
+        </Panel>
+      )}
       <Panel>
         <Text style={styles.h2}>Send it to the recipient</Text>
         <Text style={styles.muted}>
@@ -455,7 +500,7 @@ export default function Manager() {
           <>
             <Text style={styles.h3}>Private verification requirement</Text>
             <View style={styles.row}>
-              {verificationModes.map((v) => (
+              {offeredVerifications.map((v) => (
                 <Chip
                   key={v}
                   label={verificationLabels[v]}

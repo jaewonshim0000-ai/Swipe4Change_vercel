@@ -65,6 +65,11 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
       if (error) throw new Error(error.message);
       return data ?? [];
     },
+    async signatureTrend(petition_id: string) {
+      const { data, error } = await db.rpc('lookaware_signature_trend', { petition_id });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
     async communityPosts(community_id: string) {
       const { data, error } = await db.rpc('lookaware_community_posts', { community_id });
       if (error) throw new Error(error.message);
@@ -106,6 +111,25 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
     },
     async reset() {
       throw new Error('Reset is available only in the local demo.');
+    },
+    async deleteAccount() {
+      // Photos first: only their uploader can remove them, and nothing points to them afterwards.
+      // ponytail: covers photos on petitions the owner can still see, not ones archived earlier.
+      const { data, error } = await db.rpc('lookaware_snapshot', {});
+      if (error || !data) throw new Error(error?.message ?? 'No data returned.');
+      const marker = '/petition-photos/';
+      const paths = data.petitions.flatMap((p) =>
+        p.ownerId === data.profile?.id && p.photo?.url.includes(marker)
+          ? [p.photo.url.split(marker)[1]]
+          : [],
+      );
+      if (paths.length) {
+        const removed = await db.storage.from('petition-photos').remove(paths);
+        if (removed.error)
+          throw new Error(`Your photos could not be removed: ${removed.error.message}`);
+      }
+      const deleted = await db.rpc('lookaware_command', { command: { type: 'delete_account' } });
+      if (deleted.error) throw new Error(deleted.error.message);
     },
   };
 }

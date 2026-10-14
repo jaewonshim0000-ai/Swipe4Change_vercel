@@ -3,7 +3,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { getBackendConfig } from './config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
-import { ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider, useAuth, useUser } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import {
   QueryClient,
@@ -12,12 +12,16 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { Adapter, Command, Snapshot } from '../domain/model';
+import { Adapter, Command, Snapshot, verificationModes } from '../domain/model';
 import { optimisticSnapshot } from '../domain/rules';
 import { LocalAdapter } from './local';
 import { demoAi } from './ai';
 import { createSupabaseAdapter } from './supabase';
 export const isDemo = process.env.EXPO_PUBLIC_BACKEND === 'demo';
+/** Location approval is only simulated in the demo; the real app has no residency check yet. */
+export const offeredVerifications = isDemo
+  ? verificationModes
+  : verificationModes.filter((v) => v !== 'location');
 export const localAdapter = new LocalAdapter(AsyncStorage, Crypto.randomUUID, demoAi);
 const createQueryClient = () =>
   new QueryClient({
@@ -27,6 +31,8 @@ const Context = createContext<{
   adapter: Adapter;
   sessionKey: string;
   signOut: () => Promise<void>;
+  /** Live accounts only; the demo resets instead. */
+  deleteAccount?: () => Promise<void>;
 }>({ adapter: localAdapter, sessionKey: 'demo', signOut: () => localAdapter.signOut() });
 function SessionQueries({ children }: React.PropsWithChildren) {
   const [client] = useState(createQueryClient);
@@ -49,6 +55,7 @@ function CloudProvider({ children }: React.PropsWithChildren) {
 }
 function CloudSession({ children }: React.PropsWithChildren) {
   const { getToken, userId, signOut } = useAuth();
+  const { user } = useUser();
   const queryClient = useQueryClient();
   const adapter = useMemo(() => createSupabaseAdapter(() => getToken()), [getToken]);
   return (
@@ -58,6 +65,12 @@ function CloudSession({ children }: React.PropsWithChildren) {
         sessionKey: userId ?? 'guest',
         signOut: async () => {
           await signOut();
+          queryClient.clear();
+        },
+        deleteAccount: async () => {
+          await adapter.deleteAccount();
+          // Removing the Clerk user also ends the session.
+          await user?.delete();
           queryClient.clear();
         },
       }}
@@ -129,6 +142,7 @@ export function useCommand() {
       await client.invalidateQueries({ queryKey: ['snapshot'] });
       await client.invalidateQueries({ queryKey: ['requests'] });
       await client.invalidateQueries({ queryKey: ['posts'] });
+      await client.invalidateQueries({ queryKey: ['trend'] });
     },
   });
 }

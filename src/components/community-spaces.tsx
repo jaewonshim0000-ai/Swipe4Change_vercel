@@ -12,7 +12,7 @@ import {
   Profile,
   postKindLabels,
 } from '../domain/model';
-import { useBackend, useCommand } from '../data/provider';
+import { isDemo, useBackend, useCommand } from '../data/provider';
 import { Button, Chip, Confirm, Field, Notice, colors, fonts, styles } from './ui';
 import { Initials, PillChip, Rail, initialsOf, toast } from './kit';
 import { Composer as PostBox } from './entries';
@@ -20,7 +20,7 @@ import { stag } from './motion';
 
 const badge = {
   fontFamily: fonts.semibold,
-  fontSize: 9.5,
+  fontSize: 11,
   letterSpacing: 0.8,
   textTransform: 'uppercase' as const,
   color: colors.accent,
@@ -62,7 +62,7 @@ const blurbs: Record<ViewId | 'Campaign updates' | 'Reports', string> = {
   Discussion: 'Anyone can read this. Members post questions, ideas and first-hand experience.',
   Announcements:
     'Posted in the community’s voice by its owner and moderators. Members read but do not post here.',
-  Events: 'Meetups, walk-throughs and hearings, soonest first. Fictional demo events.',
+  Events: `Meetups, walk-throughs and hearings, soonest first.${isDemo ? ' Fictional demo events.' : ''}`,
   'Organizer space':
     'A private working room for the owner and moderators. Members cannot read this space.',
   'Campaign updates':
@@ -94,7 +94,7 @@ function Post({
       <View
         style={{
           backgroundColor: colors.white,
-          borderRadius: 22,
+          borderRadius: 24,
           padding: 16,
           flexDirection: 'row',
           gap: 12,
@@ -108,7 +108,7 @@ function Post({
         />
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
           <View style={{ flexDirection: 'row', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
               {post.author}
             </Text>
             <Text style={badge}>{postKindLabels[post.kind as PostKind] ?? post.kind}</Text>
@@ -119,7 +119,7 @@ function Post({
           <Text
             style={{
               fontFamily: post.removed ? fonts.italic : fonts.body,
-              fontSize: 13.5,
+              fontSize: 13,
               lineHeight: 21,
               color: post.removed ? colors.muted : colors.secondary,
             }}
@@ -206,7 +206,7 @@ function Composer({
           ))}
         </View>
       )}
-      <View style={{ backgroundColor: colors.white, borderRadius: 22, padding: 8 }}>
+      <View style={{ backgroundColor: colors.white, borderRadius: 24, padding: 8 }}>
         <PostBox
           bare
           value={body}
@@ -356,7 +356,7 @@ function CampaignUpdates({ petitions }: { petitions: Petition[] }) {
             onPress={() => router.push(`/petition/${u.petitionId}`)}
             style={{
               backgroundColor: colors.white,
-              borderRadius: 22,
+              borderRadius: 24,
               padding: 16,
               flexDirection: 'row',
               gap: 12,
@@ -367,7 +367,7 @@ function CampaignUpdates({ petitions }: { petitions: Petition[] }) {
               <View
                 style={{ flexDirection: 'row', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}
               >
-                <Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink }}>
+                <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
                   {u.title}
                 </Text>
                 <Text style={badge}>update</Text>
@@ -375,7 +375,7 @@ function CampaignUpdates({ petitions }: { petitions: Petition[] }) {
               <Text
                 style={{
                   fontFamily: u.removed ? fonts.italic : fonts.body,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   lineHeight: 21,
                   color: u.removed ? colors.muted : colors.secondary,
                 }}

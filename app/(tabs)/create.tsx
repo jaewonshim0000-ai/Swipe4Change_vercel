@@ -18,13 +18,18 @@ import {
   identityModes,
   topics,
   verificationLabels,
-  verificationModes,
 } from '../../src/domain/model';
 import { analyzeDraft, draftSchema, evidenceSchema } from '../../src/domain/rules';
 import { plainLanguage, TARGET_GRADE } from '../../src/domain/plain-language';
 import { suggestOffices } from '../../src/domain/recipients';
 import { writingSupport } from '../../src/domain/writing-assistant';
-import { useBackend, useCommand, useSnapshot } from '../../src/data/provider';
+import {
+  isDemo,
+  offeredVerifications,
+  useBackend,
+  useCommand,
+  useSnapshot,
+} from '../../src/data/provider';
 import { OptionCard } from '../../src/components/signature-consent';
 import {
   CircleButton,
@@ -47,6 +52,8 @@ import { RecipientHelp } from '../../src/components/recipient-finder';
 import { PhotoField, PhotoValue, savePhoto } from '../../src/components/photo-field';
 import { DraftWriter } from '../../src/components/draft-writer';
 import { heldMessage } from '../../src/components/held-notice';
+import { SimilarPetitions } from '../../src/components/similar-petitions';
+import { similarPetitions } from '../../src/domain/similar';
 import { isSampleCity } from '../../src/data/civic-lookup';
 import { anim, kf, reducedMotion } from '../../src/components/motion';
 import {
@@ -93,13 +100,13 @@ const templates = [
     label: 'Safer walk home',
     topic: 'Safer streets',
     action: 'Install pedestrian lighting along the route by March 2027',
-    recipient: 'Riverton Public Works (fictional)',
+    recipient: isDemo ? 'Riverton Public Works (fictional)' : '',
   },
   {
     label: 'Welcoming place',
     topic: 'Accessibility',
     action: 'Add an accessible entrance to the park',
-    recipient: 'Riverton ADA Coordinator (fictional)',
+    recipient: isDemo ? 'Riverton ADA Coordinator (fictional)' : '',
   },
   { label: 'Blank page', topic: 'Safer streets', action: '', recipient: '' },
 ] as const;
@@ -123,12 +130,13 @@ const white = { backgroundColor: colors.white, borderRadius: 24, padding: 16, ga
 
 export default function CreateRoute() {
   const q = useSnapshot();
-  const params = useLocalSearchParams<{ draftId?: string }>();
+  const params = useLocalSearchParams<{ draftId?: string; communityId?: string }>();
   if (q.isPending) return <Loading variant="form" />;
   return (
     <Create
-      key={`${q.data?.profile?.id ?? 'guest'}-${params.draftId ?? ''}`}
+      key={`${q.data?.profile?.id ?? 'guest'}-${params.draftId ?? ''}-${params.communityId ?? ''}`}
       selectedDraftId={params.draftId}
+      communityId={params.communityId}
     />
   );
 }
@@ -173,12 +181,19 @@ function ScoreRing({ score }: { score: number }) {
           animatedProps={props}
         />
       </Svg>
-      <Text style={{ fontFamily: fonts.display, fontSize: 19, color: colors.ink }}>{score}</Text>
+      <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink }}>{score}</Text>
     </View>
   );
 }
 
-function Create({ selectedDraftId }: { selectedDraftId?: string }) {
+function Create({
+  selectedDraftId,
+  communityId,
+}: {
+  selectedDraftId?: string;
+  /** Opened from a community page: a fresh draft for that community and its city. */
+  communityId?: string;
+}) {
   const q = useSnapshot();
   const command = useCommand();
   const { adapter } = useBackend();
@@ -189,16 +204,19 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   );
   const hydrated = useRef(false);
   const [initialSnapshot] = useState(q.data);
-  const home = initialSnapshot?.profile?.joined[0];
-  const homeCity = initialSnapshot?.profile?.city || undefined;
+  const [picked] = useState(() => initialSnapshot?.communities.find((c) => c.id === communityId));
+  const home = picked?.id ?? initialSnapshot?.profile?.joined[0];
+  const homeCity = picked?.city || initialSnapshot?.profile?.city || undefined;
   // A draft picked from Profile is already in the snapshot, so it restores on the first render.
   const [saved] = useState(() => initialSnapshot?.drafts?.find((d) => d.id === selectedDraftId));
-  const [ready, setReady] = useState(!!saved || selectedDraftId === 'new');
+  const [ready, setReady] = useState(!!saved || selectedDraftId === 'new' || !!picked);
   const [step, setStep] = useState(saved?.step ?? 0);
   const [template, setTemplate] = useState('');
   const [preview, setPreview] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const [published, setPublished] = useState<string | null>(null);
+  /** Similar petitions the creator said differ from theirs, hidden for the rest of this draft. */
+  const [different, setDifferent] = useState<string[]>([]);
   const [now] = useState(Date.now);
   const [undo, setUndo] = useState<{
     field: 'title' | 'summary' | 'problem';
@@ -212,7 +230,9 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
       ? 'Restored your private draft.'
       : selectedDraftId && selectedDraftId !== 'new'
         ? 'This draft is unavailable. Start a new draft from your profile.'
-        : '',
+        : picked
+          ? `Starting a petition with ${picked.name}. You can change the community in step 2.`
+          : '',
   );
   const form = useForm<Draft>({
     resolver: zodResolver(draftSchema),
@@ -226,7 +246,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   const draftKey = `lookaware.draft.${q.data?.profile?.id ?? 'guest'}`;
   // Otherwise pick up the on-device backup of whatever was being written last.
   useEffect(() => {
-    if (!initialSnapshot?.profile || hydrated.current || selectedDraftId) return;
+    if (!initialSnapshot?.profile || hydrated.current || selectedDraftId || picked) return;
     hydrated.current = true;
     let active = true;
     void AsyncStorage.getItem(draftKey)
@@ -247,7 +267,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
     return () => {
       active = false;
     };
-  }, [initialSnapshot, selectedDraftId, draftKey, form, home, homeCity]);
+  }, [initialSnapshot, selectedDraftId, picked, draftKey, form, home, homeCity]);
   const backup = JSON.stringify(draft);
   useEffect(() => {
     if (!ready) return;
@@ -391,6 +411,18 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
   const live = published ? q.data.petitions.find((p) => p.id === published) : undefined;
   const held = live ? heldMessage(live) : null;
   const unverified = !q.data.profile.emailVerified;
+  const similar =
+    published === null && (step === 0 || step === 3)
+      ? similarPetitions(draft, q.data.petitions, now).filter(
+          (m) => !different.includes(m.petition.id),
+        )
+      : [];
+  const similarPanel = (
+    <SimilarPetitions
+      matches={similar}
+      onDismiss={() => setDifferent([...different, ...similar.map((m) => m.petition.id)])}
+    />
+  );
   return (
     <Screen>
       <View
@@ -434,7 +466,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         >
           {steps[step][0]}
         </Text>
-        <Text style={[styles.body, { fontSize: 14, color: colors.muted, marginBottom: 16 }]}>
+        <Text style={[styles.body, { fontSize: 14.5, color: colors.muted, marginBottom: 16 }]}>
           {steps[step][1]}
         </Text>
         {step === 0 && (
@@ -498,6 +530,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 }
               />
             </View>
+            {!!similar.length && <View style={{ marginTop: 14 }}>{similarPanel}</View>}
           </>
         )}
         {step === 1 && (
@@ -559,7 +592,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                     alignItems: 'center',
                     gap: 10,
                     backgroundColor: colors.quiet,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     paddingVertical: 10,
                     paddingHorizontal: 12,
                   }}
@@ -627,7 +660,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
             <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
               Who may sign
             </Text>
-            {verificationModes.map((v) => (
+            {offeredVerifications.map((v) => (
               <OptionCard
                 key={v}
                 label={verificationLabels[v]}
@@ -713,13 +746,14 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 />
               </View>
             </View>
-            <Text style={[styles.micro, { fontSize: 11.5 }]}>
+            <Text style={[styles.micro, { fontSize: 12 }]}>
               Signing rules lock after the first signature. Closes {draft.deadline}.
             </Text>
           </View>
         )}
         {step === 3 && (
           <>
+            {!!similar.length && <View style={{ marginBottom: 14 }}>{similarPanel}</View>}
             <View style={{ marginBottom: 12 }}>
               <Segmented
                 options={['Card preview', 'Page preview']}
@@ -776,7 +810,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                 <Text style={styles.label}>
                   {draft.topic} · {draft.city} · {community?.name}
                 </Text>
-                <Text style={[styles.title, { fontSize: 26, lineHeight: 28 }]}>
+                <Text style={[styles.title, { fontSize: 27, lineHeight: 28 }]}>
                   {draft.title || 'Untitled petition'}
                 </Text>
                 <Text style={styles.body}>{draft.action}</Text>
@@ -815,7 +849,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                   style={{
                     width: 44,
                     height: 44,
-                    borderRadius: 22,
+                    borderRadius: 999,
                     backgroundColor: colors.pale,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -824,7 +858,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
                   <DrawnCheck size={22} color={colors.dark} delay={200} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
+                  <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}>
                     {held ? 'Saved · not public yet' : 'Published · Change starter earned'}
                   </Text>
                   <Text
@@ -849,13 +883,13 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <ScoreRing score={analysis.score} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.label, { fontSize: 10.5, letterSpacing: 1.2 }]}>
+            <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.2 }]}>
               Writing check · local rules
             </Text>
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 15,
+                fontSize: 14.5,
                 lineHeight: 20,
                 color: colors.ink,
                 marginTop: 4,
@@ -864,10 +898,11 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
               {scoreLabel}
             </Text>
             <Text
-              style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted, marginTop: 2 }}
+              style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 }}
             >
-              Reading grade {clarity.words && clarity.grade ? clarity.grade : '—'} · target{' '}
-              {TARGET_GRADE} or below
+              {clarity.words && clarity.grade
+                ? `Reading grade ${clarity.grade} · target ${TARGET_GRADE} or below`
+                : `Aim for reading grade ${TARGET_GRADE} or below`}
             </Text>
           </View>
         </View>
@@ -897,7 +932,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
           <Animated.View
             key={sg.field}
             style={[
-              { backgroundColor: colors.quiet, borderRadius: 16, padding: 12, gap: 8 },
+              { backgroundColor: colors.quiet, borderRadius: 14, padding: 12, gap: 8 },
               anim(kf.in, 350),
             ]}
           >
@@ -908,7 +943,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
               numberOfLines={6}
               style={{
                 fontFamily: fonts.heading,
-                fontSize: 15,
+                fontSize: 14.5,
                 lineHeight: 19.5,
                 color: colors.ink,
               }}
@@ -936,7 +971,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
             }}
           />
         )}
-        <Text style={[styles.micro, { fontSize: 10.5 }]}>
+        <Text style={[styles.micro, { fontSize: 11 }]}>
           Advisory only. This score and these tips use simple rules on your own words. The ✦ helpers
           use AI (Claude) and only suggest; nothing here checks your facts.
         </Text>
@@ -1000,7 +1035,7 @@ function Create({ selectedDraftId }: { selectedDraftId?: string }) {
         onCancel={() => setConfirm(false)}
         onConfirm={publish}
       >
-        <View style={{ backgroundColor: colors.white, borderRadius: 18, padding: 14, gap: 6 }}>
+        <View style={{ backgroundColor: colors.white, borderRadius: 20, padding: 14, gap: 6 }}>
           <Text style={styles.cardTitle}>{draft.title}</Text>
           <Text style={styles.small}>
             To {draft.recipient} · {draft.city}

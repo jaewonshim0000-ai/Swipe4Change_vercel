@@ -9,6 +9,7 @@ import {
   sameCity,
   sampleCities,
 } from '../domain/location';
+import { isDemo } from './provider';
 
 /** Type-ahead search of real US cities through Open-Meteo's free geocoder (no key needed). */
 export async function searchCities(query: string, signal?: AbortSignal): Promise<Place[]> {
@@ -58,7 +59,7 @@ export async function cityFromDevice(): Promise<string> {
 
 /** The centre of a chosen city, for district lookups. Null for the fictional sample cities. */
 export async function cityCentre(city: string): Promise<{ lat: number; lon: number } | null> {
-  if (sampleCities.some((c) => sameCity(c.city, city))) return null;
+  if (isDemo && sampleCities.some((c) => sameCity(c.city, city))) return null;
   const match = (await searchCities(city)).find((p) => sameCity(p.city, city));
   return match?.lat !== undefined && match.lon !== undefined
     ? { lat: match.lat, lon: match.lon }

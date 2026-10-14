@@ -53,7 +53,7 @@ The optional local demo cannot award legal acceptance. Real verification and doc
     anything. Nothing in this app should be able to add your name to a public document by accident, and
     a gesture is exactly the kind of input that happens by accident. The four circular actions and the
     Follow / Volunteer / Share row give every gesture a labelled equivalent, so the deck is fully usable
-    without dragging at all.
+    without dragging at all. _(The buttons were later removed; see "Centered swipe card".)_
 29. **Saving and following are different asks, superseding decision 18.** Treating a save as a _(Superseded by 44.)_
     subscription was tidy, but it meant a person could not keep a petition to read later without also
     opting into its notifications. Saving is now a private bookmark that notifies nobody; following is
@@ -269,3 +269,59 @@ An organizer may split a requested action into one to three asks and compare eac
 - Spam is checked at publication and on every rewording, not only after a report, so it never reaches the feed. A flagged petition is held rather than rejected, because a false positive should cost the organizer an edit, not their work. "Nonsense" joins the categories; the prompt keeps blunt civic speech up.
 - Hosted publication is trustworthy: the database, not the app, marks a new petition pending and hidden, and only the service-role Edge Function records the result, for the exact wording it read (`updated_at` guard). A public petition stays up while a rewording is rechecked.
 - A verified email is required to publish (not to draft), raising the cost of throwaway spam accounts. The owner chose this over a daily limit, duplicate checks and photo screening.
+
+## Going live (October 8)
+
+- **Federal Register, not the Regulations.gov API.** The owner chose Regulations.gov as the real-world source. Its API needs a key and returns about a thousand open items, mostly routine. The Federal Register API lists the same proposed rules with official abstracts and agency slugs, needs no key, allows browser requests, and its `comment_url` opens the Regulations.gov comment form, so the app fetches it directly: no table, sync job or Edge Function to fail. Change.org has no public API and the White House's We the People closed in 2021, so neither is used.
+- **Only official wording.** Federal rules show the agency's own title and abstract; nothing is summarized or rewritten by AI, and they are never presented as petitions or signable.
+- **Claims are re-read on every load.** Email verification was captured once at provisioning, so anyone who verified later could never publish. The snapshot now applies the signed `email_verified` claim whenever it is present and leaves the stored value alone when it is absent (a misconfigured token must not unverify everyone). The `name` claim only replaces the placeholder, never a name the person chose.
+- **Deleting an account** removes personal records and the Clerk mapping in one transaction, archives the person's petitions, and keeps public writing under "Deleted account" so threads and edit histories still make sense. Photos are removed first through Storage (only the uploader may delete), and the Clerk user last, so a failure leaves at worst a fresh, empty profile.
+- **Location verification is demo-only.** No residency check exists, so the live app does not offer the `location` signing rule rather than labelling an unverifiable requirement.
+- **13+ and plain-language terms at onboarding.** Many users are students; under-13 accounts would need parental consent the app cannot collect.
+
+## Community backing by member vote (October 8)
+
+- Communities had discussion, events and moderation but no say in outcomes: an endorsement was one owner's click. Backing is now a member vote, so a community's support means its members decided it, and that decision travels with the petition (card, page, ranking and the packet the recipient receives).
+- The rule is a fixed floor, three yes votes and more yes than no, not a share of members: fictional sample headcounts never vote, and a five-person community should be able to decide. Votes can change until the community backs the petition; then the vote closes and an endorsement records the tally.
+- Votes are private. The hosted table has row-level security with no policies; the snapshot publishes totals plus each person's own votes. The owner's one-click endorse is refused.
+- The seed adds Sam and Jordan to Riverton students and gives the members-only crosswalk petition their two yes votes, so the demo's third vote backs it. The flagship's older sample endorsement shows as backing without a tally.
+- Members-only petitions already worked; they are now named on cards ("Members of … only") and listed on each community page so membership visibly matters for signing.
+
+## Similar petitions and signature trends (October 11)
+
+- **"Already started?" is advisory and rule-based.** Near-duplicates split supporters, so Create shows up to three open petitions that look like the same ask, live on the first step and again before publishing. It never blocks publishing: two lighting requests on different streets are both legitimate, and only the creator knows. A match needs the same city or office plus a shared issue tag (lighting, crossings, transit…); setting and audience tags such as campus, schools or students never match on their own, because in the seed they paired unrelated asks. Shared title/action words add weight, so a street name like "Elm" separates a duplicate from a neighbour. Tags stay hidden; the creator sees plain reasons (same recipient, same city, same topic). The rule is calibrated so the twelve distinct seed petitions flag only one related pair.
+- **The trend chart shows real signatures only, in 24-hour buckets.** Seed petitions hold hundreds of fictional sample signatures with no dates, and inventing a daily history for them would be fabricated data, so the chart says they are not shown. Days count back from the fetch ("last 24 hours") rather than by calendar date, so the local and SQL versions agree without time zones.
+- **Sources are counts, not people.** Each real signature counts once: a share link (a referral row) wins over community membership, then everyone else. Membership is read as it is now, not at signing time, which is close enough for "is our community showing up" and needs no new history table. Per-day counts reveal nothing an organizer refreshing the total could not already see; no signer, exact time or link owner leaves `lookaware_signature_trend`, which is organizer-only like the volunteer roster.
+- **Chart colours were validated, not eyeballed.** The app's muted tokens read as grey and failed colour-blind separation, so the chart uses three dedicated series colours (`series` in the theme) that pass the palette validator for every pair, with a legend, per-day screen-reader labels and a tap readout so colour is never the only channel.
+
+## Centered swipe card (October 11)
+
+- The Pass / Read / Save / Sign buttons under the deck were removed at the owner's request, and the card now centers in the space above the tab bar (`Screen fill`). On phones the buttons sat partly under the floating tab bar.
+- The buttons were the deck's only non-drag controls, so their jobs moved onto the card rather than disappearing: tapping opens the petition, screen readers (and Switch Control) get Read, Pass, Sign and Save as accessibility actions, and the focused card takes ←, → and ↑ or Enter on the web, matching the "← pass · ↑ read · sign →" hint. Save stays one tap away on the petition page.
+
+## Community notifications and starting a petition from a community (October 11)
+
+- **Members hear from the people who run a community.** Announcements and events posted by the owner or a moderator notify every member; a member's own event still lists under Events but notifies no one, so one person cannot ping a whole community, and the private organizer room never notifies. Notifications stay in-app; there is no per-community mute yet, which is the first thing to add if communities get noisy.
+- **A new campaign is announced once, when it is first public.** Publishing marks it `announce_pending`; the publication check announces it when it clears, so a petition held for spam is never advertised, and fixing it announces it then. Petitions published before the migration, and petitions restored after a report, never announce. The organizer and collaborators are not told about their own campaign. The local demo keeps the same rule with a private `toAnnounce` list.
+- **"Start a petition here" starts a fresh draft** with the community and the community's city chosen, like "Start a new draft" from Profile, so it does not reopen an unrelated on-device backup. The community stays editable in step 2.
+
+## Merging the final branches (October 12)
+
+- **Wrapper migrations are chained, not parallel.** Live accounts, community backing and community notifications were built on separate branches, and each renamed `lookaware_command` to `_v10` (two also renamed the snapshot to `_v7`). Applied together, the second would fail. They now chain in filename order: live accounts (`command_v10`, `snapshot_v7`), backing (`202610080002`, `command_v11`, `snapshot_v8`), notifications (`command_v12`).
+- **Account deletion also removes private backing votes.** Deletion predates the votes table, so the backing wrapper deletes a person's votes before passing the command on. Decided backings keep their recorded tally.
+
+## Final design pass, haptics and the poster (October 12)
+
+- **A test, not a style refactor, keeps screens consistent.** Screens style inline and had drifted to 30 font sizes, 27 radii and 25 hard-coded colours. Values were snapped to one scale (a radius of half an element became 999, so circles stay round), and `tests/design-tokens.test.ts` fails on anything off-scale. Moving every screen to shared style objects would have touched far more code this close to submission.
+- **One fix in the shared component, not one per screen.** Unselected chips and white buttons vanished on white cards; a hairline in `PillChip` and `Button` fixes every use at once.
+- **Haptics mark decisions, not motion.** One tick when a drag crosses its commit line (not every frame), a tap on save, and a success buzz on a confirmed signature. Release speed comes from the gesture's own event timestamps. The web gets no haptics.
+- **The poster is web only and uses the share link.** A phone's link is the `swipe4change://` scheme, which people scanning a poster without the app cannot open, so the entry points only appear on the web. The QR code encodes the same link as Share, so it carries the printer's ripple code once they have signed. Medium error correction survives creases and smudges. The `qrcode` package was already in the dependency tree (through Clerk) and is now a direct dependency. Printing builds a plain window with `textContent`, like the delivery packet, because the title and request are organizer-written.
+
+## Public beta on Vercel (October 12)
+
+Spec: `docs/superpowers/specs/2026-10-12-vercel-beta-launch-design.md`.
+
+- **Vercel, static single page.** The owner chose Vercel over EAS Hosting. Production never calls the development-only `/api` routes, so the site is plain static files: `app.config.ts` switches `web.output` to `single` when `VERCEL=1`, and `vercel.json` falls back to `index.html` for every path that is not a file. No serverless functions, nothing to cold-start. Local development keeps `server` output, which the demo's `/api` routes need. `expo serve` has no single-page fallback, so `npm run preview:web` serves the build with a small Node server that matches `vercel.json`.
+- **A labelled beta, because there is no domain yet.** Clerk cannot run a production instance on `vercel.app`, so sign-in uses a development instance: 100 accounts at most, not transferable to production later. Rather than hide that, the app shows a **Beta** label, a line on sign-in, and a Terms section saying accounts may need to sign up again. The demo shows none of it; it is labelled fictional instead.
+- **A public contact that is not a private repo.** The Terms page pointed at the GitHub issues of a private repository, which the public cannot open. It now shows `EXPO_PUBLIC_CONTACT_EMAIL` when set (a dedicated address, never a personal one) and otherwise points to Report a concern.
+- **An on-brand not-found page** replaces Expo Router's developer "Unmatched Route" screen, which would otherwise greet anyone with a mistyped or dead link.

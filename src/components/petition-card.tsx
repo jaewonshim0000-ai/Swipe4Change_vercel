@@ -8,20 +8,24 @@ import { daysLeft, milestoneLabel } from '../domain/discovery';
 import { useCommand } from '../data/provider';
 import { recordSignal } from '../data/signals';
 import { Bar, Cover, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
-import { stag } from './motion';
+import { haptic, stag } from './motion';
 import { colors, fonts } from './theme';
 
 /**
- * Once you have signed, your share link carries your ripple code, so everyone who signs through it
- * joins your ripple. Before that it is a plain link: a ripple only credits people who signed.
+ * A petition's link. Once you have signed, it carries your ripple code, so everyone who signs
+ * through it joins your ripple. Before that it is a plain link: a ripple only credits signers.
  */
+export function petitionLink(p: Petition, s: Snapshot, origin: string) {
+  const via = s.ripple && s.signed.includes(p.id) ? `?via=${s.ripple.code}` : '';
+  return `${origin}/petition/${p.id}${via}`;
+}
+
 export async function sharePetition(p: Petition, s: Snapshot) {
   void recordSignal(s.profile, p.id, 'share');
-  const via = s.ripple && s.signed.includes(p.id) ? `?via=${s.ripple.code}` : '';
-  const url = `${Platform.OS === 'web' ? window.location.origin : 'swipe4change:/'}/petition/${p.id}${via}`;
+  const url = petitionLink(p, s, Platform.OS === 'web' ? window.location.origin : 'swipe4change:/');
   if (Platform.OS === 'web') {
     await Clipboard.setStringAsync(url);
-    return via
+    return url.includes('?via=')
       ? 'Link copied — it carries your private ripple code.'
       : 'Petition link copied. Share it with your community.';
   }
@@ -43,6 +47,7 @@ export function useSave(s: Snapshot) {
       return;
     }
     const was = s.saved.includes(p.id);
+    haptic('tap');
     mutation.mutate(
       { type: 'save', petitionId: p.id },
       {
@@ -95,7 +100,7 @@ export function PetitionRow({
       >
         <Cover
           source={petitionImage(p)}
-          style={{ width: detail ? 98 : 96, height: detail ? 122 : 112, borderRadius: 18 }}
+          style={{ width: detail ? 98 : 96, height: detail ? 122 : 112, borderRadius: 20 }}
         />
         <View
           style={{ flex: 1, minWidth: 0, gap: 6, paddingVertical: 4, paddingRight: detail ? 2 : 4 }}
@@ -123,7 +128,7 @@ export function PetitionRow({
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 16,
+                  borderRadius: 999,
                   backgroundColor: colors.field,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -149,7 +154,7 @@ export function PetitionRow({
               numberOfLines={1}
               style={{
                 fontFamily: fonts.body,
-                fontSize: 11.5,
+                fontSize: 12,
                 lineHeight: 16,
                 color: colors.accent,
               }}
@@ -161,7 +166,7 @@ export function PetitionRow({
             <Bar pct={(100 * p.count) / p.goal} height={5} label="Signature goal progress" />
             <Text
               numberOfLines={1}
-              style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted }}
+              style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}
             >
               {p.count.toLocaleString()} of {p.goal.toLocaleString()} ·{' '}
               {detail ? `${daysLeft(p, now)}d left` : p.city}
@@ -183,7 +188,7 @@ export function CollectionCard({ petition: p, badge }: { petition: Petition; bad
       style={{
         width: 206,
         height: 252,
-        borderRadius: 26,
+        borderRadius: 24,
         overflow: 'hidden',
         backgroundColor: colors.dark,
         boxShadow: '0px 16px 30px -20px rgba(32,38,26,0.55)',
@@ -195,13 +200,13 @@ export function CollectionCard({ petition: p, badge }: { petition: Petition; bad
       />
       <Scrim stops="rgba(18,20,15,0) 30%, rgba(18,20,15,0.88) 100%" />
       <View style={{ position: 'absolute', top: 12, left: 12 }}>
-        <GlassPill text={badge} style={{ fontFamily: fonts.semibold, fontSize: 10.5 }} />
+        <GlassPill text={badge} style={{ fontFamily: fonts.semibold, fontSize: 11 }} />
       </View>
       <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14, gap: 7 }}>
         <Text
           style={{
             fontFamily: fonts.heading,
-            fontSize: 17,
+            fontSize: 18,
             lineHeight: 20,
             letterSpacing: -0.4,
             color: colors.white,
@@ -240,7 +245,7 @@ export function Progress({
         <Text
           style={{
             fontFamily: fonts.display,
-            fontSize: 32,
+            fontSize: 34,
             lineHeight: 34,
             letterSpacing: -1,
             color: colors.ink,
@@ -254,7 +259,7 @@ export function Progress({
             signatures
           </Text>
         </Text>
-        <Text style={{ fontFamily: fonts.medium, fontSize: 12.5, color: colors.muted }}>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: colors.muted }}>
           of {p.goal.toLocaleString()}
         </Text>
       </View>

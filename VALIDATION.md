@@ -78,3 +78,20 @@ One regression was caught by the existing test suite during this work and fixed:
 - Browser walkthrough at 375 × 812: Maya read, chose a public name, drew a signature and confirmed; shared her ripple link; Sam opened it, navigated away and back, and signed without the link in the URL; Maya's bell showed "Your ripple grew" without naming Sam, and the ripple appeared on the petition page, Profile and Manage. No console errors.
 
 One real bug surfaced in the browser: the signature pad appended each point to the list from the last render, so touch moves arriving between renders were dropped and strokes came out choppy. The pad now takes a state setter and appends functionally.
+
+## 2026-10-12 — Final merge, design pass, haptics and poster
+
+- Merged the live-accounts, community-backing and badges/notifications branches, and chained their wrapper migrations (`command_v10`–`_v12`, `snapshot_v7`–`_v8`).
+- Prettier, Expo ESLint and strict TypeScript passed. All 200 tests across 41 Jest suites passed, including the new `design-tokens`, `swipe` and `poster` suites. The swipe suite was run against a deliberately broken tick rule and failed, as it should.
+- Embedded PostgreSQL integration passed against 24 RLS tables, now also checking that account deletion removes private backing votes.
+- Expo web production export passed.
+- Headless Chromium walk-through at 375 × 812, 375 × 2400 and 1280 × 900 of Home, Explore, Create, Communities, Profile, petition, community, Manage, notifications, recipients, packet, signing sheet and poster, with no application console errors. (The offline demo logs 503s from `/api/ai` when no `ANTHROPIC_API_KEY` is set; the keyword fallback handles them.)
+- On the web, a quick 50-point flick commits and a slow 50-point drag springs back. The poster's on-screen and printed QR codes both decode (jsQR) to the exact petition link.
+- `npx expo install --check` lists newer SDK 57 patch releases (expo 57.0.28, expo-router 57.0.26 and 12 others). They were not applied in this pass.
+
+## 2026-10-12 — Public beta build for Vercel
+
+- `VERCEL=1` resolves `web.output` to `single`; without it, `server` (checked with `expo config`). Both exports pass, including with the development-only `app/api` routes present.
+- `npm run preview:web` built the single-page site and served it like `vercel.json`. Direct loads and refreshes of `/`, a petition, a community, `/legal` and an unknown path all rendered in headless Chromium with no console errors; unknown paths show the new "Page not found". A `../` path returned `index.html`, not a file outside `dist`.
+- Prettier, ESLint, strict TypeScript, 200 tests in 41 suites and the PostgreSQL integration test passed.
+- Not yet run: the live smoke test on the `vercel.app` address, which needs the owner's Clerk, Supabase and Vercel accounts (SETUP.md steps 1–6). The Beta label and sign-in notice only render with real keys and are checked there.

@@ -5,28 +5,29 @@ import { useSnapshot } from '../src/data/provider';
 import { useReads } from '../src/data/reads';
 import { Empty, Loading, Notice, colors, fonts, styles } from '../src/components/ui';
 import { CircleButton, LiveDot, Screen } from '../src/components/kit';
-import { Glyph } from '../src/components/glyph';
+import { Glyph, GlyphName } from '../src/components/glyph';
 import { kf, stag, transition } from '../src/components/motion';
 
 /**
  * What each kind of notification is called and its glyph. Keyed by the `kind` the data layer
  * writes; anything unrecognised falls back to a neutral notice rather than disappearing.
  */
-const kinds: Record<string, { title: string; glyph: string }> = {
-  signature: { title: 'Signature confirmed', glyph: '✓' },
-  update: { title: 'Organizer update', glyph: '↗' },
-  edit: { title: 'Petition revised', glyph: '✎' },
-  response: { title: 'Response recorded', glyph: '✉' },
-  delivery: { title: 'Delivered', glyph: '➤' },
-  milestone: { title: 'Milestone crossed', glyph: '◆' },
-  endorsement: { title: 'Endorsement', glyph: '★' },
-  discussion: { title: 'New discussion contribution', glyph: '❝' },
-  eligibility: { title: 'Eligibility', glyph: '⚿' },
-  volunteer: { title: 'Volunteer', glyph: '✋' },
-  moderation: { title: 'Moderation', glyph: '⚑' },
-  close: { title: 'Petition closed', glyph: '⚑' },
-  status: { title: 'Petition status', glyph: '⚑' },
-  ripple: { title: 'Your ripple grew', glyph: '◎' },
+const kinds: Record<string, { title: string; glyph: GlyphName }> = {
+  signature: { title: 'Signature confirmed', glyph: 'check' },
+  update: { title: 'Organizer update', glyph: 'bell' },
+  edit: { title: 'Petition revised', glyph: 'pen' },
+  response: { title: 'Response recorded', glyph: 'capitol' },
+  delivery: { title: 'Delivered', glyph: 'next' },
+  milestone: { title: 'Milestone crossed', glyph: 'up' },
+  endorsement: { title: 'Community backing', glyph: 'star' },
+  discussion: { title: 'New discussion contribution', glyph: 'chat' },
+  eligibility: { title: 'Eligibility', glyph: 'profile' },
+  volunteer: { title: 'Volunteer', glyph: 'hand' },
+  moderation: { title: 'Moderation', glyph: 'flag' },
+  close: { title: 'Petition closed', glyph: 'flag' },
+  status: { title: 'Petition status', glyph: 'flag' },
+  ripple: { title: 'Your ripple grew', glyph: 'link' },
+  community: { title: 'Your community', glyph: 'communities' },
 };
 
 export default function Notifications() {
@@ -63,7 +64,7 @@ export default function Notifications() {
             onPress={() => markRead(items.map((n) => n.id))}
             style={{ minHeight: 44, justifyContent: 'center' }}
           >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 12.5, color: colors.accent }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
               Mark all read
             </Text>
           </Pressable>
@@ -74,7 +75,7 @@ export default function Notifications() {
           <Notice error text={q.error.message} />
         ) : items.length ? (
           items.map((n, i) => {
-            const kind = kinds[n.kind] ?? { title: 'Notice', glyph: '•' };
+            const kind = kinds[n.kind] ?? { title: 'Notice', glyph: 'bell' };
             const done = read.includes(n.id);
             return (
               <Animated.View key={n.id} style={stag(i, kf.slide)}>
@@ -89,9 +90,9 @@ export default function Notifications() {
                         flexDirection: 'row',
                         gap: 12,
                         alignItems: 'flex-start',
-                        borderRadius: 22,
+                        borderRadius: 24,
                         padding: 14,
-                        backgroundColor: done ? '#F6F7F3' : colors.white,
+                        backgroundColor: done ? colors.quiet : colors.white,
                       },
                       done ? null : { boxShadow: '0px 10px 24px -16px rgba(32,38,26,0.4)' },
                       transition(['backgroundColor'], 300),
@@ -101,27 +102,24 @@ export default function Notifications() {
                       style={{
                         width: 40,
                         height: 40,
-                        borderRadius: 20,
+                        borderRadius: 999,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: done ? colors.track : colors.dark,
                       }}
                     >
-                      <Text
-                        style={{
-                          fontFamily: fonts.semibold,
-                          fontSize: 15,
-                          color: done ? colors.muted : colors.pale,
-                        }}
-                      >
-                        {kind.glyph}
-                      </Text>
+                      <Glyph
+                        name={kind.glyph}
+                        size={18}
+                        weight={2}
+                        color={done ? colors.muted : colors.pale}
+                      />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                       <Text
                         style={{
                           fontFamily: fonts.semibold,
-                          fontSize: 13.5,
+                          fontSize: 13,
                           lineHeight: 18,
                           color: colors.ink,
                         }}
@@ -131,7 +129,7 @@ export default function Notifications() {
                       <Text
                         style={{
                           fontFamily: fonts.body,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           lineHeight: 19,
                           color: colors.muted,
                         }}
@@ -156,7 +154,8 @@ export default function Notifications() {
         )}
       </View>
       <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18 }]}>
-        Petitions you save, sign or volunteer for send their updates here. In-app only in this demo.
+        Petitions you save, sign or volunteer for, and communities you join, send their updates
+        here. In-app only in this demo.
       </Text>
     </Screen>
   );

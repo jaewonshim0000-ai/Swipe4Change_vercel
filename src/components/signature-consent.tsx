@@ -20,7 +20,8 @@ import {
   toast,
 } from './kit';
 import { Glyph } from './glyph';
-import { anim, kf } from './motion';
+import { Medal, badgeLook } from './badge-medal';
+import { anim, haptic, kf } from './motion';
 import { Button, Notice, colors, fonts, styles } from './ui';
 
 const titles = ['Read the full request', 'How should your name appear?', 'Sign and confirm'];
@@ -51,7 +52,7 @@ export function OptionCard({
         borderWidth: 1.5,
         borderColor: selected ? colors.dark : 'transparent',
         backgroundColor: colors.white,
-        borderRadius: 18,
+        borderRadius: 20,
         paddingVertical: 13,
         paddingHorizontal: 14,
         minHeight: 52,
@@ -59,7 +60,9 @@ export function OptionCard({
     >
       <Radio on={selected} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.ink }}>{label}</Text>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
+          {label}
+        </Text>
         <Text
           style={{
             fontFamily: fonts.body,
@@ -120,6 +123,7 @@ export function SignatureConsent({
         ...(via ? { via } : {}),
       });
       void forgetVia(petition.id);
+      haptic('success');
       setDone(true);
       onRecorded?.();
     } catch (e) {
@@ -163,7 +167,7 @@ export function SignatureConsent({
                 {
                   width: 76,
                   height: 76,
-                  borderRadius: 38,
+                  borderRadius: 999,
                   backgroundColor: colors.accent,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -192,7 +196,7 @@ export function SignatureConsent({
           </Animated.Text>
           <Animated.Text
             style={[
-              { ...styles.muted, fontSize: 14, lineHeight: 21.5, textAlign: 'center' },
+              { ...styles.muted, fontSize: 14.5, lineHeight: 21.5, textAlign: 'center' },
               anim(kf.in, 500, { delay: 400 }),
             ]}
           >
@@ -204,7 +208,7 @@ export function SignatureConsent({
               {
                 width: '100%',
                 backgroundColor: colors.white,
-                borderRadius: 22,
+                borderRadius: 24,
                 padding: 16,
                 flexDirection: 'row',
                 gap: 14,
@@ -216,7 +220,7 @@ export function SignatureConsent({
           >
             <RippleRings moving size={64} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
                 Now start a ripple
               </Text>
               <Text style={[styles.small, { fontSize: 12, marginTop: 2 }]}>
@@ -232,7 +236,7 @@ export function SignatureConsent({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 12,
-                  backgroundColor: colors.soft,
+                  backgroundColor: badgeLook('First voice').tone.soft,
                   borderRadius: 20,
                   paddingVertical: 12,
                   paddingHorizontal: 14,
@@ -240,14 +244,9 @@ export function SignatureConsent({
                 anim(kf.in, 500, { delay: 600 }),
               ]}
             >
-              <Animated.Text
-                style={[
-                  { fontSize: 20 },
-                  anim(kf.float, 2400, { loop: true, ease: 'ease-in-out' }),
-                ]}
-              >
-                🏅
-              </Animated.Text>
+              <Animated.View style={anim(kf.float, 2400, { loop: true, ease: 'ease-in-out' })}>
+                <Medal name="First voice" earned size={40} />
+              </Animated.View>
               <Text
                 style={{
                   fontFamily: fonts.medium,
@@ -271,7 +270,7 @@ export function SignatureConsent({
               style={{ flex: 1.6 }}
             />
           </View>
-          <Text style={[styles.micro, { fontSize: 10.5, textAlign: 'center' }]}>
+          <Text style={[styles.micro, { fontSize: 11, textAlign: 'center' }]}>
             Private receipt saved to your profile. Withdraw any time.
           </Text>
         </View>
@@ -281,14 +280,14 @@ export function SignatureConsent({
             <StepBars count={3} current={step} />
           </View>
           <Animated.View key={step} style={anim(step % 2 ? kf.tickA : kf.tickB, 400)}>
-            <Text style={[styles.label, { fontSize: 10.5, letterSpacing: 1.3 }]}>
+            <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.3 }]}>
               Step {step + 1} of 3
             </Text>
             <Text
               accessibilityRole="header"
               style={{
                 fontFamily: fonts.display,
-                fontSize: 25,
+                fontSize: 24,
                 lineHeight: 27.5,
                 letterSpacing: -0.8,
                 color: colors.ink,
@@ -322,7 +321,7 @@ export function SignatureConsent({
                     <Text
                       style={{
                         fontFamily: fonts.body,
-                        fontSize: 13.5,
+                        fontSize: 13,
                         lineHeight: 21.5,
                         color: colors.secondary,
                       }}
@@ -341,8 +340,8 @@ export function SignatureConsent({
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 10,
-                    backgroundColor: eligibility.message ? '#FBEDEA' : colors.soft,
-                    borderRadius: 18,
+                    backgroundColor: eligibility.message ? colors.errorSoft : colors.soft,
+                    borderRadius: 20,
                     paddingVertical: 12,
                     paddingHorizontal: 14,
                     marginTop: 10,
@@ -353,7 +352,7 @@ export function SignatureConsent({
                       {
                         width: 22,
                         height: 22,
-                        borderRadius: 11,
+                        borderRadius: 999,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: eligibility.message ? colors.error : colors.success,
@@ -393,7 +392,7 @@ export function SignatureConsent({
                     />
                   ))}
                 </View>
-                <Text style={[styles.micro, { fontSize: 11.5, marginTop: 10 }]}>
+                <Text style={[styles.micro, { fontSize: 12, marginTop: 10 }]}>
                   Your account always owns the signature privately.
                 </Text>
               </>
@@ -411,7 +410,7 @@ export function SignatureConsent({
                     gap: 12,
                     alignItems: 'flex-start',
                     backgroundColor: colors.white,
-                    borderRadius: 18,
+                    borderRadius: 20,
                     padding: 14,
                     marginTop: 10,
                   }}
@@ -420,7 +419,7 @@ export function SignatureConsent({
                     style={{
                       width: 22,
                       height: 22,
-                      borderRadius: 7,
+                      borderRadius: 8,
                       borderWidth: 2,
                       borderColor: consent ? colors.dark : colors.radio,
                       backgroundColor: consent ? colors.dark : 'transparent',
@@ -439,7 +438,7 @@ export function SignatureConsent({
                     style={{
                       flex: 1,
                       fontFamily: fonts.body,
-                      fontSize: 13.5,
+                      fontSize: 13,
                       lineHeight: 20,
                       color: colors.secondary,
                     }}

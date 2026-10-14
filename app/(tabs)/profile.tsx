@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { isDemo, localAdapter, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import { useReads } from '../../src/data/reads';
-import { badgeProgress } from '../../src/domain/personalization';
+import { badgeDefinitions, badgeProgress } from '../../src/domain/personalization';
 import { rippleTotal } from '../../src/domain/ripple';
 import {
   Button,
@@ -34,25 +34,24 @@ import {
 import { anim, kf, stag } from '../../src/components/motion';
 import { ProfileEditor } from '../../src/components/profile-personalization';
 import { RippleSummary } from '../../src/components/ripple';
+import { Medal, badgeLook } from '../../src/components/badge-medal';
+import { Glyph } from '../../src/components/glyph';
+import { shadows } from '../../src/components/theme';
 
-const glyphs: Record<string, string> = {
-  'First voice': '✦',
-  'Change starter': '↗',
-  'Conversation starter': '❝',
-  'Community builder': '◎',
-  'Showing up': '★',
-};
 type SheetName = 'drafts' | 'reports' | 'ripple' | 'profile' | null;
 
 export default function Profile() {
   const q = useSnapshot();
-  const { adapter, signOut } = useBackend();
+  const { adapter, signOut, deleteAccount } = useBackend();
   const client = useQueryClient();
   const m = useCommand();
   const { read } = useReads(q.data?.profile?.id);
   const [part, setPart] = useState('Created');
   const [panel, setPanel] = useState<SheetName>(null);
   const [reset, setReset] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingNow, setDeletingNow] = useState(false);
+  const [typed, setTyped] = useState('');
   const [failing, setFailing] = useState(() => isDemo && localAdapter.failing);
   const [appeal, setAppeal] = useState('');
   const [withdrawReport, setWithdrawReport] = useState<string | null>(null);
@@ -86,15 +85,16 @@ export default function Profile() {
       earned: b.earned,
     })),
     ...p.badges
-      .filter((b) => !(b in glyphs))
+      .filter((b) => !badgeDefinitions.some((d) => d.name === b))
       .map((b) => ({
         name: b,
-        criteria: 'Fictional sample award.',
+        criteria: isDemo ? 'Fictional sample award.' : 'Awarded for your activity.',
         progress: 1,
         target: 1,
         earned: true,
       })),
-  ];
+  ].sort((a, b) => Number(b.earned) - Number(a.earned));
+  const earnedCount = badges.filter((b) => b.earned).length;
   const unread = s.notifications.filter((n) => !read.includes(n.id)).length;
   const rows = [
     { label: 'Private drafts', value: s.drafts?.length ?? 0, onPress: () => setPanel('drafts') },
@@ -146,7 +146,7 @@ export default function Profile() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 20, color: colors.accent }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 21, color: colors.accent }}>
                 {initialsOf(p.name)}
               </Text>
             </View>
@@ -165,7 +165,7 @@ export default function Profile() {
               {p.name}
             </Text>
             <Text
-              style={{ fontFamily: fonts.body, fontSize: 12.5, color: colors.muted, marginTop: 3 }}
+              style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 3 }}
             >
               {isDemo ? 'Fictional demo account' : 'Community member'} · {p.city}
             </Text>
@@ -175,7 +175,7 @@ export default function Profile() {
           <Text
             style={{
               fontFamily: fonts.body,
-              fontSize: 13.5,
+              fontSize: 13,
               lineHeight: 21,
               color: colors.secondary,
               marginTop: 12,
@@ -196,7 +196,7 @@ export default function Profile() {
               style={{
                 flex: 1,
                 backgroundColor: colors.quiet,
-                borderRadius: 16,
+                borderRadius: 14,
                 paddingVertical: 10,
                 paddingHorizontal: 8,
                 alignItems: 'center',
@@ -215,7 +215,7 @@ export default function Profile() {
               <Text
                 style={{
                   fontFamily: fonts.medium,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   color: colors.muted,
                   marginTop: 4,
                 }}
@@ -227,97 +227,101 @@ export default function Profile() {
         </View>
       </Animated.View>
 
-      <Text accessibilityRole="header" style={[styles.h2, { marginTop: 24, marginBottom: 12 }]}>
-        Badges
-      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginTop: 24,
+          marginBottom: 12,
+        }}
+      >
+        <Text accessibilityRole="header" style={styles.h2}>
+          Badges
+        </Text>
+        <Text style={styles.small}>
+          {earnedCount} of {badges.length} earned
+        </Text>
+      </View>
       <Rail gap={10} style={{ paddingBottom: 6 }}>
-        {badges.map((b) => (
-          <View
-            key={b.name}
-            accessible
-            accessibilityLabel={`${b.name}. ${b.criteria} ${b.earned ? 'Earned.' : `${b.progress} of ${b.target}.`}`}
-            style={[
-              {
-                width: 148,
-                minHeight: 176,
-                borderRadius: 22,
-                padding: 14,
-                gap: 6,
-                backgroundColor: b.earned ? colors.white : colors.quiet,
-              },
-              b.earned ? { boxShadow: '0px 12px 26px -16px rgba(32,38,26,0.45)' } : null,
-            ]}
-          >
+        {badges.map((b, i) => {
+          const { tone } = badgeLook(b.name);
+          return (
             <Animated.View
+              key={b.name}
+              accessible
+              accessibilityLabel={`${b.name}. ${b.criteria} ${b.earned ? 'Earned.' : `${b.progress} of ${b.target}.`}`}
               style={[
                 {
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
-                  marginBottom: 4,
+                  width: 148,
+                  minHeight: 196,
+                  borderRadius: 24,
+                  padding: 14,
+                  paddingTop: 16,
+                  gap: 6,
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: b.earned ? colors.dark : colors.knob,
+                  backgroundColor: b.earned ? colors.white : colors.quiet,
                 },
-                b.earned ? anim(kf.float, 3000, { loop: true, ease: 'ease-in-out' }) : null,
+                b.earned ? shadows.raised : null,
+                stag(i),
               ]}
-            >
-              <Text
-                style={{
-                  fontFamily: fonts.semibold,
-                  fontSize: 17,
-                  color: b.earned ? colors.pale : '#9A9E92',
-                }}
-              >
-                {glyphs[b.name] ?? '◆'}
-              </Text>
-            </Animated.View>
-            <Text
-              style={{
-                fontFamily: fonts.semibold,
-                fontSize: 13.5,
-                lineHeight: 17,
-                color: colors.ink,
-              }}
-            >
-              {b.name}
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 11,
-                lineHeight: 15.5,
-                color: colors.muted,
-              }}
-            >
-              {b.criteria}
-            </Text>
-            <View
-              style={{
-                height: 4,
-                borderRadius: 4,
-                backgroundColor: colors.track,
-                overflow: 'hidden',
-                marginTop: 'auto',
-              }}
             >
               <Animated.View
                 style={[
-                  {
-                    width: `${Math.min(100, (100 * b.progress) / b.target)}%`,
-                    height: '100%',
-                    transformOrigin: 'left',
-                    backgroundColor: b.earned ? colors.sage : '#B9BEAF',
-                  },
-                  anim(kf.grow, 1000),
+                  { marginBottom: 6 },
+                  b.earned ? anim(kf.float, 3000, { loop: true, ease: 'ease-in-out' }) : null,
                 ]}
-              />
-            </View>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 10.5, color: colors.accent }}>
-              {b.earned ? 'Earned' : `${b.progress} of ${b.target}`}
-            </Text>
-          </View>
-        ))}
+              >
+                <Medal name={b.name} earned={b.earned} progress={b.progress / b.target} />
+              </Animated.View>
+              <Text
+                style={{
+                  fontFamily: fonts.semibold,
+                  fontSize: 13,
+                  lineHeight: 17,
+                  color: b.earned ? colors.ink : colors.secondary,
+                  textAlign: 'center',
+                }}
+              >
+                {b.name}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 11,
+                  lineHeight: 15.5,
+                  color: colors.muted,
+                  textAlign: 'center',
+                }}
+              >
+                {b.criteria}
+              </Text>
+              <View
+                style={{
+                  marginTop: 'auto',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderRadius: 999,
+                  paddingVertical: 4,
+                  paddingHorizontal: 10,
+                  backgroundColor: b.earned ? tone.soft : colors.white,
+                }}
+              >
+                {b.earned && <Glyph name="check" size={12} color={tone.accent} weight={2.6} />}
+                <Text
+                  style={{
+                    fontFamily: fonts.semibold,
+                    fontSize: 11,
+                    color: b.earned ? tone.accent : colors.muted,
+                  }}
+                >
+                  {b.earned ? 'Earned' : `${b.progress} of ${b.target}`}
+                </Text>
+              </View>
+            </Animated.View>
+          );
+        })}
       </Rail>
       <Text style={[styles.micro, { marginTop: 4 }]}>
         Badges recognize participation, not verified impact.
@@ -358,7 +362,7 @@ export default function Profile() {
                 <Text
                   style={{
                     fontFamily: fonts.heading,
-                    fontSize: 14,
+                    fontSize: 14.5,
                     lineHeight: 18,
                     color: colors.ink,
                   }}
@@ -368,7 +372,7 @@ export default function Profile() {
                 <Text
                   style={{
                     fontFamily: fonts.body,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     color: colors.muted,
                     marginTop: 3,
                   }}
@@ -443,7 +447,7 @@ export default function Profile() {
           <Text
             style={{
               fontFamily: fonts.semibold,
-              fontSize: 10.5,
+              fontSize: 11,
               letterSpacing: 1.3,
               textTransform: 'uppercase',
               color: colors.muted,
@@ -468,19 +472,19 @@ export default function Profile() {
               justifyContent: 'space-between',
               gap: 12,
               backgroundColor: colors.white,
-              borderRadius: 22,
+              borderRadius: 24,
               paddingVertical: 14,
               paddingHorizontal: 16,
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.ink }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
                 Simulate next write failure
               </Text>
               <Text
                 style={{
                   fontFamily: fonts.body,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   color: colors.muted,
                   marginTop: 2,
                 }}
@@ -494,7 +498,7 @@ export default function Profile() {
             title="Reset all local demo data"
             variant="danger"
             onPress={() => setReset(true)}
-            style={{ marginTop: 10, borderRadius: 22 }}
+            style={{ marginTop: 10, borderRadius: 24 }}
           />
         </>
       )}
@@ -504,6 +508,14 @@ export default function Profile() {
         onPress={() => void logout()}
         style={{ marginTop: 10 }}
       />
+      {deleteAccount && (
+        <Button
+          title="Delete account"
+          variant="danger"
+          onPress={() => setDeleting(true)}
+          style={{ marginTop: 10, borderRadius: 24 }}
+        />
+      )}
 
       <Sheet visible={panel === 'profile'} onClose={() => setPanel(null)} locked={m.isPending}>
         <ProfileEditor key={p.id} snapshot={s} onDone={() => setPanel(null)} />
@@ -567,7 +579,7 @@ export default function Profile() {
                 key={r.id}
                 style={{ backgroundColor: colors.white, borderRadius: 20, padding: 14, gap: 8 }}
               >
-                <Text style={[styles.label, { fontSize: 10 }]}>{r.status}</Text>
+                <Text style={[styles.label, { fontSize: 11 }]}>{r.status}</Text>
                 <Text style={styles.body}>{r.reason}</Text>
                 {!!r.screening && (
                   <Text style={styles.small}>
@@ -654,6 +666,42 @@ export default function Profile() {
       >
         {m.error && <Notice error text={m.error.message} />}
       </Confirm>
+      {deleteAccount && (
+        <Confirm
+          visible={deleting}
+          title="Delete your account?"
+          body="Your signatures, saves, memberships, drafts, notifications and photos are deleted, and your petitions leave public view. Updates and posts you wrote stay public as “Deleted account”. This can’t be undone."
+          pending={deletingNow}
+          confirmLabel="Delete account"
+          confirmDisabled={typed.trim() !== 'DELETE'}
+          onCancel={() => {
+            setDeleting(false);
+            setTyped('');
+          }}
+          onConfirm={() => {
+            setDeletingNow(true);
+            void deleteAccount()
+              .then(() => {
+                client.clear();
+                router.replace('/(tabs)');
+                toast('Your account was deleted.');
+              })
+              .catch((e) => toast(e instanceof Error ? e.message : 'Deletion failed. Try again.'))
+              .finally(() => {
+                setDeletingNow(false);
+                setDeleting(false);
+                setTyped('');
+              });
+          }}
+        >
+          <Field
+            label="Type DELETE to confirm"
+            value={typed}
+            onChangeText={setTyped}
+            autoCapitalize="characters"
+          />
+        </Confirm>
+      )}
       <Confirm
         visible={reset}
         title="Reset this fictional community?"

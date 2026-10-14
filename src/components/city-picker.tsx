@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { Place, normalizeCity, sampleCities } from '../domain/location';
 import { cityFromDevice, searchCities } from '../data/places';
+import { isDemo } from '../data/provider';
 import { Press, Sheet } from './kit';
 import { Glyph } from './glyph';
 import { Notice, colors, fonts, styles } from './ui';
@@ -65,7 +66,7 @@ export function CitySheet({
   }
 
   const typed = normalizeCity(query);
-  const samples = sampleCities.filter((c) => normalizeCity(c.city).startsWith(typed));
+  const samples = isDemo ? sampleCities.filter((c) => normalizeCity(c.city).startsWith(typed)) : [];
   const found = typed.length >= 2 ? results : [];
   const list = [...samples, ...found.filter((r) => !samples.some((s) => s.city === r.city))];
 
@@ -108,7 +109,7 @@ export function CitySheet({
             flex: 1,
             minWidth: 0,
             fontFamily: fonts.body,
-            fontSize: 15,
+            fontSize: 14.5,
             color: colors.ink,
             paddingVertical: 12,
           }}
@@ -131,7 +132,7 @@ export function CitySheet({
         }}
       >
         <Glyph name="pin" size={18} color={colors.accent} />
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.ink }}>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
           {locating ? 'Finding your city…' : 'Use my current location'}
         </Text>
       </Press>
@@ -155,7 +156,7 @@ export function CitySheet({
               borderBottomColor: colors.line,
             }}
           >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
               {p.city}
             </Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
@@ -209,8 +210,8 @@ export function CityField({
           style={{
             flex: 1,
             fontFamily: fonts.body,
-            fontSize: 15,
-            color: value ? colors.ink : '#8C9086',
+            fontSize: 14.5,
+            color: value ? colors.ink : colors.placeholder,
           }}
         >
           {value || 'Choose a city'}

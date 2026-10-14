@@ -1,5 +1,12 @@
 import { writeFileSync } from 'node:fs';
-import { communities, demoIds, petitionId, seedPetitions, seedProfiles } from '../src/data/seed';
+import {
+  communities,
+  demoIds,
+  petitionId,
+  seedPetitions,
+  seedProfiles,
+  seedVotes,
+} from '../src/data/seed';
 import { topics } from '../src/domain/model';
 const sql = (value: unknown) => `'${String(value).replaceAll("'", "''")}'`;
 const rows = [
@@ -86,6 +93,10 @@ for (const p of seedPetitions()) {
       `insert into public.official_responses(petition_id,author_id,body,organization,verification,delivery_id) select ${sql(p.id)},${sql(p.ownerId)},${sql(e.body)},${sql(e.organization)},'verified',${e.deliveryId ? sql(e.deliveryId) : 'null'} where not exists(select 1 from public.official_responses where petition_id=${sql(p.id)});`,
     );
 }
+for (const v of seedVotes)
+  rows.push(
+    `insert into public.community_backing_votes(petition_id,community_id,user_id,support) values(${sql(v.petitionId)},${sql(v.communityId)},${sql(v.userId)},${v.support}) on conflict do nothing;`,
+  );
 rows.push(
   `insert into public.petition_saves(petition_id,user_id) values(${sql(petitionId(2))},${sql(demoIds.maya)}) on conflict do nothing;`,
 );

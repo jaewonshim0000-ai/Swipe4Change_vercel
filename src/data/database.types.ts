@@ -9,6 +9,7 @@ import type {
   Snapshot,
   Volunteer,
 } from '../domain/model';
+import type { TrendCount } from '../domain/trend';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 export interface Database {
   public: {
@@ -17,9 +18,13 @@ export interface Database {
     Functions: {
       signature_receipt: { Args: { petition_id: string }; Returns: SignatureReceipt | null };
       lookaware_snapshot: { Args: Record<string, never>; Returns: Snapshot };
-      lookaware_command: { Args: { command: Command }; Returns: string | null };
+      lookaware_command: {
+        Args: { command: Command | { type: 'delete_account' } };
+        Returns: string | null;
+      };
       lookaware_requests: { Args: { petition_id: string }; Returns: EligibilityRequest[] };
       lookaware_volunteers: { Args: { petition_id: string }; Returns: Volunteer[] };
+      lookaware_signature_trend: { Args: { petition_id: string }; Returns: TrendCount[] };
       lookaware_community_posts: { Args: { community_id: string }; Returns: CommunityPost[] };
       lookaware_community_reports: { Args: { community_id: string }; Returns: PostReport[] };
     };

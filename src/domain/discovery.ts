@@ -1,6 +1,16 @@
-import { Petition, Snapshot, Topic, Verification } from './model';
+import { Community, Petition, Snapshot, Topic, Verification, verificationLabels } from './model';
 import { findOffice, GovernmentLevel } from './recipients';
 import { normalizeCity, sameCity } from './location';
+import { backers } from './rules';
+
+/** Who may sign, naming the community on a members-only petition. */
+export function requirementLabel(p: Petition, communities: Community[]) {
+  const c = p.verification === 'community' && communities.find((x) => x.id === p.communityId);
+  return c ? `Members of ${c.name} only` : verificationLabels[p.verification];
+}
+/** Names of the communities whose members voted to back the petition. */
+export const backerNames = (p: Petition, communities: Community[]) =>
+  backers(p).flatMap((id) => communities.find((c) => c.id === id)?.name ?? []);
 
 export function nextMilestone(p: Pick<Petition, 'count' | 'goal'>) {
   const target = [25, 50, 75, 100]

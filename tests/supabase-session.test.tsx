@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native';
-import { render, screen, waitFor } from '@testing-library/react-native';
-import { useAuth } from '@clerk/expo';
+import { act, render, screen, waitFor } from '@testing-library/react-native';
+import { useAuth, useUser } from '@clerk/expo';
 import { useQuery } from '@tanstack/react-query';
 import { Providers, useBackend } from '../src/data/provider';
 import { getBackendConfig } from '../src/data/config';
@@ -94,4 +94,31 @@ test('invalid setup shows an actionable message without mounting authentication'
 afterEach(() => {
   jest.runOnlyPendingTimers();
   jest.useRealTimers();
+});
+test('deleting an account clears the database records before removing the Clerk user', async () => {
+  session('alice');
+  const order: string[] = [];
+  jest.mocked(createSupabaseAdapter).mockReturnValue({
+    deleteAccount: jest.fn(async () => {
+      order.push('records');
+    }),
+  } as unknown as ReturnType<typeof createSupabaseAdapter>);
+  jest.mocked(useUser).mockReturnValue({
+    user: { delete: jest.fn(async () => order.push('clerk user')) },
+  } as unknown as ReturnType<typeof useUser>);
+  let remove: (() => Promise<void>) | undefined;
+  function Grab() {
+    remove = useBackend().deleteAccount;
+    return null;
+  }
+  const view = await render(
+    <Providers>
+      <Grab />
+    </Providers>,
+  );
+  await act(async () => {
+    await remove!();
+  });
+  expect(order).toEqual(['records', 'clerk user']);
+  await view.unmount();
 });

@@ -4,7 +4,7 @@ import { colors, fonts, styles } from './theme';
 /** Label left, value right, on a quiet ground. Every "here is what you chose" block. */
 export function SummaryRows({ rows }: { rows: { label: string; value: string }[] }) {
   return (
-    <View style={{ borderRadius: 18, backgroundColor: colors.quiet, padding: 14, gap: 10 }}>
+    <View style={{ borderRadius: 20, backgroundColor: colors.quiet, padding: 14, gap: 10 }}>
       {rows.map((r) => (
         <View key={r.label} style={[styles.between, { gap: 12 }]}>
           <Text style={[styles.small, { flexShrink: 1 }]}>{r.label}</Text>
