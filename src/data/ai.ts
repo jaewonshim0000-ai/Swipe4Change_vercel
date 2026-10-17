@@ -16,8 +16,14 @@ export interface CivicAi {
   lookup?(request: LookupRequest): Promise<LookupResponse>;
 }
 
-// Web calls its own origin; a phone reaches the dev server it loaded the app from.
+// Web calls its own origin; a phone reaches the dev server it loaded the app from. The /api routes
+// exist only on the development server (they refuse production builds), so a published demo, such
+// as the static Vercel site, says so instead of sending a request that can only fail.
 function endpoint(path = 'ai') {
+  if (!__DEV__)
+    throw new Error(
+      'AI helpers are not available on this demo website. They work in the live app, or when you run the demo locally.',
+    );
   if (Platform.OS === 'web') return `/api/${path}`;
   const host = Constants.expoConfig?.hostUri;
   if (!host) throw new Error('AI review runs on the development server.');

@@ -105,7 +105,7 @@ the same fallback that makes links like `/petition/…` open directly. It uses t
 
 Then, once, at [vercel.com](https://vercel.com):
 
-1. **Add New → Project**, import the GitHub repository `Dankguy17/petitionv2`. Vercel reads
+1. **Add New → Project**, import the GitHub repository `jaewonshim0000-ai/Swipe4Change_vercel` (public). Vercel reads
    `vercel.json` (build `npx expo export --platform web`, output `dist`), so leave the framework
    preset as **Other** and change nothing else.
 2. **Environment Variables** (all environments), the same public values as your `.env`:
