@@ -45,3 +45,28 @@ test('hosted auth is the default unless demo is explicitly requested', () => {
   expect(readBackendConfig({ ...env, backend: 'demo' })).toEqual({ backend: 'demo' });
   expect(() => readBackendConfig({ clerkKey: env.clerkKey })).toThrow(/SUPABASE_URL/);
 });
+test("the Supabase–Vercel integration's public values reach the build, never its secrets", () => {
+  const saved = process.env;
+  process.env = {
+    NODE_ENV: 'test',
+    NEXT_PUBLIC_SUPABASE_URL: 'https://sample.supabase.co',
+    SUPABASE_PUBLISHABLE_KEY: env.publicKey,
+    SUPABASE_SECRET_KEY: 'sb_secret_private',
+    SUPABASE_SERVICE_ROLE_KEY: jwt('service_role'),
+  };
+  try {
+    jest.isolateModules(() => require('../app.config'));
+    const { EXPO_PUBLIC_SUPABASE_URL: url, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publicKey } =
+      process.env;
+    expect(readBackendConfig({ url, publicKey, clerkKey: env.clerkKey })).toMatchObject({
+      url: 'https://sample.supabase.co',
+      publicKey: env.publicKey,
+    });
+    expect(Object.keys(process.env).filter((name) => name.startsWith('EXPO_PUBLIC_'))).toEqual([
+      'EXPO_PUBLIC_SUPABASE_URL',
+      'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+    ]);
+  } finally {
+    process.env = saved;
+  }
+});
