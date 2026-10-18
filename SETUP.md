@@ -108,12 +108,17 @@ Then, once, at [vercel.com](https://vercel.com):
 1. **Add New → Project**, import the GitHub repository `jaewonshim0000-ai/Swipe4Change_vercel` (public). Vercel reads
    `vercel.json` (build `npx expo export --platform web`, output `dist`), so leave the framework
    preset as **Other** and change nothing else.
-2. **Environment Variables** (all environments), the same public values as your `.env`:
-   `EXPO_PUBLIC_BACKEND=supabase`, `EXPO_PUBLIC_SUPABASE_URL`,
-   `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, and optionally
+2. **Environment Variables** (all environments): `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, and the
+   Supabase URL and publishable key. The easy way to add the Supabase pair is Supabase's Vercel
+   integration (Vercel **Integrations → Supabase**, or Supabase **Integrations → Vercel**): the
+   app reads its `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_URL` and
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_PUBLISHABLE_KEY`, and never the secret
+   keys it also adds. Or add `EXPO_PUBLIC_SUPABASE_URL` and
+   `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` yourself; those win. Leave `EXPO_PUBLIC_BACKEND` unset
+   or `supabase`: `demo` shows only the fictional demo accounts. Optionally add
    `EXPO_PUBLIC_CONTACT_EMAIL` (shown publicly on the Terms page; use an address made for the
-   app). **Never** add `ANTHROPIC_API_KEY`, `OPENSTATES_API_KEY` or any secret key here: anything
-   in the web build is public. Those live only in Supabase (step 4).
+   app). **Never** add `ANTHROPIC_API_KEY`, `OPENSTATES_API_KEY` or any secret key under an
+   `EXPO_PUBLIC_` name: anything in the web build is public. Those live only in Supabase (step 4).
 3. **Deploy.** The site is at `https://<project>.vercel.app`. From then on every push to `main`
    redeploys it, and other branches get their own preview addresses. Changing an environment
    variable needs a redeploy (Deployments → ⋯ → Redeploy), because the values are built in.
