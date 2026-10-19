@@ -301,3 +301,13 @@ Tokens come from the v2 design: canvas `#EEF0E9`, near-black olive `#1C1F19` for
 Newsreader and Work Sans are bundled through Expo Font. The six illustrative photos in `assets/theme/` come from the supplied HTML reference and are bundled for offline use. They are theme artwork, not evidence or photographs of the fictional petition locations, and are labeled accordingly. The reference’s platform statistics, legislative victories, certification promises, and donation/funding claims are not product claims. All demo data continues to be labeled fictional.
 
 Theme smoke check: open Home and Explore at 375px and 1440px; drag the deck left, up and right; switch Story/Progress/Activity; sign a petition end to end; walk Create to the published card; open Communities, a community, Profile and Notifications. Mobile primary controls should remain at least 44 points.
+
+## Teal & ivory introduction
+
+The root route now introduces Swipe4Change before continuing to the existing discovery/onboarding flow. The shared theme uses warm ivory, deep teal, and peach accents on web and native. The introduction is responsive and lets visitors browse without signing in.
+
+The web intro integrates five source components from [React Bits](https://reactbits.dev): **Blur Text** (headline), **Animated Content** (card and steps), **Spotlight Card** (illustrated cause card), **Count Up** (step numbers), and **Star Border** (browse button). Source and upstream license live in `src/components/react-bits/`; Motion and GSAP are dependencies. Upstream source is exempt from app-specific inline token checks. Native uses a matching React Native introduction rather than DOM components. System reduced-motion preferences are supported. Illustration and copy are conceptual, not live petition or signature statistics.
+
+Preview without hosted credentials: `EXPO_PUBLIC_BACKEND=demo npm run web`. Smoke check the intro at 390px and 1440px, use the browse button, open a petition, and verify keyboard focus and reduced motion. The introduction reappears when the root route mounts; deep links remain direct.
+
+The fictional catalog now contains **22 petitions** across the five existing topics and four communities. Ten additional requests cover shaded bus stops, a repair cafe, homework sessions, step-free recreation routes, public seating, family preparedness workshops, rain gardens, equipment lending, quiet play space, and a maintenance calendar. New requests start at zero signatures, saves and volunteer activity, with no fabricated endorsements or official responses. `npm run seed` regenerates the repeatable Supabase development seed from the same typed factory. As described in SETUP.md, do not import the fictional seed into a real community database.

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Create from '../app/(tabs)/create';
 import { localAdapter } from '../src/data/provider';
-import { demoIds } from '../src/data/seed';
+import { demoIds, seedPetitions } from '../src/data/seed';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn() },
@@ -61,7 +61,7 @@ test('the reorganized builder validates each step, previews both surfaces, and p
   await fireEvent.press(screen.getByLabelText('Page preview'));
   expect(screen.getByText('Why it matters')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Publish petition'));
-  expect((await localAdapter.load()).petitions).toHaveLength(12);
+  expect((await localAdapter.load()).petitions).toHaveLength(seedPetitions().length);
   await fireEvent.press(screen.getByLabelText('Publish'));
   await waitFor(() => expect(screen.getByText('Published · Change starter earned')).toBeTruthy());
   await fireEvent.press(screen.getByLabelText('View your petition'));
