@@ -22,7 +22,7 @@ import {
   volunteerRoles,
 } from '../../src/domain/model';
 import { milestones, reachedMilestones } from '../../src/domain/rules';
-import { milestoneLabel, requirementLabel } from '../../src/domain/discovery';
+import { requirementLabel } from '../../src/domain/discovery';
 import { findOffice, levelLabels } from '../../src/domain/recipients';
 import { officialNamed } from '../../supabase/functions/_shared/officials';
 import { isSampleCity, useOfficials } from '../../src/data/civic-lookup';
@@ -40,7 +40,7 @@ import {
 } from '../../src/components/entries';
 import {
   CircleButton,
-  Heart,
+  SaveMark,
   Initials,
   LiveDot,
   PillChip,
@@ -48,17 +48,16 @@ import {
   Scrim,
   Segmented,
   Sheet,
-  TopicPill,
+  Kicker,
   initialsOf,
   toast,
   petitionImage,
 } from '../../src/components/kit';
 import { Glyph } from '../../src/components/glyph';
-import { topicColors } from '../../src/components/theme';
+import { blur, topicColors } from '../../src/components/theme';
 import { anim, kf, reducedMotion } from '../../src/components/motion';
 import {
   Button,
-  Chip,
   Confirm,
   Empty,
   Field,
@@ -70,7 +69,14 @@ import {
   styles,
 } from '../../src/components/ui';
 
-const card = { backgroundColor: colors.white, borderRadius: 24, padding: 18, gap: 10 };
+const card = {
+  backgroundColor: colors.white,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: colors.line,
+  padding: 18,
+  gap: 10,
+};
 const cardTitle = { fontFamily: fonts.heading, fontSize: 18, lineHeight: 22.5, color: colors.ink };
 const supporterColors = [
   [colors.pale, colors.accent],
@@ -225,12 +231,6 @@ function PetitionPage({
     .filter((u) => !u.removed)
     .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
   const actions = [
-    { label: saved ? 'Saved' : 'Save', icon: <Heart on={saved} dark />, onPress: () => save(p) },
-    {
-      label: 'Share',
-      icon: <Glyph name="share" size={19} />,
-      onPress: () => void share(p, s),
-    },
     {
       label: myOffer ? 'Volunteering' : 'Volunteer',
       icon: <Glyph name="hand" size={19} color={myOffer ? colors.accent : colors.dark} />,
@@ -301,14 +301,6 @@ function PetitionPage({
             >
               <Glyph name="back" size={19} weight={2} />
             </CircleButton>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <CircleButton label="Share" onPress={() => void share(p, s)}>
-                <Glyph name="share" size={18} />
-              </CircleButton>
-              <CircleButton label={saved ? 'Unsave' : 'Save'} onPress={() => save(p)}>
-                <Heart on={saved} dark />
-              </CircleButton>
-            </View>
           </View>
         </View>
         <View
@@ -337,11 +329,14 @@ function PetitionPage({
               anim(kf.in, 500, { delay: 100 }),
             ]}
           >
-            <TopicPill topic={p.topic} soft />
-            <Chip label={p.city} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Kicker topic={p.topic} text={`${community?.name ?? p.city} · ${p.topic}`} />
+            </View>
             <View
               style={{
                 backgroundColor: colors.white,
+                borderWidth: 1,
+                borderColor: colors.line,
                 borderRadius: 999,
                 paddingVertical: 6,
                 paddingHorizontal: 11,
@@ -368,39 +363,78 @@ function PetitionPage({
             style={[
               {
                 fontFamily: fonts.display,
-                fontSize: 30,
+                fontSize: 28,
                 lineHeight: 33,
-                letterSpacing: -1.2,
+                letterSpacing: -0.6,
                 color: colors.ink,
-                marginTop: 14,
-                marginBottom: 8,
+                marginTop: 12,
               },
               anim(kf.in, 550, { delay: 160 }),
             ]}
           >
             {p.title}
           </Animated.Text>
+          {!!p.summary && (
+            <Animated.Text
+              style={[
+                {
+                  fontFamily: fonts.body,
+                  fontSize: 16,
+                  lineHeight: 24,
+                  color: colors.secondary,
+                  marginTop: 10,
+                },
+                anim(kf.in, 550, { delay: 200 }),
+              ]}
+            >
+              {p.summary}
+            </Animated.Text>
+          )}
+          <Animated.View
+            style={[
+              { marginTop: 16, padding: 16, borderRadius: 16, backgroundColor: colors.field },
+              anim(kf.in, 550, { delay: 220 }),
+            ]}
+          >
+            <Text style={[styles.label, { color: colors.muted }]}>The ask</Text>
+            <Text
+              style={{
+                marginTop: 4,
+                fontFamily: fonts.semibold,
+                fontSize: 17,
+                lineHeight: 25,
+                color: colors.ink,
+              }}
+            >
+              {p.action.replace(/\.?$/, '.')}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+              <Glyph name="landmark" size={18} color={colors.secondary} />
+              <Text
+                style={{
+                  flexShrink: 1,
+                  fontFamily: fonts.body,
+                  fontSize: 14,
+                  color: colors.secondary,
+                }}
+              >
+                To {p.recipient}
+              </Text>
+            </View>
+          </Animated.View>
           <Animated.Text
             style={[
               {
                 fontFamily: fonts.body,
-                fontSize: 14.5,
-                lineHeight: 23,
-                color: colors.secondary,
-                marginBottom: 6,
+                fontSize: 13,
+                lineHeight: 19,
+                color: colors.muted,
+                marginTop: 12,
               },
-              anim(kf.in, 550, { delay: 220 }),
-            ]}
-          >
-            {p.action.replace(/\.?$/, '.')}
-          </Animated.Text>
-          <Animated.Text
-            style={[
-              { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.muted },
               anim(kf.in, 550, { delay: 260 }),
             ]}
           >
-            Started by {p.creator} · {community?.name ?? p.city}
+            Started by {p.creator} · {p.city}
           </Animated.Text>
           <View style={{ gap: 10, marginTop: 10 }}>
             <ManagerControl petition={p} profile={s.profile} />
@@ -491,20 +525,22 @@ function PetitionPage({
                 onPress={a.onPress}
                 style={{
                   flex: 1,
-                  backgroundColor: colors.white,
-                  borderRadius: 20,
-                  paddingTop: 12,
-                  paddingBottom: 10,
-                  paddingHorizontal: 4,
+                  minHeight: 52,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
                   alignItems: 'center',
-                  gap: 6,
-                  boxShadow: '0px 8px 20px -16px rgba(32,38,26,0.4)',
+                  gap: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.handle,
+                  backgroundColor: colors.white,
                 }}
               >
                 {a.icon}
                 <Text
                   numberOfLines={1}
-                  style={{ fontFamily: fonts.semibold, fontSize: 11, color: colors.secondary }}
+                  style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}
                 >
                   {a.label}
                 </Text>
@@ -694,7 +730,7 @@ function PetitionPage({
                     <Text
                       style={{
                         fontFamily: fonts.body,
-                        fontSize: 14.5,
+                        fontSize: 15,
                         lineHeight: 23,
                         color: colors.secondary,
                       }}
@@ -812,7 +848,7 @@ function PetitionPage({
                                 style={{
                                   fontFamily: fonts.bold,
                                   fontSize: 11,
-                                  lineHeight: 11,
+                                  lineHeight: 14,
                                   color: colors.white,
                                 }}
                               >
@@ -834,7 +870,7 @@ function PetitionPage({
                           <Text
                             style={{
                               fontFamily: fonts.semibold,
-                              fontSize: 14.5,
+                              fontSize: 15,
                               lineHeight: 18,
                               color: colors.ink,
                             }}
@@ -1176,72 +1212,84 @@ function PetitionPage({
         </View>
       </Animated.ScrollView>
 
+      {/* The design's sticky foot: save and share squares, then the one primary action. */}
       <Animated.View
         style={[
-          { position: 'absolute', left: 14, right: 14, bottom: 28 + insets.bottom, zIndex: 20 },
+          {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 20,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            paddingTop: 12,
+            paddingHorizontal: 18,
+            paddingBottom: 16 + insets.bottom,
+            borderTopWidth: 1,
+            borderTopColor: colors.line,
+            backgroundColor: 'rgba(255,255,255,0.94)',
+          },
+          blur(14),
           anim(kf.sheet, 500, { delay: 200 }),
         ]}
       >
-        <View
+        <Press
+          accessibilityLabel={saved ? 'Unsave' : 'Save'}
+          accessibilityState={{ selected: saved }}
+          scale={0.94}
+          onPress={() => save(p)}
           style={{
-            backgroundColor: colors.dark,
-            borderRadius: 999,
-            paddingVertical: 8,
-            paddingRight: 8,
-            paddingLeft: 20,
-            flexDirection: 'row',
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: saved ? colors.blue : colors.handle,
+            backgroundColor: saved ? colors.blueSoft : colors.white,
             alignItems: 'center',
-            gap: 12,
-            boxShadow: '0px 18px 36px -14px rgba(18,20,15,0.6)',
+            justifyContent: 'center',
           }}
         >
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              numberOfLines={1}
-              style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}
-            >
-              {pendingSign
-                ? 'Confirming your signature…'
-                : signed
-                  ? 'You signed this'
-                  : p.status === 'active'
-                    ? `${p.count.toLocaleString()} signed`
-                    : 'Signatures closed'}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={{ fontFamily: fonts.body, fontSize: 12, color: colors.onDark }}
-            >
-              {signed
-                ? 'Share to grow your ripple'
-                : `${milestoneLabel(p)} · ${requirementLabel(p, s.communities)}`}
-            </Text>
-          </View>
-          {(signed || p.status === 'active') && (
-            <Press
-              accessibilityLabel={signed ? 'Share link' : 'Sign petition'}
-              disabled={pendingSign}
-              scale={0.95}
-              onPress={() => (signed ? void share(p, s) : needAccount(() => setSign(true)))}
-              style={{
-                backgroundColor: colors.pale,
-                minHeight: 48,
-                paddingHorizontal: 22,
-                borderRadius: 999,
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.dark }}>
-                {signed ? 'Share link' : 'Sign petition'}
-              </Text>
-            </Press>
-          )}
-        </View>
+          <SaveMark on={saved} dark size={22} />
+        </Press>
+        <Press
+          accessibilityLabel={signed ? 'Share link' : 'Share'}
+          scale={0.94}
+          onPress={() => void share(p, s)}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: colors.handle,
+            backgroundColor: colors.white,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Glyph name="share" size={22} weight={2} />
+        </Press>
+        <Button
+          title={
+            pendingSign
+              ? 'Confirming your signature…'
+              : signed
+                ? 'You signed this'
+                : p.status === 'active'
+                  ? 'Sign petition'
+                  : 'Signatures closed'
+          }
+          icon={signed ? 'checkmark' : p.status === 'active' ? 'heart' : undefined}
+          disabled={pendingSign || signed || p.status !== 'active'}
+          onPress={() => needAccount(() => setSign(true))}
+          style={{ flex: 1, minHeight: 56 }}
+        />
       </Animated.View>
 
       {sign && <SignatureConsent petition={p} snapshot={s} onClose={() => setSign(false)} />}
       <Sheet visible={offering} onClose={() => setOffering(false)} locked={mutation.isPending}>
-        <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 26 }]}>
+        <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 29 }]}>
           Offer to help
         </Text>
         <Text style={[styles.muted, { marginTop: 6, marginBottom: 14 }]}>

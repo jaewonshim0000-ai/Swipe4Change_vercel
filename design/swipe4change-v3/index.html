@@ -1,0 +1,5948 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Swipe4Change v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet" />
+<style>
+/* Swipe4Change v3 — one visual system for every section, in the original Swipe4Change palette.
+   Light sage canvas, near-black olive for primary buttons / tab bar / sidebar, one olive-sage accent
+   (sign / progress / selected / AI), muted semantic colors (terracotta = skip & alerts,
+   slate blue = saved, muted metals = badge levels). Every screen is built from the
+   same parts: pill, search field, card, button, section label, sheet, progress bar.
+   Layout size comes from #app[data-size] (phone < 640 ≤ tablet < 1024 ≤ desktop), set by app.js. */
+
+:root {
+  --font: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Surfaces — the original Swipe4Change civic palette (src/components/theme.ts) */
+  --bg: #eef0e9; /* canvas */
+  --bg-1: #f4f5f0; /* quiet */
+  --surface: #ffffff;
+  --surface-2: #f2f3ee; /* field */
+  --surface-3: #e6e9df; /* track */
+  --line: #dde0d5;
+  --line-2: #cdd1c5;
+  --dark: #1c1f19; /* near-black olive: primary buttons, tab bar, sidebar */
+
+  /* Text */
+  --text: #121113;
+  --text-2: #3e423a;
+  --text-3: #5d6259;
+
+  /* The one accent: olive / sage */
+  --lime: #526344; /* accent text, selected, checks */
+  --green: #526344;
+  --sage: #899878;
+  --pale: #e4e6c3; /* accent on dark and on photos */
+  --on-green: #ffffff;
+  --grad-sign: linear-gradient(180deg, #2b3027 0%, #1c1f19 100%);
+  --grad-bar: linear-gradient(90deg, #899878, #526344);
+  --lime-soft: #eaf0e3;
+  --lime-line: #899878;
+  --glow: radial-gradient(90% 60% at 50% -12%, rgba(228, 230, 195, 0.95), rgba(228, 230, 195, 0) 70%);
+  --shadow-card: 0 10px 26px -16px rgba(32, 38, 26, 0.35);
+
+  /* Semantic */
+  --pink: #b4492f; /* skip, alerts */
+  --blue: #405e82; /* saved */
+
+  --r-s: 10px;
+  --r-m: 16px;
+  --r-l: 20px;
+  --r-xl: 32px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tab-h: 68px;
+  --nav-space: calc(var(--tab-h) + 24px + var(--safe-bottom));
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+button:disabled {
+  cursor: default;
+}
+img {
+  display: block;
+}
+:focus-visible {
+  outline: 3px solid #385d88;
+  outline-offset: 2px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.ic {
+  flex: none;
+  display: block;
+}
+
+/* ───────────────────────── Stage / device / preview frame ───────────────────────── */
+.stage {
+  position: relative;
+  height: 100%;
+}
+.device {
+  position: relative;
+  width: 100%;
+  height: var(--vvh, 100dvh);
+  overflow: hidden;
+}
+.statusbar,
+.home-ind {
+  display: none;
+}
+.stage[data-frame='phone'] {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 32px 16px;
+  background: radial-gradient(80% 60% at 50% 0%, #f4f5f0 0%, #d3d7cb 75%);
+}
+.stage[data-frame='phone'] .device {
+  width: 390px;
+  height: 844px;
+  border-radius: 56px;
+  border: 12px solid #1b1b1e;
+  box-shadow:
+    0 0 0 2px #34343a,
+    0 40px 80px -20px rgba(0, 0, 0, 0.8);
+  box-sizing: content-box;
+  --safe-top: 47px;
+  --safe-bottom: 20px;
+}
+.stage[data-frame='phone'] .statusbar {
+  display: flex;
+  position: absolute;
+  z-index: 90;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 47px;
+  padding: 16px 30px 0 44px;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 16px;
+  pointer-events: none;
+  color: var(--sb, #121113);
+  fill: currentColor;
+}
+.sb-icons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.stage[data-frame='phone'] .home-ind {
+  display: block;
+  position: absolute;
+  z-index: 90;
+  bottom: 8px;
+  left: 50%;
+  width: 134px;
+  height: 5px;
+  margin-left: -67px;
+  border-radius: 3px;
+  background: var(--sb, #121113);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.preview-toggle {
+  display: none;
+}
+@media (min-width: 760px) and (hover: hover) {
+  .preview-toggle {
+    display: flex;
+    position: fixed;
+    z-index: 200;
+    bottom: 12px;
+    right: 12px;
+    padding: 4px;
+    gap: 4px;
+    border-radius: 999px;
+    background: rgba(31, 31, 34, 0.9);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--line-2);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+    opacity: 0.55;
+    transition: opacity 0.2s;
+  }
+  .preview-toggle:hover,
+  .preview-toggle:focus-within {
+    opacity: 1;
+  }
+  .preview-toggle button {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .preview-toggle button[aria-pressed='true'] {
+    background: #fff;
+    color: #000;
+  }
+}
+
+/* ───────────────────────── Shared parts ───────────────────────── */
+.app {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+}
+.app[data-size='desktop'] {
+  --nav-space: 0px;
+}
+.main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+.screen.no-scroll {
+  overflow: hidden;
+}
+
+/* Section label — the one eyebrow style used on every screen */
+.eyebrow,
+.p-sec,
+.wd-side-label,
+.sec-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.eyebrow.accent {
+  color: var(--lime);
+}
+
+/* Pill — topic chips and segmented controls */
+.pill,
+.tchip,
+.seg button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.pill:hover,
+.tchip:hover,
+.seg button:hover {
+  color: var(--text);
+}
+.pill[aria-pressed='true'],
+.tchip[aria-pressed='true'],
+.seg button[aria-pressed='true'] {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+
+/* Search field — Discover and Community */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-3);
+  min-width: 0;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: none;
+  font-size: 16px;
+  color: var(--text);
+}
+.search input::placeholder {
+  color: var(--text-3);
+}
+.search:focus-within {
+  border-color: var(--line-2);
+  color: var(--text-2);
+}
+
+/* Card */
+.card-box,
+.side-box,
+.score,
+.answers,
+.ov,
+.badges,
+.qblock,
+.opt-card,
+.resume,
+.post {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
+}
+
+/* Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 24px;
+  border-radius: 18px;
+  background: var(--grad-sign);
+  color: var(--on-green);
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 26px -14px rgba(32, 38, 26, 0.6);
+  transition:
+    transform 0.15s,
+    filter 0.15s,
+    opacity 0.2s;
+}
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  background: var(--surface-3);
+  color: var(--text-3);
+  box-shadow: none;
+}
+.btn-primary.block {
+  width: 100%;
+}
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 18px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.btn-ghost:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.btn-outline,
+.btn-square {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 56px;
+  min-width: 56px;
+  padding: 0 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+.btn-outline:hover,
+.btn-square:hover {
+  background: var(--surface-2);
+}
+.btn-outline[aria-pressed='true'] {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: #e6edf7;
+}
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text);
+  position: relative;
+}
+.icon-btn:hover {
+  background: rgba(18, 17, 19, 0.06);
+}
+.dot-badge {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pink);
+  border: 2px solid #fff;
+}
+.tab-badge,
+.msg-btn .count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 11px;
+  line-height: 20px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Progress bar — the same bar everywhere (petitions, badges, write, celebration) */
+.progress {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--grad-bar);
+  transition: width 0.8s var(--ease);
+}
+.topic-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--green));
+  flex: none;
+}
+.avatar {
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--pale);
+  display: grid;
+  place-items: center;
+}
+.avatar svg {
+  width: 100%;
+  height: 100%;
+}
+.initials {
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+}
+
+/* Floating tab bar (phone + tablet) */
+.tabbar {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: calc(12px + var(--safe-bottom));
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 24px));
+  height: var(--tab-h);
+  display: flex;
+  align-items: stretch;
+  padding: 6px;
+  gap: 2px;
+  border-radius: 34px;
+  background: rgba(28, 31, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: 0 18px 36px -12px rgba(18, 20, 15, 0.55);
+  transition:
+    transform 0.35s var(--ease),
+    opacity 0.25s;
+}
+.app[data-size='desktop'] .tabbar,
+.app[data-focus='1'] .tabbar {
+  transform: translate(-50%, 140%);
+  opacity: 0;
+  pointer-events: none;
+}
+.tab {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 28px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9ea393;
+  position: relative;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.tab[aria-current='page'] {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.tab[aria-current='page'] .ic {
+  color: var(--pale);
+}
+.tab-badge {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 6px);
+}
+
+/* Desktop sidebar */
+.sidebar {
+  display: none;
+}
+.app[data-size='desktop'] .sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 248px;
+  flex: none;
+  padding: 24px 16px;
+  gap: 4px;
+  background: var(--dark);
+  color: #fff;
+  z-index: 20;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 24px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--pale);
+  color: var(--dark);
+}
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #c9cebf;
+  text-align: left;
+}
+.side-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+.side-link[aria-current='page'] {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.side-link[aria-current='page'] .ic {
+  color: var(--pale);
+}
+.side-cta {
+  margin: 20px 0 0;
+  background: var(--pale);
+  color: var(--dark);
+  box-shadow: none;
+}
+.side-me {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 16px;
+  text-align: left;
+}
+.side-me:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.side-me b {
+  display: block;
+  font-size: 14px;
+}
+.side-me span {
+  font-size: 12px;
+  color: #c9cebf;
+}
+
+/* Narrow PC windows: icon rail */
+.app[data-rail='1'] .sidebar {
+  width: 88px;
+  padding: 20px 8px;
+  align-items: center;
+}
+.app[data-rail='1'] .brand {
+  padding: 0 0 20px;
+}
+.app[data-rail='1'] .brand-name,
+.app[data-rail='1'] .side-cta .lbl,
+.app[data-rail='1'] .me-txt {
+  display: none;
+}
+.app[data-rail='1'] .side-link {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 72px;
+  height: 60px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+.app[data-rail='1'] .side-cta {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+}
+.app[data-rail='1'] .side-me {
+  padding: 6px;
+}
+
+/* ───────────────────────── 1. SWIPE ───────────────────────── */
+.swipe {
+  position: absolute;
+  inset: 0 0 var(--nav-space) 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.deck {
+  position: absolute;
+  inset: 0;
+}
+.card {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+  overflow: hidden;
+  background: var(--surface);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  will-change: transform;
+  box-shadow: 0 24px 44px -24px rgba(32, 38, 26, 0.6);
+}
+.card:active {
+  cursor: grabbing;
+}
+.card.is-next {
+  transform: scale(0.95) translateY(10px);
+  filter: brightness(0.55);
+  transition:
+    transform 0.35s var(--ease),
+    filter 0.35s;
+  pointer-events: none;
+}
+.card.is-enter {
+  animation: cardIn 0.42s var(--ease);
+}
+.card.is-undo {
+  animation: cardUndo 0.45s var(--ease);
+}
+@keyframes cardIn {
+  from {
+    transform: scale(0.95) translateY(10px);
+    filter: brightness(0.55);
+  }
+}
+@keyframes cardUndo {
+  from {
+    transform: translate(-120%, -20px) rotate(-18deg);
+  }
+}
+.card-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transition:
+    transform 0.6s var(--ease),
+    filter 0.4s;
+}
+.card[data-page='1'] .card-img {
+  transform: scale(1.12) translateY(-3%);
+}
+.card[data-page='2'] .card-img {
+  transform: scale(1.22) translateY(-6%);
+  filter: saturate(0.85);
+}
+.card-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0) 20%,
+    rgba(0, 0, 0, 0) 36%,
+    rgba(0, 0, 0, 0.6) 58%,
+    rgba(0, 0, 0, 0.9) 82%,
+    rgba(0, 0, 0, 0.96) 100%
+  );
+}
+.card[data-page='1'] .card-scrim,
+.card[data-page='2'] .card-scrim {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.1) 20%,
+    rgba(0, 0, 0, 0.55) 45%,
+    rgba(0, 0, 0, 0.94) 72%,
+    #000 100%
+  );
+}
+.segs {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--safe-top) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 132px;
+  display: flex;
+  gap: 4px;
+}
+.segs i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.segs i.on {
+  background: #fff;
+}
+.stamp {
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--safe-top) + 64px);
+  padding: 4px 14px;
+  border: 5px solid currentColor;
+  border-radius: 12px;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+}
+.stamp-sign {
+  left: 24px;
+  color: var(--pale);
+  transform: rotate(-16deg);
+}
+.stamp-skip {
+  right: 24px;
+  color: #ffb4a2;
+  transform: rotate(16deg);
+}
+.stamp-save {
+  left: 50%;
+  top: 42%;
+  color: #b9cde6;
+  transform: translateX(-50%) rotate(-8deg);
+}
+.card-info {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 16px 112px;
+  color: #fff;
+}
+.ci-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e1e4da;
+  margin-bottom: 6px;
+}
+.ci-title-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.ci-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ci-open {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+}
+.ci-open:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.ci-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #e1e4da;
+}
+.ci-progress .progress {
+  flex: 0 0 88px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.24);
+}
+.ci-progress b {
+  color: #fff;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(28, 31, 25, 0.78);
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+}
+.ok {
+  color: var(--lime);
+}
+.chip .ok {
+  color: var(--pale);
+}
+.ci-page {
+  margin-top: 12px;
+  animation: fadeUp 0.3s var(--ease);
+}
+.ci-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pale);
+  margin-bottom: 6px;
+}
+.ci-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ci-ask {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 700;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ci-to {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #e1e4da;
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+/* Compact card for short / narrow phones */
+.app[data-compact='1'] .card-info {
+  padding-bottom: 96px;
+}
+.app[data-compact='1'] .ci-title {
+  font-size: 24px;
+}
+.app[data-compact='1'] .ci-kicker {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.app[data-compact='1'] .ci-progress {
+  margin-top: 8px;
+  font-size: 13px;
+}
+.app[data-compact='1'] .ci-progress .progress {
+  flex-basis: 56px;
+}
+.app[data-compact='1'] .ci-progress .long {
+  display: none;
+}
+.app[data-compact='1'] .chips {
+  gap: 6px;
+  margin-top: 8px;
+}
+.app[data-compact='1'] .chip {
+  height: 32px;
+  padding: 0 12px;
+  gap: 6px;
+  font-size: 14px;
+}
+.app[data-compact='1'] .ci-text {
+  -webkit-line-clamp: 4;
+  font-size: 15px;
+}
+.app[data-compact='1'] .ci-ask {
+  font-size: 18px;
+  -webkit-line-clamp: 3;
+}
+.app[data-compact='1'] .act {
+  width: 50px;
+  height: 50px;
+}
+.app[data-compact='1'] .act.lg {
+  width: 62px;
+  height: 62px;
+}
+.app[data-compact='1'] .actions {
+  bottom: 14px;
+}
+.app[data-compact='1'] .segs {
+  top: calc(var(--safe-top) + 10px);
+}
+.actions {
+  position: absolute;
+  z-index: 9;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 0 8px;
+  pointer-events: none;
+}
+.act {
+  pointer-events: auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 24px -10px rgba(18, 20, 15, 0.6);
+  transition:
+    transform 0.16s var(--ease),
+    opacity 0.2s;
+}
+.act.lg {
+  width: 70px;
+  height: 70px;
+}
+.act:hover:not(:disabled) {
+  transform: scale(1.07);
+}
+.act:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.act:disabled {
+  opacity: 0.4;
+}
+.act.pulse {
+  animation: pulse 0.4s var(--ease);
+}
+@keyframes pulse {
+  50% {
+    transform: scale(1.18);
+  }
+}
+.swipe-hints {
+  display: none;
+}
+.deck-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+  gap: 12px;
+  color: var(--text);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+  background:
+    radial-gradient(70% 50% at 50% 35%, rgba(228, 230, 195, 0.9) 0%, rgba(228, 230, 195, 0) 70%),
+    var(--surface);
+}
+.deck-empty h2 {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+.deck-empty p {
+  margin: 0 0 8px;
+  color: var(--text-2);
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 300px;
+}
+.empty-orb {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--lime-soft);
+  color: var(--lime);
+}
+
+/* Swipe — tablet & desktop */
+.app:not([data-size='phone']) .swipe {
+  align-items: center;
+  padding: 24px 24px calc(var(--nav-space) - 12px);
+}
+.app:not([data-size='phone']) .deck-wrap {
+  width: min(440px, 100%);
+  max-height: 780px;
+}
+.app:not([data-size='phone']) .card,
+.app:not([data-size='phone']) .deck-empty {
+  border-radius: 24px;
+}
+.app:not([data-size='phone']) .segs {
+  top: 14px;
+}
+.app:not([data-size='phone']) .stamp {
+  top: 64px;
+}
+.app[data-size='desktop'] .swipe {
+  padding-bottom: 16px;
+}
+.app[data-size='desktop'] .swipe-hints {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding-top: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.swipe-hints kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  margin-right: 6px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  font: inherit;
+  color: var(--text);
+}
+.swipe-main {
+  display: contents;
+}
+
+/* ───────────────────────── 2. SIGNED celebration ───────────────────────── */
+.celebrate {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+  outline: none;
+  color: #fff;
+  background: linear-gradient(180deg, #8c9b7b 0%, #6b7d5c 28%, #3e4a34 56%, #252a20 80%, #1c1f19 100%);
+  animation: celebIn 0.45s var(--ease);
+}
+@keyframes celebIn {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+.celeb-hearts {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--safe-top) - 30px);
+  width: max(150%, 560px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.celeb-hearts .h {
+  transform-origin: 300px 170px;
+  animation: heartPop 0.7s var(--ease) both;
+}
+.celeb-hearts .h2 {
+  animation-delay: 0.08s;
+}
+.celeb-hearts .h3 {
+  animation-delay: 0.16s;
+}
+@keyframes heartPop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+.spark {
+  animation: twinkle 1.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.spark.s2 {
+  animation-delay: 0.6s;
+}
+@keyframes twinkle {
+  50% {
+    transform: scale(0.7) rotate(20deg);
+    opacity: 0.7;
+  }
+}
+.celeb-inner {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 72px) 24px calc(24px + var(--safe-bottom));
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.celeb-close {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--safe-top) + 12px);
+  left: 12px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  border-radius: 50%;
+}
+.celeb-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.pair {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  animation: pairIn 0.6s 0.15s var(--ease) both;
+}
+@keyframes pairIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+}
+.pair > * {
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  border: 5px solid var(--pale);
+  overflow: hidden;
+  background: var(--pale);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.5);
+}
+.pair > * + * {
+  margin-left: -20px;
+}
+.pair img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.celeb-title {
+  position: relative;
+  margin-top: -40px;
+  text-align: center;
+  line-height: 0.95;
+  font-style: italic;
+  font-weight: 800;
+  color: #fff;
+  -webkit-text-stroke: 2px #0a0a0a;
+  paint-order: stroke fill;
+  text-shadow:
+    1px 1px 0 #0a0a0a,
+    2px 2px 0 #0a0a0a,
+    3px 3px 0 #0a0a0a,
+    4px 4px 0 #0a0a0a,
+    5px 5px 0 #0a0a0a,
+    6px 6px 0 #0a0a0a,
+    8px 10px 18px rgba(0, 0, 0, 0.35);
+  animation: titleIn 0.55s 0.3s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+@keyframes titleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-6deg);
+  }
+}
+.celeb-title small {
+  display: block;
+  text-align: left;
+  font-size: 30px;
+  letter-spacing: 0.02em;
+  margin: 0 0 2px 6px;
+}
+.celeb-title span {
+  display: block;
+  font-size: clamp(54px, 17vw, 76px);
+  letter-spacing: -0.02em;
+}
+.celeb-sub {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  animation: fadeUp 0.5s 0.45s var(--ease) both;
+}
+.celeb-meter {
+  width: 100%;
+  margin-top: 16px;
+  animation: fadeUp 0.5s 0.5s var(--ease) both;
+}
+.celeb-meter .progress {
+  background: rgba(255, 255, 255, 0.2);
+  height: 6px;
+}
+.celeb-meter .row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e1e4da;
+  margin-top: 8px;
+}
+.say {
+  width: 100%;
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 8px 0 20px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--line-2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fadeUp 0.5s 0.55s var(--ease) both;
+}
+.say:focus-within {
+  border-color: var(--lime-line);
+}
+.say input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: none;
+  font-size: 17px;
+  color: var(--text);
+  caret-color: var(--lime);
+}
+.say input::placeholder {
+  color: var(--text-3);
+}
+.say button {
+  height: 44px;
+  padding: 0 14px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--lime);
+  border-radius: 12px;
+}
+.say button:disabled {
+  color: var(--text-3);
+}
+.reacts {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  animation: fadeUp 0.5s 0.6s var(--ease) both;
+}
+.reacts button {
+  flex: 1;
+  height: 56px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 26px;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.reacts button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.reacts button:active {
+  transform: scale(0.94);
+}
+.celeb-foot {
+  margin-top: auto;
+  padding-top: 24px;
+  display: flex;
+  gap: 8px;
+}
+.celeb-foot .btn-ghost {
+  color: rgba(255, 255, 255, 0.9);
+}
+.celeb-foot .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+.confetti i {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.9;
+  animation: fall linear forwards;
+}
+@keyframes fall {
+  to {
+    transform: translate(var(--dx), 110vh) rotate(var(--r));
+    opacity: 0.2;
+  }
+}
+
+/* ───────────────────────── 3. WRITE ───────────────────────── */
+.write {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--glow), var(--bg);
+}
+.w-top {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  padding: calc(var(--safe-top) + 6px) 8px 6px;
+  min-height: calc(var(--safe-top) + 62px);
+}
+.w-top h1 {
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+.w-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-align: center;
+}
+.w-progress {
+  height: 4px;
+  margin: 0 20px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.w-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--grad-bar);
+  transition: width 0.4s var(--ease);
+}
+.w-body {
+  flex: 1;
+  padding: 32px 20px 24px;
+  animation: qIn 0.38s var(--ease);
+}
+@keyframes qIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+.w-body.back {
+  animation-name: qBack;
+}
+@keyframes qBack {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+.w-link,
+.w-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--lime);
+  border-radius: 8px;
+}
+.w-link:hover {
+  text-decoration: underline;
+}
+.w-q {
+  margin: 12px 0 0;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.w-input {
+  display: block;
+  width: 100%;
+  margin-top: 24px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--text);
+  caret-color: var(--lime);
+  min-height: 120px;
+}
+.w-input.single {
+  min-height: 0;
+}
+.w-input::placeholder {
+  color: rgba(18, 17, 19, 0.34);
+}
+.w-hint {
+  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.w-hint.count {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.w-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 24px 0 0;
+  padding: 14px 16px;
+  border-radius: var(--r-m);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.w-note svg {
+  color: var(--lime);
+  margin-top: 2px;
+}
+.w-example {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--r-m);
+  background: var(--lime-soft);
+  border: 1px solid var(--line-2);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-2);
+  animation: fadeUp 0.25s var(--ease);
+}
+.w-example b {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  color: var(--lime);
+}
+.w-example button {
+  margin-top: 10px;
+  font-weight: 800;
+  color: var(--lime);
+  font-size: 14px;
+}
+.w-foot {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 20px calc(16px + var(--safe-bottom));
+  background: linear-gradient(180deg, rgba(238, 240, 233, 0), var(--bg) 30%);
+}
+.w-next {
+  width: 100%;
+}
+.w-skip {
+  display: block;
+  margin: 8px auto 0;
+  height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-2);
+  border-radius: 12px;
+}
+.w-skip:hover {
+  background: var(--surface-2);
+}
+.options {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  font-size: 17px;
+  font-weight: 600;
+  text-align: left;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.opt:hover {
+  background: var(--surface-2);
+}
+.opt[aria-pressed='true'],
+.goal[aria-pressed='true'],
+.opt .emo {
+  font-size: 22px;
+  width: 28px;
+  text-align: center;
+  flex: none;
+}
+.opt .txt {
+  flex: 1;
+  min-width: 0;
+}
+.opt .txt small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+.opt .tick {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--line-2);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.opt[aria-pressed='true'] .tick {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+.goal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+.goal {
+  height: 76px;
+  border-radius: 18px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  font-size: 24px;
+  font-weight: 800;
+}
+.goal:hover {
+  background: var(--surface-2);
+}
+.goal small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.goal[aria-pressed='true'] {
+  color: var(--lime);
+}
+.field-other,
+.field {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  min-height: 56px;
+  padding: 14px 16px;
+  border-radius: var(--r-m);
+  border: 1px dashed var(--line-2);
+  background: transparent;
+  font-size: 16px;
+  color: var(--text);
+  outline: 0;
+  caret-color: var(--lime);
+}
+.field {
+  border-style: solid;
+  background: var(--surface-2);
+  resize: vertical;
+  line-height: 1.5;
+}
+.field-other::placeholder,
+.field::placeholder {
+  color: var(--text-3);
+}
+.field-other:focus,
+.field:focus {
+  border-style: solid;
+  border-color: var(--lime-line);
+}
+.w-intro {
+  padding: 24px 20px calc(var(--nav-space) + 16px);
+  animation: fadeUp 0.35s var(--ease);
+}
+.w-intro .w-q {
+  margin-top: 8px;
+  font-size: 32px;
+}
+.opt-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 20px;
+  text-align: left;
+  transition:
+    transform 0.15s,
+    background 0.2s;
+}
+.opt-card:hover {
+  transform: translateY(-1px);
+  background: var(--surface-2);
+}
+.opt-card.ai,
+.wd-ai {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(120deg, var(--pale), var(--sage) 50%, var(--green)) border-box;
+}
+.opt-card.ai:hover {
+  background:
+    linear-gradient(var(--surface-2), var(--surface-2)) padding-box,
+    linear-gradient(120deg, var(--pale), var(--sage) 50%, var(--green)) border-box;
+}
+.opt-card .orb {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text);
+}
+.opt-card.ai .orb {
+  background: var(--lime-soft);
+  color: var(--lime);
+}
+.opt-card b {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+}
+.opt-card span {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+.opt-card .chev {
+  margin-left: auto;
+  color: var(--text-3);
+}
+.resume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+}
+.resume:hover {
+  background: var(--surface-2);
+}
+.resume small {
+  display: block;
+  font-weight: 500;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.drafting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 64px;
+}
+.spark-orb {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--on-green);
+  background: conic-gradient(from 0deg, var(--pale), var(--sage), var(--green), var(--pale));
+  animation: spin 2.4s linear infinite;
+  box-shadow: 0 20px 50px -18px rgba(82, 99, 68, 0.7);
+}
+.spark-orb > * {
+  animation: spin 2.4s linear infinite reverse;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.draft-steps {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  width: min(320px, 100%);
+  text-align: left;
+}
+.draft-steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.draft-steps li .st {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--line-2);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  flex: none;
+}
+.draft-steps li.active,
+.draft-steps li.done {
+  color: var(--text);
+}
+.draft-steps li.active .st {
+  border-color: var(--lime);
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+.draft-steps li.done .st {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+.draft-steps li.skip .st {
+  border-style: dashed;
+}
+
+/* Review + preview */
+.score {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+.ring {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+}
+.ring svg {
+  transform: rotate(-90deg);
+}
+.ring b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+.score h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+.score p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+.checklist {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.checklist li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+.checklist .ck {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+.checklist li.pass .ck {
+  background: var(--lime-soft);
+  color: var(--lime);
+}
+.answers {
+  margin-top: 16px;
+  overflow: hidden;
+}
+.answer {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.answer:last-child {
+  border-bottom: 0;
+}
+.answer:hover {
+  background: var(--surface-2);
+}
+.answer .k {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.answer .v {
+  margin-top: 2px;
+  font-size: 15px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.answer .v.empty {
+  color: var(--pink);
+}
+.answer .edit {
+  margin-left: auto;
+  flex: none;
+  color: var(--lime);
+  font-size: 14px;
+  font-weight: 700;
+}
+.mini-card {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  aspect-ratio: 3 / 3.6;
+  max-width: 100%;
+  background: var(--dark);
+  color: #fff;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 40px -24px rgba(32, 38, 26, 0.6);
+}
+.mini-card img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mini-card .card-scrim {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.85) 80%, #000 100%);
+}
+.mini-card .mc-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px;
+}
+.mini-card .mc-body h3 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.mini-card .mc-body .ci-progress {
+  margin-top: 10px;
+}
+.illus {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Write — tablet: keep the one-question column at a readable width */
+.app[data-size='tablet'] .w-top,
+.app[data-size='tablet'] .w-progress,
+.app[data-size='tablet'] .w-body,
+.app[data-size='tablet'] .w-foot,
+.app[data-size='tablet'] .w-intro {
+  width: 100%;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.app[data-size='tablet'] .w-progress {
+  width: calc(100% - 40px);
+}
+
+/* Write — desktop: every question on one page, live preview on the right */
+.wd {
+  padding: 40px 32px 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 680px);
+  gap: 32px;
+  justify-content: center;
+  align-items: start;
+}
+.app[data-wide='1'] .wd {
+  grid-template-columns: minmax(0, 680px) 360px;
+  gap: 40px;
+}
+.wd-title {
+  margin: 4px 0 0;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+.wd-sub {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.wd-ai {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: var(--r-l);
+}
+.wd-ai h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+}
+.wd-ai h2 svg {
+  color: var(--lime);
+}
+.wd-ai textarea,
+.qblock textarea,
+.qblock input[type='text'],
+.qblock input[type='number'] {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  outline: 0;
+  resize: vertical;
+  caret-color: var(--lime);
+}
+.wd-ai textarea::placeholder,
+.qblock textarea::placeholder,
+.qblock input::placeholder {
+  color: var(--text-3);
+}
+.wd-ai textarea:focus,
+.qblock textarea:focus,
+.qblock input:focus {
+  border-color: var(--lime-line);
+  box-shadow: 0 0 0 4px rgba(82, 99, 68, 0.1);
+}
+.wd-ai-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.wd-ai-row .btn-primary {
+  height: 48px;
+  border-radius: 14px;
+}
+.wd-ai .w-note {
+  margin-top: 16px;
+  background: var(--bg-1);
+}
+.wd-drafted {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.qblock {
+  margin-top: 16px;
+  padding: 24px;
+}
+.qblock .qn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+.qblock h3 {
+  margin: 8px 0 0;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.qblock .w-hint {
+  margin-top: 8px;
+}
+.qblock .options,
+.qblock .goal-grid {
+  margin-top: 16px;
+}
+.qblock .goal-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+.qblock .opt {
+  min-height: 52px;
+  font-size: 15px;
+  background: var(--surface-2);
+}
+.qblock .goal {
+  background: var(--surface-2);
+}
+.wd-side {
+  display: grid;
+  gap: 16px;
+}
+.app:not([data-wide='1']) .wd-side .mini-card {
+  max-width: 360px;
+}
+.app[data-wide='1'] .wd-side {
+  position: sticky;
+  top: 32px;
+}
+
+/* ───────────────────────── 4. DISCOVER ───────────────────────── */
+.discover {
+  min-height: 100%;
+  padding-bottom: calc(var(--nav-space) + 8px);
+}
+.disc-head,
+.comm-top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: calc(var(--safe-top) + 8px) 8px 8px;
+  background: rgba(238, 240, 233, 0.9);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.topic-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-top: 8px;
+  padding-bottom: 2px;
+}
+.topic-row::-webkit-scrollbar {
+  display: none;
+}
+.tchip {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 8px;
+}
+.app[data-size='tablet'] .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.app[data-size='desktop'] .grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 0 24px;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+.app[data-size='desktop'] .disc-head {
+  padding: 24px 24px 16px;
+}
+.app[data-size='desktop'] .disc-head-inner {
+  max-width: 1512px;
+  margin: 0 auto;
+}
+.app[data-size='desktop'] .disc-head .search {
+  max-width: 720px;
+}
+.tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-3);
+  color: #fff;
+  text-align: left;
+  box-shadow: var(--shadow-card);
+  animation: tileIn 0.45s var(--ease) both;
+}
+@keyframes tileIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--ease);
+}
+.tile:hover img {
+  transform: scale(1.04);
+}
+.tile-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 40px 12px 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.82));
+}
+.tile-meta b {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+.tile-meta .progress {
+  height: 4px;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.22);
+}
+.tile-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #e1e4da;
+}
+.tile-flag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.tile-flag.signed {
+  background: var(--pale);
+  color: var(--dark);
+}
+.empty-dark {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.empty-dark b {
+  display: block;
+  color: var(--text);
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+.empty-dark .btn-ghost {
+  margin-top: 12px;
+}
+
+/* ───────────────────────── 5. COMMUNITY ───────────────────────── */
+.comm {
+  min-height: 100%;
+  padding-bottom: calc(var(--nav-space) + 8px);
+}
+.comm-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(var(--safe-top) + 8px) 8px 8px 12px;
+}
+.comm-top .search {
+  flex: 1;
+}
+.msg-btn .count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  border: 2px solid var(--bg);
+  line-height: 16px;
+  height: 22px;
+  min-width: 22px;
+}
+.comm-feed {
+  display: grid;
+  gap: 12px;
+  padding: 4px 8px 0;
+}
+.comm-feed > section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  overflow: hidden;
+}
+.sec-title {
+  margin: 0;
+  padding: 20px 16px 4px;
+}
+.rec {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 14px;
+  padding: 16px;
+  position: relative;
+}
+.rec + .rec::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  border-top: 1px solid var(--line);
+}
+.rec-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.rec-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.rec-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.rec-desc {
+  margin-top: 2px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rec-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.rec-meta svg {
+  margin-top: 1px;
+}
+.join {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  margin-top: 12px;
+  padding: 0 18px 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--lime-line);
+  background: var(--lime-soft);
+  color: var(--lime);
+  font-size: 15px;
+  font-weight: 800;
+  transition: background 0.15s;
+}
+.join:hover {
+  background: var(--pale);
+}
+.join[aria-pressed='true'] {
+  border-color: var(--line-2);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.show-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 56px;
+  border-top: 1px solid var(--line);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.show-more:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.band {
+  display: none;
+}
+.post {
+  padding-top: 16px;
+  overflow: hidden;
+}
+.post-head {
+  display: flex;
+  gap: 12px;
+  padding: 0 16px;
+}
+.post-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex: none;
+}
+.post-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.post-who {
+  flex: 1;
+  min-width: 0;
+}
+.post-who b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+}
+.post-who span {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.post-body {
+  padding: 12px 16px 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.post-body .more {
+  color: var(--text-3);
+  font-weight: 700;
+}
+.post-img {
+  margin-top: 12px;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+.post-petition {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 16px 0;
+  padding: 12px;
+  border-radius: var(--r-m);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  width: calc(100% - 32px);
+  text-align: left;
+}
+.post-petition:hover {
+  background: var(--surface-3);
+}
+.post-img {
+  background: var(--surface-3);
+}
+.post-petition img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.post-petition b {
+  display: block;
+  font-size: 15px;
+}
+.post-petition .progress {
+  height: 4px;
+  margin-top: 6px;
+}
+.post-petition span {
+  font-size: 13px;
+  color: var(--text-3);
+}
+.post-counts {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.post-actions {
+  display: flex;
+  border-top: 1px solid var(--line);
+  padding: 4px 8px;
+}
+.post-actions button {
+  flex: 1;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.post-actions button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.post-actions button[aria-pressed='true'] {
+  color: var(--lime);
+}
+.comm-side {
+  display: none;
+}
+.app:not([data-size='phone']) .comm-feed {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.app[data-size='desktop'] .comm-top {
+  padding: 16px 24px;
+}
+.app[data-size='desktop'] .comm-top .search {
+  max-width: 420px;
+}
+.app[data-size='desktop'] .comm-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 640px);
+  gap: 24px;
+  justify-content: center;
+  padding: 8px 24px 24px;
+  align-items: start;
+}
+.app[data-mid='1'] .comm-layout {
+  grid-template-columns: 240px minmax(0, 600px);
+}
+.app[data-xwide='1'] .comm-layout {
+  grid-template-columns: 240px minmax(0, 600px) 300px;
+}
+.app[data-size='desktop'] .comm-feed {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.app[data-mid='1'] .comm-side {
+  display: block;
+  position: sticky;
+  top: 92px;
+}
+.app[data-mid='1'] .comm-side.right {
+  display: none;
+}
+.app[data-xwide='1'] .comm-side.right {
+  display: block;
+}
+.side-box {
+  overflow: hidden;
+}
+.side-box + .side-box {
+  margin-top: 12px;
+}
+.me-cover {
+  height: 56px;
+  background: var(--glow), var(--surface-2);
+}
+.me-box {
+  padding: 0 16px 16px;
+  text-align: center;
+}
+.me-box .avatar {
+  margin: -32px auto 0;
+  border: 3px solid var(--surface);
+}
+.me-box b {
+  display: block;
+  margin-top: 8px;
+  font-size: 17px;
+}
+.me-box span {
+  font-size: 13px;
+  color: var(--text-3);
+}
+.side-box h4 {
+  margin: 0;
+  padding: 16px 16px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.side-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+}
+.side-item:hover {
+  background: var(--surface-2);
+}
+.side-item img {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.side-item small {
+  display: block;
+  font-weight: 500;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.side-item:last-child {
+  margin-bottom: 8px;
+}
+
+/* ───────────────────────── 6. PROFILE ───────────────────────── */
+.prof {
+  min-height: 100%;
+  padding-bottom: calc(var(--nav-space) + 16px);
+}
+.prof-hero {
+  position: relative;
+  height: calc(var(--safe-top) + 268px);
+  overflow: hidden;
+  background:
+    radial-gradient(60% 70% at 50% 100%, rgba(137, 152, 120, 0.45), rgba(137, 152, 120, 0) 72%),
+    linear-gradient(180deg, #e4e6c3 0%, #eaf0e3 100%);
+  border-bottom: 1px solid var(--line);
+}
+.prof-bar {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--safe-top) + 6px);
+  left: 8px;
+  right: 8px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+}
+.prof-bar h1 {
+  margin: 0;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+}
+.ribbon {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--safe-top) + 64px);
+  right: 20px;
+  height: 28px;
+  padding: 0 12px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  transform: skewX(-12deg);
+  background: var(--dark);
+  box-shadow: 0 6px 16px -6px rgba(32, 38, 26, 0.5);
+}
+.ribbon span {
+  transform: skewX(12deg);
+  font-size: 12px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: var(--pale);
+}
+.prof-avatar {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 216px;
+  height: 216px;
+  transform: translateX(-50%);
+  animation: avatarIn 0.6s var(--ease);
+}
+@keyframes avatarIn {
+  from {
+    transform: translate(-50%, 24px);
+    opacity: 0;
+  }
+}
+.prof-body {
+  padding: 24px 20px 0;
+}
+.handle {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+.stats {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+.stats .v {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  font-size: 24px;
+  font-weight: 800;
+}
+.stats .l {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.tt {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: var(--c);
+}
+.btn3d-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+.btn3d-row .btn-primary {
+  flex: 1;
+}
+.p-sec {
+  margin: 36px 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.p-sec small {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 700;
+}
+.chart-box {
+  padding: 16px 16px 18px;
+}
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.chart text {
+  font-family: var(--font);
+}
+.legend {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+.legend div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+.legend span {
+  margin-left: auto;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ov {
+  padding: 14px 16px;
+}
+.ov-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ov .e {
+  font-size: 20px;
+  line-height: 1;
+}
+.ov b {
+  font-size: 22px;
+  font-weight: 800;
+}
+.ov > span {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.badges {
+  overflow: hidden;
+}
+.badge {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.15s;
+}
+.badge:last-child {
+  border-bottom: 0;
+}
+.badge:hover {
+  background: var(--surface-2);
+}
+.badge .b-name {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 800;
+}
+.badge .b-name small {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tc, var(--text-3));
+  white-space: nowrap;
+}
+.badge .b-desc {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.b-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.b-bar .progress {
+  flex: 1;
+}
+.b-bar span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-3);
+  min-width: 44px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+.ladder div {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.ladder svg {
+  margin: 0 auto 6px;
+}
+.seg {
+  display: flex;
+  gap: 6px;
+}
+.seg button {
+  flex: 1;
+}
+.act-list {
+  margin-top: 8px;
+}
+.act-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.act-row:last-child {
+  border-bottom: 0;
+}
+.act-row img {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex: none;
+}
+.act-row b {
+  display: block;
+  font-size: 15px;
+}
+.act-row span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.act-row .progress {
+  margin-top: 8px;
+  height: 4px;
+}
+.act-row .grow {
+  flex: 1;
+  min-width: 0;
+}
+.act-empty {
+  padding: 20px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.app:not([data-size='phone']) .prof-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.app[data-size='desktop'] .prof-wrap {
+  max-width: 688px;
+  padding: 32px 24px;
+}
+.app[data-size='desktop'] .prof-right .prof-body {
+  padding-top: 8px;
+}
+.app[data-wide='1'] .prof-wrap {
+  max-width: 1080px;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 32px;
+  padding: 32px;
+  align-items: start;
+}
+.app[data-wide='1'] .prof-left {
+  position: sticky;
+  top: 32px;
+}
+.app[data-size='desktop'] .prof-left {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  overflow: hidden;
+  padding-bottom: 24px;
+}
+.app[data-size='desktop'] .prof-hero {
+  height: 268px;
+  --safe-top: 0px;
+}
+.app[data-wide='1'] .prof-right .prof-body {
+  padding: 0;
+}
+.app[data-wide='1'] .prof-right .p-sec:first-child {
+  margin-top: 4px;
+}
+.app[data-size='desktop'] .chart {
+  max-height: 300px;
+}
+
+/* ───────────────────────── Sheets, modals, toast ───────────────────────── */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(18, 17, 19, 0.45);
+  animation: fade 0.2s ease;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.sheet {
+  position: relative;
+  outline: none;
+  width: 100%;
+  max-height: calc(100% - var(--safe-top) - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
+  padding: 8px 20px calc(20px + var(--safe-bottom));
+  animation: sheetUp 0.38s var(--ease);
+  box-shadow: 0 -20px 40px -20px rgba(32, 38, 26, 0.45);
+  scrollbar-width: none;
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+}
+.app:not([data-size='phone']) .scrim {
+  align-items: center;
+  padding: 24px;
+}
+.app:not([data-size='phone']) .sheet {
+  width: min(520px, 100%);
+  max-height: calc(100% - 48px);
+  border-radius: 28px;
+  border-bottom: 1px solid var(--line);
+  padding: 24px 28px 28px;
+  animation: pop 0.3s var(--ease);
+}
+.app:not([data-size='phone']) .sheet.wide {
+  width: min(640px, 100%);
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+.handle-bar {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line-2);
+  margin: 4px auto 12px;
+}
+.app:not([data-size='phone']) .handle-bar {
+  display: none;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sheet-head img {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex: none;
+}
+.sheet-head .grow {
+  flex: 1;
+  min-width: 0;
+}
+.sheet h2,
+.sheet h3 {
+  margin: 2px 0 0;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.sheet .close {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text);
+}
+.sheet .close:hover {
+  background: var(--surface-3);
+}
+.ask-box {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--r-m);
+  background: var(--surface-2);
+}
+.ask-box p {
+  margin: 4px 0 0;
+  font-size: 17px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+.ask-to {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.elig {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  background: var(--lime-soft);
+  color: #326544;
+}
+.elig.warn {
+  background: #fbf6ec;
+  color: #805c24;
+}
+.elig.block {
+  background: #fbedea;
+  color: #ba1a1a;
+}
+.f-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.f-label button {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-3);
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+}
+.f-label button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.seg3 button[aria-pressed='true'] {
+  color: var(--lime);
+}
+.sigpad {
+  position: relative;
+  height: 128px;
+  border-radius: var(--r-m);
+  border: 1px dashed var(--line-2);
+  background: var(--bg-1);
+  touch-action: none;
+  overflow: hidden;
+}
+.sigpad canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+.sigpad .ph {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 28px;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-3);
+  padding-bottom: 4px;
+  pointer-events: none;
+}
+.sheet-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.sheet-actions .btn-primary {
+  flex: 1;
+}
+.detail-hero {
+  position: relative;
+  margin: -8px -20px 0;
+  aspect-ratio: 16 / 11;
+  overflow: hidden;
+  border-radius: 28px 28px 0 0;
+}
+.app:not([data-size='phone']) .detail-hero {
+  margin: -24px -28px 0;
+}
+.detail-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.detail-hero::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--surface));
+  pointer-events: none;
+}
+.detail-hero .close {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  background: rgba(18, 17, 19, 0.55);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+.detail-hero .illus {
+  top: auto;
+  bottom: 12px;
+  z-index: 2;
+}
+.d-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.d-title {
+  margin: 6px 0 0;
+  font-size: 26px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+}
+.d-summary {
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.d-meter {
+  margin-top: 20px;
+}
+.d-meter .row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-3);
+}
+.d-meter .row b {
+  color: var(--text);
+}
+.d-rows {
+  margin-top: 16px;
+  display: grid;
+  gap: 2px;
+}
+.d-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.d-row svg {
+  color: var(--text-3);
+  margin-top: 1px;
+}
+.d-row small {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.d-problem {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.fine {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.d-foot {
+  position: sticky;
+  bottom: calc(-20px - var(--safe-bottom));
+  margin: 20px -20px calc(-20px - var(--safe-bottom));
+  padding: 12px 20px calc(16px + var(--safe-bottom));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), var(--surface) 30%);
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+}
+.app:not([data-size='phone']) .d-foot {
+  bottom: -28px;
+  margin: 20px -28px -28px;
+  padding: 16px 28px 20px;
+}
+.d-foot .btn-primary {
+  flex: 1;
+}
+/* QR codes need a light ground to scan */
+.qr-box {
+  display: grid;
+  place-items: center;
+  margin: 20px auto 0;
+  width: 232px;
+  height: 232px;
+  padding: 16px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.qr-box svg {
+  width: 100%;
+  height: 100%;
+}
+.qr-box .fine {
+  color: #3a3a40;
+}
+.center {
+  text-align: center;
+}
+
+/* Published success (write) */
+.published {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  outline: none;
+  overflow-y: auto;
+  background: var(--glow), var(--bg);
+  animation: celebIn 0.4s var(--ease);
+}
+.published-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 48px) 24px calc(24px + var(--safe-bottom));
+  text-align: center;
+}
+.burst {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--grad-sign);
+  color: var(--on-green);
+  box-shadow: 0 0 0 12px rgba(82, 99, 68, 0.15);
+  animation: titleIn 0.55s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+.published h2 {
+  margin: 24px 0 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.published p {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.published .mini-card {
+  margin-top: 24px;
+  text-align: left;
+}
+.published .stack {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* Toast */
+.toast {
+  position: absolute;
+  z-index: 95;
+  left: 50%;
+  bottom: calc(var(--nav-space) + 8px);
+  transform: translate(-50%, 20px);
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--dark);
+  color: #f7f7f2;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 18px 36px -12px rgba(18, 20, 15, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    transform 0.3s var(--ease);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app[data-size='desktop'] .toast {
+  bottom: 24px;
+}
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .confetti {
+    display: none;
+  }
+}
+
+/* Bell sits on the canvas (not a photo) on tablet and PC */
+
+/* Progress on photos and dark grounds uses the pale accent so it stays visible */
+.ci-progress .progress i,
+.tile-meta .progress i,
+.celeb-meter .progress i,
+.mini-card .progress i {
+  background: linear-gradient(90deg, #f4f5e4, var(--pale));
+}
+
+/* ───────────────────────── Signing: the original three steps ───────────────────────── */
+.sheet.sign {
+  background: #f7f8f4;
+}
+.step-bars {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 16px;
+}
+.step-bars i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #d3d7cb;
+  transition: background 0.3s;
+}
+.step-bars i.on {
+  background: var(--dark);
+}
+.sign-step {
+  animation: qIn 0.35s var(--ease);
+}
+.sign-step.back {
+  animation-name: qBack;
+}
+.sign-title {
+  margin: 8px 0 12px !important;
+  font-size: 24px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+}
+.read-box {
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  outline: none;
+}
+.read-box:focus-visible {
+  outline: 3px solid #385d88;
+}
+.read-box h3 {
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+}
+.read-box p {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+.read-box p b {
+  color: var(--text);
+}
+.read-box .read-meta {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.elig-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: var(--lime-soft);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+.elig-row.bad {
+  background: #fbedea;
+}
+.elig-dot {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #326544;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  animation: titleIn 0.4s 0.15s ease both;
+}
+.elig-row.bad .elig-dot {
+  background: #ba1a1a;
+}
+.radio-list {
+  display: grid;
+  gap: 8px;
+}
+.radio-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 14px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background: var(--surface);
+  text-align: left;
+  box-shadow: 0 1px 0 var(--line);
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.radio-card:active {
+  transform: scale(0.98);
+}
+.radio-card[aria-checked='true'] {
+  border-color: var(--dark);
+}
+.radio-card b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.radio-card small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.radio-dot {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid #c5c8bd;
+  display: grid;
+  place-items: center;
+}
+.radio-card[aria-checked='true'] .radio-dot {
+  border-color: var(--dark);
+}
+.radio-card[aria-checked='true'] .radio-dot::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dark);
+}
+.micro {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+.sheet.sign .sigpad {
+  height: 160px;
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--surface);
+}
+.sig-clear {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+.sig-clear:hover {
+  color: var(--text);
+}
+.consent-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.consent-row .box {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 2px solid #c5c8bd;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.consent-row[aria-checked='true'] .box {
+  background: var(--dark);
+  border-color: var(--dark);
+  transform: scale(1.06);
+}
+.sign-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.sign-back {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+}
+.sign-back:hover {
+  background: var(--surface-2);
+}
+.sign-next {
+  flex: 1;
+  min-height: 52px;
+  border-radius: 999px;
+  background: var(--dark);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
+}
+.sign-next:active {
+  transform: scale(0.97);
+}
+.sign-next.off {
+  opacity: 0.4;
+}
+
+/* ───────────────────────── PC polish ───────────────────────── */
+/* Swipe: the card is sized from the window height and sits on a soft, blurred echo of its photo */
+.swipe-ambient {
+  display: none;
+}
+.app[data-size='desktop'] .swipe-ambient {
+  display: block;
+  position: absolute;
+  inset: -80px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(70px) saturate(0.8);
+  opacity: 0.32;
+  transition: background-image 0.6s ease;
+  pointer-events: none;
+}
+.app[data-size='desktop'] .swipe::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 70% at 50% 45%, rgba(238, 240, 233, 0) 40%, var(--bg) 100%);
+  pointer-events: none;
+}
+.app[data-size='desktop'] .swipe {
+  overflow: hidden;
+  justify-content: center;
+  padding: 32px 24px 20px;
+}
+.app[data-size='desktop'] .swipe-main,
+.app[data-size='desktop'] .swipe-hints {
+  position: relative;
+  z-index: 1;
+}
+.app[data-size='desktop'] .deck-wrap {
+  flex: none;
+  height: min(calc(100% - 44px), 880px);
+  width: auto;
+  max-width: 100%;
+  max-height: none;
+  aspect-ratio: 0.64;
+  z-index: 1;
+}
+.app[data-size='desktop'] .card,
+.app[data-size='desktop'] .deck-empty {
+  border-radius: 28px;
+}
+.app[data-size='desktop'] .card {
+  box-shadow: 0 40px 80px -36px rgba(32, 38, 26, 0.55);
+}
+.app[data-size='desktop'] .card-info {
+  padding: 0 24px 120px;
+}
+.app[data-size='desktop'] .ci-title {
+  font-size: 34px;
+}
+.app[data-size='desktop'] .actions {
+  bottom: 24px;
+  padding: 0 16px;
+}
+.app[data-size='desktop'] .swipe-hints {
+  padding-top: 16px;
+}
+
+/* Community: search on top of the middle column, columns aligned at the top */
+.comm-center {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.app[data-size='desktop'] .comm-layout {
+  padding-top: 24px;
+}
+.comm-searchbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -24px;
+  padding: 24px 0 4px;
+  background: var(--bg);
+}
+.comm-searchbar .search {
+  flex: 1;
+  height: 48px;
+}
+.msg-btn {
+  color: var(--text-2);
+}
+.app[data-mid='1'] .comm-side {
+  top: 24px;
+}
+
+/* Profile: wide chart, overview in one row */
+.app[data-wide='1'] .overview {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.app[data-size='desktop'] .chart {
+  max-height: none;
+}
+
+/* Petition dialog: a shorter photo on PC */
+.app[data-size='desktop'] .detail-hero {
+  aspect-ratio: 16 / 7;
+}
+
+
+/* Artifact host: the page skeleton already pads :root by the safe-area insets. */
+:root { --safe-top: 0px; --safe-bottom: 0px; color-scheme: light; }
+html, body { height: 100%; background: #eef0e9; }
+.stage:not([data-frame='phone']) .device { height: 100%; }
+
+</style>
+
+  <!-- Shared gradients for the swipe action icons (referenced by url(#id) from inline SVGs). -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="g-skip" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#C45A3E" />
+        <stop offset="1" stop-color="#A63E26" />
+      </linearGradient>
+      <linearGradient id="g-save" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#5B7BA3" />
+        <stop offset="1" stop-color="#405E82" />
+      </linearGradient>
+      <linearGradient id="g-sign" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#7A8E69" />
+        <stop offset="1" stop-color="#526344" />
+      </linearGradient>
+      <linearGradient id="g-share" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#4FD1FF" />
+        <stop offset="1" stop-color="#2E7BFF" />
+      </linearGradient>
+      <linearGradient id="g-ai" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#FF9F5A" />
+        <stop offset=".5" stop-color="#B57CFF" />
+        <stop offset="1" stop-color="#22C55E" />
+      </linearGradient>
+      <linearGradient id="g-bell" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#F4F5E4" />
+        <stop offset="1" stop-color="#E4E6C3" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="stage" id="stage">
+    <div class="device" id="device">
+      <div class="statusbar" aria-hidden="true">
+        <span class="sb-time">9:41</span>
+        <span class="sb-icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" /><rect x="5" y="5.5" width="3" height="6.5" rx="1" /><rect x="10" y="3" width="3" height="9" rx="1" /><rect x="15" y="0" width="3" height="12" rx="1" /></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.2-1.2A10.5 10.5 0 0 0 8 .5 10.5 10.5 0 0 0 .6 3.5l1.2 1.2A8.8 8.8 0 0 1 8 2.2Zm0 3.4c1.5 0 2.8.6 3.8 1.5L13 5.9a7 7 0 0 0-10 0l1.2 1.2c1-.9 2.3-1.5 3.8-1.5Zm0 3.3c.6 0 1.1.2 1.5.6L8 11 6.5 9.5c.4-.4.9-.6 1.5-.6Z" /></svg>
+          <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4" /><rect x="2" y="2" width="20" height="9" rx="2" /><path d="M25 4.5v4c.8-.3 1.5-1.1 1.5-2s-.7-1.7-1.5-2Z" opacity=".4" /></svg>
+        </span>
+      </div>
+      <div class="app" id="app" data-size="phone">
+        <aside class="sidebar" id="sidebar" aria-label="Main navigation"></aside>
+        <main class="main" id="main">
+          <div class="screen" id="screen"></div>
+        </main>
+        <nav class="tabbar" id="tabbar" aria-label="Main navigation"></nav>
+        <div id="overlay"></div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      </div>
+      <div class="home-ind" aria-hidden="true"></div>
+    </div>
+
+    <div class="preview-toggle" role="group" aria-label="Preview size">
+      <button type="button" data-frame="off" aria-pressed="true">Responsive</button>
+      <button type="button" data-frame="phone" aria-pressed="false">Phone frame</button>
+    </div>
+  </div>
+
+  
+  
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+/* Swipe4Change v3 prototype. Plain JS, no build step. All people, offices and numbers are fictional
+   sample data that mirror src/data/seed.ts so the design can be dropped onto the real app. */
+(() => {
+  'use strict';
+
+  // ───────────────────────── helpers ─────────────────────────
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const esc = (s) =>
+    String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt = (n) => Number(n).toLocaleString('en-US');
+  const pct = (p) => Math.min(100, Math.round((p.count / p.goal) * 100));
+  const photo = (name) => `../../assets/photos/${name}.jpg`;
+  const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const store = {
+    get(k) {
+      try {
+        return localStorage.getItem(k);
+      } catch {
+        return null;
+      }
+    },
+    set(k, v) {
+      try {
+        localStorage.setItem(k, v);
+      } catch {
+        /* storage unavailable (private mode); preview still works */
+      }
+    },
+  };
+
+  const ICONS = {
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    chevL: '<path d="m15 18-6-6 6-6"/>',
+    chevR: '<path d="m9 18 6-6-6-6"/>',
+    arrowL: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+    arrowR: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+    arrowUp: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+    search: '<circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.6-4.6"/>',
+    sliders:
+      '<path d="M20 7h-9M14 17H4"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+    bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    cards:
+      '<rect x="3.5" y="6.5" width="12" height="15" rx="2.5"/><path d="M8.5 3.5h9a3 3 0 0 1 3 3v12"/>',
+    compass: '<circle cx="12" cy="12" r="9.5"/><path d="m15.8 8.2-2.1 5.5-5.5 2.1 2.1-5.5z"/>',
+    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    users:
+      '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    landmark:
+      '<path d="M3 21h18M5 18v-7M9.5 18v-7M14.5 18v-7M19 18v-7M12 3l9 5H3z"/>',
+    shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    clock: '<circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/>',
+    trend: '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+    msg: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-5.2A8.4 8.4 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5Z"/><path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" stroke-width="2.6"/>',
+    comment:
+      '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-5.2A8.4 8.4 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5Z"/>',
+    support:
+      '<path d="M7 11v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1zm0 0 4-8a3 3 0 0 1 3 3v4h5.5a2 2 0 0 1 2 2.3l-1.3 7.4A2 2 0 0 1 18.2 21H7"/>',
+    share: '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/>',
+    more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+    bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/>',
+    sparkle:
+      '<path d="M12 3.5 13.9 9 19.5 11l-5.6 2-1.9 5.5-1.9-5.5L4.5 11l5.6-2Z"/><path d="M19 2.5v3M17.5 4h3M5 18.5v3M3.5 20h3"/>',
+    mic: '<rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M19 10.5a7 7 0 0 1-14 0M12 17.5V21"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
+    qr: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>',
+    bookmark: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+    send: '<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5"/>',
+  };
+  const ic = (n, s = 24, sw = 2, cls = '') =>
+    `<svg class="ic ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+
+  // Filled, gradient action icons for the swipe buttons (ref: image 1).
+  const ACT = {
+    undo: `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#75786F" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4v6h6"/><path d="M3.5 15a8.5 8.5 0 1 0 2-8.8L3 10"/></svg>`,
+    skip: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="url(#g-skip)" stroke-width="3.6" stroke-linecap="round" aria-hidden="true"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>`,
+    save: `<svg width="30" height="30" viewBox="0 0 24 24" fill="url(#g-save)" aria-hidden="true"><path d="M12 2.6l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 16.9l-5.6 2.9 1.1-6.2L3 9.2l6.2-.9z" stroke="url(#g-save)" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+    sign: `<svg width="38" height="38" viewBox="0 0 24 24" fill="url(#g-sign)" aria-hidden="true"><path d="M12 21s-7.6-4.6-9.7-9.4C.8 8.1 3 4.4 6.6 4c2-.2 3.9.8 5.4 2.7 1.5-1.9 3.4-2.9 5.4-2.7 3.6.4 5.8 4.1 4.3 7.6C19.6 16.4 12 21 12 21Z"/></svg>`,
+    share: `<svg width="28" height="28" viewBox="0 0 24 24" fill="#5D6259" aria-hidden="true"><path d="M21.3 2.7 2.9 9.5c-.8.3-.8 1.4 0 1.7l7.2 2.7 2.7 7.2c.3.8 1.4.8 1.7 0l6.8-18.4c.3-.7-.4-1.3-1-1Z"/></svg>`,
+  };
+
+  // Original illustrated avatar for Maya (sample organizer).
+  const mayaSvg = (bg = '#E4E6C3') => `<svg viewBox="0 0 200 200" aria-hidden="true">
+    ${bg ? `<rect width="200" height="200" fill="${bg}"/>` : ''}
+    <path d="M30 200c4-36 30-58 70-58s66 22 70 58Z" fill="#1F9D57"/>
+    <path d="M78 150c6 10 38 10 44 0l-4-10H82Z" fill="#E7B48C"/>
+    <path d="M70 150c8 14 52 14 60 0" fill="none" stroke="#178048" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="100" cy="38" r="20" fill="#2A1C16"/>
+    <ellipse cx="100" cy="96" rx="52" ry="56" fill="#2A1C16"/>
+    <rect x="60" y="56" width="80" height="88" rx="38" fill="#F6CBA6"/>
+    <circle cx="60" cy="104" r="9" fill="#F0BC93"/><circle cx="140" cy="104" r="9" fill="#F0BC93"/>
+    <path d="M58 92c2-30 22-44 46-44 22 0 38 14 38 40-14-12-34-20-54-18-12 1-22 8-30 22Z" fill="#2A1C16"/>
+    <circle cx="84" cy="104" r="12" fill="#fff" stroke="#2E3A59" stroke-width="4"/>
+    <circle cx="116" cy="104" r="12" fill="#fff" stroke="#2E3A59" stroke-width="4"/>
+    <path d="M96 104h8" stroke="#2E3A59" stroke-width="4"/>
+    <circle cx="86" cy="106" r="4.5" fill="#2A1C16"/><circle cx="118" cy="106" r="4.5" fill="#2A1C16"/>
+    <circle cx="74" cy="122" r="6" fill="#F59E8B" opacity=".45"/><circle cx="126" cy="122" r="6" fill="#F59E8B" opacity=".45"/>
+    <path d="M90 126q10 9 20 0" fill="none" stroke="#8A3E2B" stroke-width="3.5" stroke-linecap="round"/>
+  </svg>`;
+  const avatar = (size) => `<span class="avatar" style="width:${size}px;height:${size}px">${mayaSvg()}</span>`;
+  const initials = (name, color, size = 52) =>
+    `<span class="initials" style="width:${size}px;height:${size}px;background:${color};font-size:${Math.round(size * 0.38)}px">${esc(
+      name
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2),
+    )}</span>`;
+
+  // ───────────────────────── sample data (mirrors src/data/seed.ts) ─────────────────────────
+  const TOPICS = {
+    // Muted topic tones from the original theme (src/components/theme.ts topicColors).
+    'Safer streets': { emoji: '🚸', color: '#C08A4A', soft: '#F5EBD9', img: 'crosswalk' },
+    Environment: { emoji: '🌳', color: '#7FA383', soft: '#E5EFE2', img: 'shade-trees' },
+    Education: { emoji: '📚', color: '#8099BA', soft: '#E6EDF7', img: 'library' },
+    'Public spaces': { emoji: '🏞️', color: '#B08584', soft: '#F4E5E2', img: 'garden' },
+    Accessibility: { emoji: '♿', color: '#9C88B3', soft: '#EDE6F4', img: 'accessible-park' },
+  };
+  const OFFICES = {
+    'public-works': 'Riverton Public Works',
+    'transportation-safety': 'Riverton Transportation Safety Board',
+    parks: 'Riverton Parks and Recreation',
+    'environmental-services': 'Riverton Environmental Services',
+    'school-board': 'Riverton Unified School Board',
+    'library-board': 'Riverton Library Board',
+    'brookside-library': 'Brookside Library Board',
+    'brookside-parks': 'Brookside Parks and Recreation',
+    'brookside-public-works': 'Brookside Public Works',
+    'ada-coordinator': 'Riverton ADA Coordinator',
+    'campus-facilities': 'Eastbridge Campus Facilities',
+  };
+  const OFFICE_BY_TOPIC = {
+    'Safer streets': ['public-works', 'transportation-safety', 'school-board'],
+    Environment: ['parks', 'environmental-services', 'school-board'],
+    Education: ['school-board', 'library-board', 'brookside-library'],
+    'Public spaces': ['parks', 'brookside-parks', 'public-works'],
+    Accessibility: ['ada-coordinator', 'parks', 'brookside-public-works'],
+  };
+  const COMMUNITIES = [
+    { id: 'c1', name: 'Riverton students', desc: 'Small changes. Safer journeys. A space for students shaping our fictional town.', city: 'Riverton, CA', topic: 'Safer streets', members: 248, img: 'crosswalk' },
+    { id: 'c2', name: 'Greener together', desc: 'Neighbors making room for trees, cleaner air, and a more resilient community.', city: 'Riverton, CA', topic: 'Environment', members: 186, img: 'garden' },
+    { id: 'c3', name: 'Open doors collective', desc: 'Better access to learning and public places, for everyone.', city: 'Riverton, CA', topic: 'Accessibility', members: 124, img: 'accessible-park' },
+    { id: 'c4', name: 'Brookside neighbors', desc: 'Libraries, parks, and the places that bring us together.', city: 'Brookside, CA', topic: 'Public spaces', members: 312, img: 'library' },
+    // Two extra sample communities exist only in this design, so "Show more" has something to reveal.
+    { id: 'c5', name: 'College Avenue riders', desc: 'Students and neighbors who bike to class and want safer lanes to get there.', city: 'Riverton, CA', topic: 'Safer streets', members: 96, img: 'bike-lane' },
+    { id: 'c6', name: 'Cedar Commons hoopers', desc: 'Pickup games, court clean-ups, and getting the Cedar Commons courts back in shape.', city: 'Brookside, CA', topic: 'Public spaces', members: 58, img: 'courts' },
+  ];
+  const P = (id, title, action, summary, problem, topic, community, recipient, count, goal, days, verify, img, extra = {}) => ({
+    id, title, action, summary, problem, topic, community, recipient: OFFICES[recipient], count, goal, days, verify, img,
+    city: community === 'c4' ? 'Brookside, CA' : 'Riverton, CA', ...extra,
+  });
+  const PETITIONS = [
+    P('p1', 'A brighter walk home starts here', 'Assess the public path from the Eastbridge campus gate to the bus shelter and publish a pedestrian-lighting plan before winter evening classes.', 'Light the public path from the Eastbridge campus gate to the bus stop before winter evening classes.', 'Evening classes finish after sunset, but the public path from the Eastbridge campus gate to the bus shelter has gaps between lights. Students want to see the route clearly and wait for the bus without standing in the dark.', 'Safer streets', 'c1', 'public-works', 684, 1000, 18, 'email', 'lighting', { mine: true }),
+    P('p2', 'More shade. Cooler school days.', 'Plant shade trees around the Riverton school courtyard.', 'Plant shade trees around the Riverton school courtyard and publish a maintenance plan.', 'Students use the school courtyard for breaks and outdoor activities, but the seating area has little shade. The request asks the district to assess suitable planting sites and explain how new trees would be cared for.', 'Environment', 'c2', 'school-board', 328, 500, 65, 'account', 'shade-trees'),
+    P('p3', 'Keep the library open after class', 'Extend the Brookside library study hours to 7 pm.', 'Keep the Brookside public library open until 7 pm on school nights.', 'Students who need a quiet place after class cannot use the Brookside library once it closes for the day. An evening-hours pilot would give them a predictable place to study; staffing and costs need a public review.', 'Education', 'c4', 'brookside-library', 412, 750, 112, 'account', 'library'),
+    P('p4', 'A park that welcomes every body', 'Add an accessible entrance to Willow Park.', 'Create an accessible entrance to Willow Park and publish a route plan.', 'The current route into Willow Park is difficult for visitors using mobility devices. Residents are asking the parks department to assess the entrance, choose an accessible route and share when improvements could be made.', 'Accessibility', 'c3', 'parks', 237, 400, 159, 'community', 'accessible-park'),
+    P('p5', 'Make room for a neighborhood garden', 'Check who owns the Oak Street lot and publish a feasible community-garden plan.', 'Check ownership of the Oak Street lot before proposing a neighborhood garden there.', 'Neighbors have suggested the Oak Street lot for a shared garden, but its ownership and suitability have not been established. A public feasibility review would show whether a garden is possible and who must approve it.', 'Public spaces', 'c4', 'brookside-parks', 156, 300, 206, 'location', 'garden'),
+    P('p6', 'Safer crossings for smaller footsteps', 'Add a raised crosswalk near Eastbridge School.', 'Assess a raised crosswalk near Eastbridge School and publish the street design.', 'Families cross the public street near Eastbridge School at busy arrival and dismissal times. They want the city to review a raised crossing and explain what design would make the route clearer for children.', 'Safer streets', 'c1', 'public-works', 521, 800, 253, 'community', 'crosswalk'),
+    P('p7', 'Refill, reuse, repeat', 'Install water refill stations at Riverton recreation centers.', 'Install water refill stations at Riverton recreation centers.', 'Visitors to recreation centers need a dependable way to refill water bottles during activities. The request asks the parks department to identify suitable sites, costs and a maintenance schedule.', 'Environment', 'c2', 'parks', 189, 500, 300, 'account', 'water-refill'),
+    P('p8', 'A quiet place to learn', 'Create a sensory-friendly study room at the town library.', 'Make a sensory-friendly study room available at the Riverton public library.', 'A shared library room can be noisy for residents who need a lower-stimulation place to read or study. The library board can assess an existing room and publish hours and access guidelines.', 'Education', 'c3', 'library-board', 88, 200, 47, 'email', 'quiet-room'),
+    P('p9', 'Our bus stops need a seat', 'Add accessible benches at Brookside bus stops.', 'Add accessible benches at Brookside bus stops with long waits.', 'Some Brookside stops lack a place to sit while waiting for a bus. Riders with limited stamina need the city to assess clear sidewalk space and choose bench sites that preserve accessible travel paths.', 'Accessibility', 'c4', 'brookside-public-works', 304, 500, 94, 'account', 'bus-bench'),
+    P('p10', 'Bring the courts back to life', 'Repair the basketball courts at Cedar Commons.', 'Repair the Cedar Commons basketball courts and share a reopening plan.', 'Neighbors want to use the Cedar Commons courts, but worn playing surfaces need a maintenance assessment. Brookside Parks can inspect the site and publish a repair schedule and reopening criteria.', 'Public spaces', 'c4', 'brookside-parks', 143, 250, 141, 'custom', 'courts'),
+    P('p11', 'Bike to school with confidence', 'Pilot a protected bike lane along College Avenue.', 'Pilot a protected bike lane on College Avenue and publish the traffic review.', 'Students biking on College Avenue share space with turning vehicles. They want the city to study a protected lane, consult people who use the street and publish a pilot design.', 'Safer streets', 'c1', 'public-works', 391, 600, 188, 'location', 'bike-lane'),
+    P('p12', 'Less waste at lunchtime', 'Pilot a food-scrap collection program in campus dining halls.', 'Test food-scrap collection in Eastbridge campus dining halls.', 'Campus dining produces food scraps that students would like to keep out of general waste. A limited collection pilot could measure participation and the work required before any campuswide rollout.', 'Environment', 'c2', 'campus-facilities', 76, 200, 235, 'custom', 'food-scraps'),
+  ];
+  // Card order comes from the app's own feed algorithm. This is only a sample order for the prototype.
+  const DECK_ORDER = ['p6', 'p2', 'p8', 'p11', 'p7', 'p3', 'p12', 'p4', 'p9', 'p5', 'p10'];
+  const ME = {
+    name: 'Maya Chen',
+    handle: 'mayachen',
+    city: 'Riverton, CA',
+    interests: ['Safer streets', 'Education', 'Environment'],
+    emailVerified: true,
+    locationApproved: false,
+    earlierSignatures: 9,
+    streakWeeks: 12,
+    ripple: 14,
+    posts: 6,
+  };
+  const POSTS = [
+    { id: 'post1', community: 'c1', author: 'Maya Chen', role: 'Organizer', time: '2h', kind: 'Update', petition: 'p1', img: 'lighting', supports: 34, comments: 12,
+      text: 'Big week for the Eastbridge lighting petition: we passed 650 signatures and delivered the packet to Riverton Public Works. They agreed to walk the path with us after dark on Oct 29 at 6 pm. Anyone in Riverton students is welcome, and bring a flashlight so we can mark every dark stretch together.' },
+    { id: 'post2', community: 'c2', author: 'Sam Rivera', role: 'Organizer', time: '1d', kind: 'Event recap', petition: 'p2', img: 'gathering', supports: 21, comments: 5, suggested: true,
+      text: 'Thank you to the 40 neighbors who came to the courtyard walk-through on Saturday. We mapped six spots where shade trees could go without blocking paths, and the school board asked for our map before its November meeting.' },
+    { id: 'post3', community: 'c4', author: 'Sam Rivera', role: 'Moderator', time: '3d', kind: 'Question', petition: 'p3', img: 'meeting', supports: 17, comments: 9, suggested: true,
+      text: 'The Brookside Library Board will take public comments on evening study hours on Nov 4. Would a 7 pm close on school nights change how you study? Reply with what would make the biggest difference for you.' },
+  ];
+  // Advancement badges: each has four levels (bronze, silver, gold, emerald).
+  const TIERS = [
+    { n: 'Locked', a: '#F2F3EE', b: '#CDD1C5', ink: '#75786F' },
+    { n: 'Bronze', a: '#EAD2AE', b: '#8B6B37', ink: '#805C24' },
+    { n: 'Silver', a: '#F2F3EE', b: '#8A8E82', ink: '#5D6259' },
+    { n: 'Gold', a: '#EFDFA6', b: '#A5822F', ink: '#7A5E1C' },
+    { n: 'Emerald', a: '#D5E6D2', b: '#3D6546', ink: '#3D6546' },
+  ];
+  const BADGES = [
+    { name: 'First voice', emoji: '✍️', what: 'signatures confirmed', tiers: [1, 5, 25, 100], value: () => signedCount() },
+    { name: 'Showing up', emoji: '🔥', what: 'weeks in a row with an action', tiers: [4, 12, 26, 52], value: () => ME.streakWeeks },
+    { name: 'Change starter', emoji: '📣', what: 'petitions published', tiers: [1, 3, 10, 25], value: () => mine().length },
+    { name: 'Ripple maker', emoji: '🌊', what: 'people signed through your link', tiers: [5, 25, 100, 500], value: () => ME.ripple },
+    { name: 'Conversation starter', emoji: '💬', what: 'discussion posts', tiers: [1, 10, 50, 100], value: () => ME.posts + state.myPosts },
+    { name: 'Community builder', emoji: '🤝', what: 'communities joined', tiers: [2, 5, 10, 20], value: () => state.joined.size },
+  ];
+
+  // Write flow questions (one per screen on phone/tablet; all on one page on desktop).
+  const QS = [
+    { k: 'title', q: 'What should we call your petition?', hint: 'Short and specific works best: what changes, and where.', type: 'text', max: 80, ph: 'e.g. A safe way across Maple Avenue', example: 'A brighter walk home from the Eastbridge bus stop' },
+    { k: 'problem', q: "What's the problem you've noticed?", hint: 'Who is affected, where and when. Stick to what you know first-hand.', type: 'area', ph: 'Describe what you see…', example: 'Evening classes end after sunset, and the path from the campus gate to the bus shelter has long gaps between lights.' },
+    { k: 'action', q: 'What exactly should change?', hint: 'One clear request someone can say yes to.', type: 'area', ph: 'e.g. Add a marked crosswalk at Maple Avenue and Hill Street', example: 'Assess the path and publish a pedestrian-lighting plan before winter evening classes.' },
+    { k: 'place', q: 'Where is this happening?', hint: 'An approximate place is enough. Never share a home address.', type: 'place' },
+    { k: 'topic', q: 'Which topic fits best?', hint: 'Topics help neighbors who care about this find it.', type: 'topic' },
+    { k: 'recipient', q: 'Who has the power to make this change?', hint: 'These are suggestions from the local directory. You choose; nothing is filled in for you.', type: 'recipient' },
+    { k: 'goal', q: 'How many signatures would make it count?', hint: 'Pick a goal you can reach. You can raise it later.', type: 'goal' },
+    { k: 'verify', q: 'Who should be able to sign?', hint: 'Stricter rules make each signature count for more, but fewer people can sign.', type: 'verify' },
+  ];
+  const VERIFY = {
+    account: { label: 'Anyone with an account', d: 'Fastest to sign. One signature per account.', emo: '👤' },
+    email: { label: 'Verified email only', d: 'Signers confirm their email address first.', emo: '✉️' },
+    community: { label: 'Members of a community', d: 'Only members of the local community it is posted in.', emo: '🤝' },
+    location: { label: 'Verified local residents', d: 'Signers confirm they live in the place you chose.', emo: '📍' },
+  };
+  const EXAMPLE_DESC =
+    "Kids walking to Riverton Middle School have to cross Maple Avenue at Hill Street. There's no crosswalk and cars come fast around the bend. My little brother almost got hit last week. We need a painted crosswalk there and a crossing guard in the mornings.";
+
+  // ───────────────────────── state ─────────────────────────
+  const emptyAnswers = () => ({ title: '', problem: '', action: '', place: '', topic: '', recipient: '', goal: 0, verify: '' });
+  const state = {
+    tab: 'swipe',
+    page: 0,
+    gone: [], // [{id, a}] swiped cards, newest last
+    saved: new Set(),
+    signed: new Set(),
+    joined: new Set(['c1']),
+    today: 0, // actions taken in this session (feeds the weekly chart)
+    q: '',
+    dTopic: 'All',
+    cq: '',
+    showMore: false,
+    supported: new Set(),
+    expanded: new Set(),
+    myPosts: 0,
+    profTab: 'started',
+    overlay: null,
+    write: { stage: 'intro', step: 0, desc: '', aiFields: new Set(), prev: null, a: emptyAnswers(), example: false, dir: 1 },
+  };
+  const byId = (id) => PETITIONS.find((p) => p.id === id);
+  const comm = (id) => COMMUNITIES.find((c) => c.id === id);
+  const mine = () => PETITIONS.filter((p) => p.mine);
+  const signedCount = () => ME.earlierSignatures + state.signed.size;
+  const cityShort = (c) => c.split(',')[0];
+
+  function eligibility(p) {
+    const c = comm(p.community);
+    switch (p.verify) {
+      case 'email':
+        return { ok: ME.emailVerified, label: 'Verified email', short: 'Verified email' };
+      case 'community': {
+        const ok = state.joined.has(c.id);
+        return { ok, label: `Members of ${c.name}`, short: 'Members can sign', fix: ok ? null : 'join' };
+      }
+      case 'location':
+        return { ok: ME.locationApproved, label: `Verified ${cityShort(p.city)} residents`, short: `${cityShort(p.city)} residents`, fix: 'location' };
+      case 'custom':
+        return { ok: true, review: true, label: 'Organizer reviews each signature', short: 'Organizer review' };
+      default:
+        return { ok: true, label: 'Anyone with an account', short: 'Anyone can sign' };
+    }
+  }
+
+  // Signing rules — the same messages as signingError() in src/domain/rules.ts.
+  const VERIFICATION_LABELS = {
+    account: 'Account required',
+    email: 'Verified email required',
+    community: 'Community members',
+    location: 'Location approval required',
+    custom: 'Manager-reviewed eligibility',
+  };
+  const IDENTITIES = [
+    ['full_name', 'Full name'],
+    ['first_name_last_initial', 'First name + last initial'],
+    ['anonymous', 'Anonymous'],
+  ];
+  function publicName(identity) {
+    const words = ME.name.trim().split(/\s+/);
+    if (identity === 'anonymous') return 'Anonymous supporter';
+    if (identity === 'full_name') return ME.name;
+    return `${words[0]}${words.length > 1 ? ` ${words[words.length - 1][0]}.` : ''}`;
+  }
+  function signingError(p) {
+    if (state.signed.has(p.id)) return 'You have already signed this petition.';
+    if (p.verify === 'email' && !ME.emailVerified)
+      return 'A verified email is required. Verify it with your authentication provider.';
+    if (p.verify === 'community' && !state.joined.has(p.community)) return 'Join this community before signing.';
+    if (p.verify === 'location' && !ME.locationApproved)
+      return 'Location verification requires an approved attestation. An approximate city alone does not establish eligibility.';
+    if (p.verify === 'custom')
+      return 'Request an eligibility review on the petition page. The organizer must approve it before you sign.';
+    return null;
+  }
+  const closes = (p) =>
+    new Date(Date.now() + p.days * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // ───────────────────────── shell ─────────────────────────
+  const app = $('#app');
+  const screen = $('#screen');
+  const overlayEl = $('#overlay');
+  const stage = $('#stage');
+  const THEME = { swipe: 'light', discover: 'light', write: 'light', community: 'light', profile: 'light' };
+  const TABS = [
+    { id: 'swipe', label: 'Swipe', icon: 'cards' },
+    { id: 'discover', label: 'Discover', icon: 'compass' },
+    { id: 'write', label: 'Write', icon: 'pen' },
+    { id: 'community', label: 'Community', icon: 'users' },
+    { id: 'profile', label: 'Profile', icon: 'user' },
+  ];
+  const size = () => app.dataset.size;
+  const isDesk = () => size() === 'desktop';
+  const writeFocus = () => state.tab === 'write' && !isDesk() && state.write.stage !== 'intro';
+
+  function renderChrome() {
+    app.dataset.screen = state.tab;
+    app.dataset.theme = THEME[state.tab];
+    app.dataset.focus = writeFocus() ? '1' : '0';
+    const onPhoto = state.overlay?.type === 'celebrate' || (state.tab === 'swipe' && app.dataset.size === 'phone');
+    $('#device').style.setProperty('--sb', onPhoto ? '#fff' : '#121113');
+    $('#tabbar').innerHTML = TABS.map(
+      (t) => `<button class="tab" data-action="tab" data-tab="${t.id}" ${state.tab === t.id ? 'aria-current="page"' : ''}>
+        ${ic(t.icon, 24, state.tab === t.id ? 2.4 : 2)}<span>${t.label}</span>
+        ${t.id === 'community' && state.tab !== 'community' ? '<span class="tab-badge">2</span>' : ''}</button>`,
+    ).join('');
+    $('#sidebar').innerHTML = `
+      <div class="brand"><span class="brand-mark">${ic('cards', 20, 2.4)}</span><span class="brand-name">Swipe4Change</span></div>
+      ${TABS.map(
+        (t) => `<button class="side-link" data-action="tab" data-tab="${t.id}" title="${t.label}" ${state.tab === t.id ? 'aria-current="page"' : ''}>${ic(t.icon, 22)}<span>${t.label}</span></button>`,
+      ).join('')}
+      <button class="btn-primary side-cta" data-action="tab" data-tab="write" title="Start a petition" aria-label="Start a petition">${ic('sparkle', 20)}<span class="lbl">Start a petition</span></button>
+      <button class="side-me" data-action="tab" data-tab="profile" title="${ME.name}" aria-label="Your profile">${avatar(40)}<span class="me-txt"><b>${ME.name}</b><span>${ME.city}</span></span></button>`;
+  }
+
+  function render() {
+    const keep = screen.scrollTop;
+    const same = screen.dataset.tab === state.tab;
+    renderChrome();
+    screen.className = 'screen' + (state.tab === 'swipe' ? ' no-scroll' : '');
+    screen.dataset.tab = state.tab;
+    screen.innerHTML = SCREENS[state.tab]();
+    screen.scrollTop = same ? keep : 0;
+    if (state.tab === 'swipe') mountDeck();
+    if (state.tab === 'write') afterWrite();
+  }
+
+  // ───────────────────────── 1. SWIPE ─────────────────────────
+  // The deck shows cards in the order the feed algorithm supplies, minus ones already handled here.
+  function deckIds() {
+    const goneIds = new Set(state.gone.map((g) => g.id));
+    return DECK_ORDER.map(byId)
+      .filter((p) => !p.mine && !state.signed.has(p.id) && !goneIds.has(p.id))
+      .map((p) => p.id);
+  }
+
+  function screenSwipe() {
+    return `<div class="swipe">
+      <div class="swipe-ambient" id="ambient" aria-hidden="true"></div>
+      <div class="swipe-main">
+        <div class="deck-wrap">
+          <div class="deck" id="deck"></div>
+          <div class="actions" id="actions">
+            <button class="act" data-action="undo" aria-label="Undo last swipe">${ACT.undo}</button>
+            <button class="act lg" data-action="skip" aria-label="Skip">${ACT.skip}</button>
+            <button class="act" data-action="save" aria-label="Save for later">${ACT.save}</button>
+            <button class="act lg" data-action="sign" aria-label="Sign this petition">${ACT.sign}</button>
+            <button class="act" data-action="share" aria-label="Share">${ACT.share}</button>
+          </div>
+        </div>
+        <div class="swipe-hints" aria-hidden="true">
+          <span><kbd>←</kbd>Skip</span><span><kbd>→</kbd>Sign</span><span><kbd>↑</kbd>Save</span><span><kbd>Space</kbd>Next detail</span><span><kbd>Z</kbd>Undo</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Who can sign — the one chip on the card.
+  function chipsHTML(p) {
+    const e = eligibility(p);
+    return `<span class="chip">${ic(e.review ? 'clock' : e.ok ? 'shield' : 'lock', 18, 2)} ${esc(e.short)} ${
+      e.ok && !e.review ? `<span class="ok">${ic('check', 18, 3)}</span>` : ''
+    }</span>`;
+  }
+
+  function cardHTML(p, cls, page) {
+    const t = TOPICS[p.topic];
+    const c = comm(p.community);
+    let lower;
+    if (page === 0) {
+      lower = `<div class="ci-progress"><div class="progress"><i style="width:${pct(p)}%"></i></div><span><b>${fmt(p.count)}</b> of ${fmt(p.goal)}<span class="long"> signed</span> · ${p.days} days<span class="long"> left</span></span></div>
+        <div class="chips">${chipsHTML(p)}</div>`;
+    } else if (page === 1) {
+      lower = `<div class="ci-page"><div class="ci-label">The problem</div><p class="ci-text">${esc(p.problem)}</p>
+        <div class="ci-to">${ic('pin', 18)}${esc(p.city)}</div></div>`;
+    } else {
+      lower = `<div class="ci-page"><div class="ci-label">The ask</div><p class="ci-ask">${esc(p.action)}</p>
+        <div class="ci-to">${ic('landmark', 18)}To ${esc(p.recipient)}</div>
+        <div class="ci-progress"><div class="progress"><i style="width:${pct(p)}%"></i></div><span><b>${fmt(p.count)}</b> of ${fmt(p.goal)} · ${p.days} days left</span></div></div>`;
+    }
+    return `<article class="card ${cls}" data-id="${p.id}" data-page="${page}" aria-label="${esc(p.title)}">
+      <img class="card-img" src="${photo(p.img)}" alt="" draggable="false" />
+      <div class="card-scrim"></div>
+      <div class="segs" aria-hidden="true">${[0, 1, 2].map((i) => `<i class="${i === page ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="stamp stamp-sign" aria-hidden="true">SIGN</div>
+      <div class="stamp stamp-skip" aria-hidden="true">SKIP</div>
+      <div class="stamp stamp-save" aria-hidden="true">SAVE</div>
+      <div class="card-info">
+        <div class="ci-kicker"><span class="topic-dot" style="--c:${t.color}"></span>${esc(c.name)} · ${esc(p.topic)}</div>
+        <div class="ci-title-row"><h2 class="ci-title">${esc(p.title)}</h2>
+          <button class="ci-open" data-action="open" data-id="${p.id}" aria-label="Open full petition">${ic('arrowUp', 22, 2.4)}</button></div>
+        ${lower}
+      </div>
+    </article>`;
+  }
+
+  function mountDeck(enter = '') {
+    const deck = $('#deck');
+    if (!deck) return;
+    const ids = deckIds();
+    const top = ids[0] ? byId(ids[0]) : null;
+    if (!top) {
+      deck.innerHTML = `<div class="deck-empty">
+        <div class="empty-orb">${ic('check', 40, 2.4)}</div>
+        <h2>You're all caught up</h2>
+        <p>You have seen every petition for now. Browse Discover, or look again at the ones you skipped.</p>
+        <button class="btn-primary" data-action="tab" data-tab="discover">${ic('compass', 20)}Browse Discover</button>
+        ${state.gone.some((g) => g.a === 'skip') ? `<button class="btn-ghost" data-action="reset-skips">${ic('refresh', 18)}Show skipped again</button>` : ''}
+      </div>`;
+    } else {
+      const next = ids[1] ? byId(ids[1]) : null;
+      deck.innerHTML = (next ? cardHTML(next, 'is-next', 0) : '') + cardHTML(top, enter, state.page);
+      bindDrag(deck.querySelector('.card:last-child'));
+    }
+    $$('#actions .act').forEach((b) => {
+      const a = b.dataset.action;
+      b.disabled = a === 'undo' ? !state.gone.length : !top;
+    });
+    $('#actions').style.display = top ? '' : 'none';
+    const amb = $('#ambient');
+    if (amb) amb.style.backgroundImage = top ? `url("${photo(top.img)}")` : 'none';
+  }
+
+  // Drag physics: follow the pointer, show SIGN / SKIP / SAVE stamps, commit past a threshold or on a flick.
+  function bindDrag(card) {
+    if (!card) return;
+    let sx = 0, sy = 0, dx = 0, dy = 0, t0 = 0, down = false, moved = false;
+    const stamps = { sign: $('.stamp-sign', card), skip: $('.stamp-skip', card), save: $('.stamp-save', card) };
+    const nextCard = $('#deck .is-next');
+    card.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || e.target.closest('button')) return;
+      down = true; moved = false; dx = dy = 0;
+      sx = e.clientX; sy = e.clientY; t0 = performance.now();
+      card.setPointerCapture(e.pointerId);
+      card.style.transition = 'none';
+    });
+    card.addEventListener('pointermove', (e) => {
+      if (!down) return;
+      dx = e.clientX - sx; dy = e.clientY - sy;
+      if (!moved && Math.hypot(dx, dy) > 6) moved = true;
+      if (!moved) return;
+      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 16}deg)`;
+      const up = -dy > Math.abs(dx);
+      stamps.sign.style.opacity = !up ? Math.max(0, Math.min(1, dx / 110)) : 0;
+      stamps.skip.style.opacity = !up ? Math.max(0, Math.min(1, -dx / 110)) : 0;
+      stamps.save.style.opacity = up ? Math.max(0, Math.min(1, -dy / 120)) : 0;
+      if (nextCard) {
+        const k = Math.min(1, Math.hypot(dx, dy) / 160);
+        nextCard.style.transition = 'none';
+        nextCard.style.transform = `scale(${0.95 + 0.05 * k}) translateY(${10 - 10 * k}px)`;
+        nextCard.style.filter = `brightness(${0.55 + 0.45 * k})`;
+      }
+    });
+    const end = (e) => {
+      if (!down) return;
+      down = false;
+      const dt = Math.max(1, performance.now() - t0);
+      const vx = dx / dt, vy = dy / dt;
+      if (!moved) {
+        // Tap: lower info area opens the petition; upper area steps through the card's pages.
+        const r = card.getBoundingClientRect();
+        const info = $('.card-info', card).getBoundingClientRect();
+        if (e.clientY >= info.top + 20) return openDetail(card.dataset.id);
+        const p = Number(card.dataset.page);
+        const next = e.clientX - r.left > r.width / 2 ? Math.min(2, p + 1) : Math.max(0, p - 1);
+        if (next !== p) setPage(next);
+        return;
+      }
+      if (dx > 110 || (vx > 0.55 && dx > 40)) return act('sign', 'drag');
+      if (dx < -110 || (vx < -0.55 && dx < -40)) return act('skip', 'drag');
+      if ((dy < -130 || (vy < -0.6 && dy < -50)) && -dy > Math.abs(dx)) return act('save', 'drag');
+      springBack(card);
+    };
+    card.addEventListener('pointerup', end);
+    card.addEventListener('pointercancel', () => {
+      down = false;
+      springBack(card);
+    });
+  }
+  function springBack(card) {
+    if (!card) return;
+    card.style.transition = 'transform .45s cubic-bezier(.3,1.4,.5,1)';
+    card.style.transform = '';
+    $$('.stamp', card).forEach((s) => (s.style.opacity = 0));
+    const n = $('#deck .is-next');
+    if (n) {
+      n.style.transition = '';
+      n.style.transform = '';
+      n.style.filter = '';
+    }
+  }
+  function setPage(n) {
+    state.page = n;
+    const card = $('#deck .card:last-child');
+    if (!card) return;
+    const p = byId(card.dataset.id);
+    const fresh = document.createElement('div');
+    fresh.innerHTML = cardHTML(p, '', n);
+    card.dataset.page = n;
+    $('.card-info', card).replaceWith($('.card-info', fresh.firstElementChild));
+    $('.segs', card).replaceWith($('.segs', fresh.firstElementChild));
+  }
+  function fly(dir) {
+    const card = $('#deck .card:last-child');
+    if (!card) return Promise.resolve();
+    const w = card.offsetWidth, h = card.offsetHeight;
+    const stamp = $(`.stamp-${dir === 'right' ? 'sign' : dir === 'left' ? 'skip' : 'save'}`, card);
+    if (stamp) stamp.style.opacity = 1;
+    card.style.transition = 'transform .34s cubic-bezier(.4,.1,.7,1), opacity .3s ease-in .04s';
+    card.style.opacity = '0';
+    const m = card.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
+    const y0 = m ? Number(m[2]) : 0;
+    card.style.transform =
+      dir === 'up' ? `translate(0, ${-h * 1.2}px) rotate(0deg)` : `translate(${(dir === 'right' ? 1 : -1) * w * 1.5}px, ${y0 - 30}px) rotate(${dir === 'right' ? 26 : -26}deg)`;
+    card.style.pointerEvents = 'none';
+    const n = $('#deck .is-next');
+    if (n) {
+      n.style.transition = 'transform .34s var(--ease), filter .34s';
+      n.style.transform = 'none';
+      n.style.filter = 'none';
+    }
+    return new Promise((r) => setTimeout(r, reduceMotion() ? 0 : 320));
+  }
+  function pulse(action) {
+    const b = $(`#actions [data-action="${action}"]`);
+    if (!b) return;
+    b.classList.remove('pulse');
+    void b.offsetWidth;
+    b.classList.add('pulse');
+  }
+  function topId() {
+    return $('#deck .card:last-child')?.dataset.id;
+  }
+
+  async function act(action, via = 'button') {
+    const id = topId();
+    if (!id && action !== 'undo') return;
+    const p = byId(id);
+    if (via === 'button') pulse(action);
+    if (action === 'skip') {
+      await fly('left');
+      state.gone.push({ id, a: 'skip' });
+      state.page = 0;
+      mountDeck('is-enter');
+    } else if (action === 'save') {
+      await fly('up');
+      state.saved.add(id);
+      state.gone.push({ id, a: 'save' });
+      state.page = 0;
+      mountDeck('is-enter');
+      toast('Saved. Find it in Profile → Saved.');
+    } else if (action === 'share') {
+      copyLink(p);
+      springBack($('#deck .card:last-child'));
+    } else if (action === 'sign') {
+      if (signingError(p)) {
+        springBack($('#deck .card:last-child'));
+        return openSign(id, false);
+      }
+      await fly('right');
+      openSign(id, true);
+    } else if (action === 'undo') {
+      const last = state.gone.pop();
+      if (!last) return;
+      if (last.a === 'save') state.saved.delete(last.id);
+      state.page = 0;
+      mountDeck('is-undo');
+      toast(last.a === 'save' ? 'Brought it back and removed it from Saved' : 'Brought it back');
+    }
+  }
+
+  function copyLink(p) {
+    const url = `swipe4change://petition/${p.id}`;
+    try {
+      navigator.clipboard?.writeText(url).catch(() => {});
+    } catch {
+      /* clipboard blocked; the toast still explains */
+    }
+    toast('Link copied. Anyone who signs through it joins your ripple.');
+  }
+
+  // ───────────────────────── 2. SIGNED celebration ─────────────────────────
+  function heartPath(cx, top, w, h) {
+    // A wide heart (w × h) whose top dip is centred on cx.
+    const sx = w / 200, sy = h / 178;
+    const X = (x) => (cx + (x - 100) * sx).toFixed(1);
+    const Y = (y) => (top + y * sy).toFixed(1);
+    return `M${X(100)} ${Y(178)} C${X(42)} ${Y(140)} ${X(0)} ${Y(104)} ${X(0)} ${Y(62)} C${X(0)} ${Y(26)} ${X(28)} ${Y(0)} ${X(60)} ${Y(0)} C${X(78)} ${Y(0)} ${X(92)} ${Y(10)} ${X(100)} ${Y(26)} C${X(108)} ${Y(10)} ${X(122)} ${Y(0)} ${X(140)} ${Y(0)} C${X(172)} ${Y(0)} ${X(200)} ${Y(26)} ${X(200)} ${Y(62)} C${X(200)} ${Y(104)} ${X(158)} ${Y(140)} ${X(100)} ${Y(178)}Z`;
+  }
+  function celebrateHTML(p) {
+    const others = p.count - 1;
+    const hearts = `<svg class="celeb-hearts" viewBox="0 0 600 340" aria-hidden="true">
+      <defs>
+        <linearGradient id="hg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7C3A3"/><stop offset="1" stop-color="#899878" stop-opacity=".15"/></linearGradient>
+        <linearGradient id="hg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D2D9BE"/><stop offset="1" stop-color="#A3B090" stop-opacity=".35"/></linearGradient>
+        <linearGradient id="hg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ECEDD3"/><stop offset="1" stop-color="#C5CDAE" stop-opacity=".6"/></linearGradient>
+      </defs>
+      <g class="h"><path d="${heartPath(300, 8, 640, 330)}" fill="url(#hg1)" stroke="rgba(255,255,255,.45)" stroke-width="6"/></g>
+      <g class="h h2"><path d="${heartPath(300, 58, 460, 262)}" fill="url(#hg2)" stroke="rgba(255,255,255,.45)" stroke-width="6"/></g>
+      <g class="h h3"><path d="${heartPath(300, 104, 300, 196)}" fill="url(#hg3)" stroke="rgba(255,255,255,.5)" stroke-width="6"/></g>
+      <path class="spark" d="M420 40l7 22 22 7-22 7-7 22-7-22-22-7 22-7z" fill="#fff"/>
+      <path class="spark s2" d="M384 104l5 16 16 5-16 5-5 16-5-16-16-5 16-5z" fill="#fff" opacity=".9"/>
+    </svg>`;
+    return `<div class="celebrate" role="dialog" aria-modal="true" aria-labelledby="celeb-title">
+      ${hearts}
+      <div class="confetti" id="confetti"></div>
+      <button class="celeb-close" data-action="close" aria-label="Close">${ic('x', 30, 2.6)}</button>
+      <div class="celeb-inner">
+        <div class="pair"><span>${mayaSvg()}</span><span><img src="${photo(p.img)}" alt="" /></span></div>
+        <div class="celeb-title" id="celeb-title"><small>IT'S</small><span>Signed!</span></div>
+        <p class="celeb-sub">You and ${fmt(others)} neighbors are asking ${esc(p.recipient)} to ${esc(lowerFirst(p.action))}</p>
+        <div class="celeb-meter"><div class="progress"><i style="width:${pct(p)}%"></i></div>
+          <div class="row"><span>${fmt(p.count)} of ${fmt(p.goal)} signatures</span><span>${p.days} days left</span></div></div>
+        <form class="say" data-form="say">
+          <input id="say-input" maxlength="280" placeholder="Say why you signed" aria-label="Say why you signed" autocomplete="off" />
+          <button type="submit" id="say-send" disabled>Send</button>
+        </form>
+        <div class="reacts" role="group" aria-label="Quick reactions">
+          ${['👏', '✊', '💚', '🙌'].map((e) => `<button data-action="react" data-emoji="${e}" aria-label="React ${e}">${e}</button>`).join('')}
+        </div>
+        <div class="celeb-foot">
+          <button class="btn-ghost" data-action="share-signed" data-id="${p.id}">${ic('share', 18)}Share my link</button>
+          <button class="btn-ghost" data-action="close">Keep swiping</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  const lowerFirst = (s) => {
+    const t = s.replace(/\.$/, '');
+    return (/^[A-Z][a-z]/.test(t) ? t[0].toLowerCase() + t.slice(1) : t) + '.';
+  };
+  function confetti() {
+    const box = $('#confetti');
+    if (!box || reduceMotion()) return;
+    const colors = ['#E4E6C3', '#FFFFFF', '#C9A86A', '#B7C7A0', '#B9CDE6'];
+    box.innerHTML = Array.from({ length: 36 }, (_, i) => {
+      const left = Math.random() * 100;
+      const dur = 2.2 + Math.random() * 1.8;
+      const delay = Math.random() * 0.6;
+      return `<i style="left:${left}%;background:${colors[i % colors.length]};animation-duration:${dur}s;animation-delay:${delay}s;--dx:${(Math.random() - 0.5) * 120}px;--r:${Math.random() * 720 - 360}deg"></i>`;
+    }).join('');
+  }
+
+  // ───────────────────────── 3. WRITE ─────────────────────────
+  const W = () => state.write;
+  function valid(k) {
+    const v = W().a[k];
+    if (k === 'title') return v.trim().length >= 8;
+    if (k === 'problem' || k === 'action') return v.trim().length >= 20;
+    if (k === 'goal') return Number(v) >= 10;
+    return String(v).trim().length > 0;
+  }
+  function answeredCount() {
+    return QS.filter((q) => valid(q.k)).length;
+  }
+  const RULES = [
+    ['title', 'Title is specific (20–80 characters)', (a) => a.title.trim().length >= 20 && a.title.trim().length <= 80],
+    ['problem', 'Problem says who is affected (80+ characters)', (a) => a.problem.trim().length >= 80],
+    ['action', 'One clear, concrete request', (a) => a.action.trim().length >= 25],
+    ['place', 'Says where it is happening', (a) => !!a.place.trim()],
+    ['topic', 'Topic chosen', (a) => !!a.topic],
+    ['recipient', 'Names who can decide', (a) => !!a.recipient.trim()],
+    ['goal', 'Signature goal set', (a) => Number(a.goal) >= 10],
+    ['verify', 'Signing rule chosen', (a) => !!a.verify],
+  ];
+  const score = () => Math.round((RULES.filter((r) => r[2](W().a)).length / RULES.length) * 100);
+  const ready = () => QS.every((q) => valid(q.k));
+
+  function aiDraft(text) {
+    // Prototype stand-in for the server-side writer: it only rearranges the creator's own words and
+    // leaves blank anything it cannot find. It never picks a recipient.
+    const t = text.trim();
+    if (t === EXAMPLE_DESC) {
+      return {
+        title: 'A safe way across Maple Avenue',
+        problem: 'Students walking to Riverton Middle School have to cross Maple Avenue at Hill Street, where there is no crosswalk and cars come quickly around the bend. A student was nearly hit there last week.',
+        action: 'Add a painted crosswalk at Maple Avenue and Hill Street and a crossing guard during morning arrival.',
+        place: 'Riverton, CA',
+        topic: 'Safer streets',
+      };
+    }
+    const sentences = t.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const first = (sentences[0] || t).replace(/[.!?]+$/, '');
+    let title = first.length > 64 ? first.slice(0, 64).replace(/\s+\S*$/, '') : first;
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+    const askRe = /\b(need|needs|should|want|ask|please|add|install|fix|repair|build|create|extend|open|replace|plant)\b/i;
+    const ask = sentences.find((s) => askRe.test(s)) || '';
+    const action = ask.replace(/^(we|i|they)\s+(really\s+)?(need|want|would like|ask)\s+(to\s+|for\s+|that\s+)?/i, '').replace(/[.!?]+$/, '');
+    const out = { title, problem: t };
+    if (action.length >= 12) out.action = action.charAt(0).toUpperCase() + action.slice(1) + '.';
+    const place = ['Riverton', 'Brookside', 'Eastbridge'].find((c) => new RegExp(c, 'i').test(t));
+    if (place) out.place = place === 'Eastbridge' ? 'Eastbridge campus' : `${place}, CA`;
+    const topicHints = [
+      ['Safer streets', /crosswalk|traffic|street|bike|speed|cross|sidewalk|light/i],
+      ['Environment', /tree|shade|waste|recycl|compost|water|air|climate/i],
+      ['Education', /school|library|study|class|student|teacher/i],
+      ['Accessibility', /wheelchair|accessib|ramp|disab|bench|sensory/i],
+      ['Public spaces', /park|garden|court|plaza|playground/i],
+    ];
+    const tp = topicHints.find(([, re]) => re.test(t));
+    if (tp) out.topic = tp[0];
+    return out;
+  }
+
+  function startDraft() {
+    const w = W();
+    if (w.desc.trim().length < 20) return;
+    w.prev = { ...w.a };
+    const draft = aiDraft(w.desc);
+    w.aiFields = new Set(Object.keys(draft));
+    Object.assign(w.a, draft);
+    w.draftKeys = Object.keys(draft);
+    if (isDesk()) {
+      render();
+      toast(`Drafted ${w.aiFields.size} answers from your words. Review each one.`);
+      return;
+    }
+    w.stage = 'drafting';
+    w.draftTick = 0;
+    render();
+    const steps = ['title', 'problem', 'action', 'place', 'topic'];
+    const tick = () => {
+      w.draftTick++;
+      if (state.tab !== 'write' || w.stage !== 'drafting') return;
+      if (w.draftTick <= steps.length) {
+        render();
+        setTimeout(tick, reduceMotion() ? 0 : 420);
+      } else {
+        w.stage = 'q';
+        w.step = 0;
+        w.dir = 1;
+        render();
+      }
+    };
+    setTimeout(tick, reduceMotion() ? 0 : 500);
+  }
+
+  function screenWrite() {
+    return isDesk() ? writeDesktop() : writeMobile();
+  }
+  function writeTop(back, title, right = '') {
+    return `<header class="w-top">${back ? `<button class="icon-btn" data-action="w-back" aria-label="Back">${ic('chevL', 28, 2.2)}</button>` : '<span></span>'}<h1>${title}</h1>${right || '<span></span>'}</header>`;
+  }
+  function writeMobile() {
+    const w = W();
+    if (w.stage === 'intro') {
+      const n = answeredCount();
+      return `<div class="write">${writeTop(false, 'New petition')}
+        <div class="w-intro">
+          <div class="eyebrow accent">Start a petition</div>
+          <h2 class="w-q">What would you like to change?</h2>
+          <p class="w-hint" style="font-size:16px">Answer ${QS.length} short questions, one at a time. Every answer stays editable until you publish.</p>
+          <button class="opt-card ai" data-action="w-ai"><span class="orb">${ic('sparkle', 28, 2)}</span><span><b>Draft it with AI</b><span>Describe the problem in your own words. AI turns it into a first draft. It never adds facts, numbers or names.</span></span><span class="chev">${ic('chevR', 22)}</span></button>
+          <button class="opt-card" data-action="w-manual"><span class="orb">${ic('pen', 26, 2)}</span><span><b>Write it myself</b><span>Start with empty answers, with an example for each question.</span></span><span class="chev">${ic('chevR', 22)}</span></button>
+          ${n ? `<button class="resume" data-action="w-resume">${ic('clock', 22)}<span>Continue your draft<small>${n} of ${QS.length} answered · saved on this device</small></span><span class="chev" style="margin-left:auto">${ic('chevR', 20)}</span></button>` : ''}
+        </div></div>`;
+    }
+    if (w.stage === 'ai') {
+      const ok = w.desc.trim().length >= 20;
+      return `<div class="write">${writeTop(true, 'New petition')}
+        <div class="w-body">
+          <button class="w-link" data-action="w-example-desc">${ic('bulb', 20)}Use an example</button>
+          <h2 class="w-q">What's happening, and what would you like to change?</h2>
+          <textarea class="w-input" id="w-field" data-bind="desc" rows="5" placeholder="Type it the way you'd tell a friend. Dictation works too." aria-label="Describe the problem">${esc(w.desc)}</textarea>
+          <p class="w-note">${ic('sparkle', 18)}<span>AI drafts only from your words. It won't invent facts, numbers, names or officials, and it never picks the recipient for you.</span></p>
+        </div>
+        <div class="w-foot">
+          <button class="btn-primary w-next" id="w-go" data-action="w-draft" ${ok ? '' : 'disabled'}>${ic('sparkle', 20)}Draft my petition</button>
+          <button class="w-skip" data-action="w-manual">Skip and write it myself</button>
+        </div></div>`;
+    }
+    if (w.stage === 'drafting') {
+      const steps = [['title', 'Title'], ['problem', 'The problem'], ['action', 'The request'], ['place', 'Place'], ['topic', 'Topic']];
+      return `<div class="write">${writeTop(false, 'New petition')}
+        <div class="w-body drafting" style="animation:none">
+          <div class="spark-orb">${ic('sparkle', 40, 2)}</div>
+          <h2 class="w-q" style="font-size:24px;margin-top:24px">Drafting from your words…</h2>
+          <ul class="draft-steps">${steps
+            .map(([k, l], i) => {
+              const st = i < w.draftTick ? (w.aiFields.has(k) ? 'done' : 'skip') : i === w.draftTick ? 'active' : '';
+              return `<li class="${st}"><span class="st">${st === 'done' ? ic('check', 14, 3.2) : ''}</span>${l}${st === 'skip' ? '<span style="margin-left:auto;font-size:12px;font-weight:600">You add this</span>' : ''}</li>`;
+            })
+            .join('')}</ul>
+        </div></div>`;
+    }
+    if (w.stage === 'review') return writeReviewMobile();
+    // One question per screen.
+    const q = QS[w.step];
+    const last = w.step === QS.length - 1;
+    const tag = w.aiFields.has(q.k)
+      ? `<span class="w-tag">${ic('sparkle', 18)}Drafted from your words · edit freely</span>`
+      : q.example
+        ? `<button class="w-link" data-action="w-example">${ic('bulb', 20)}${w.example ? 'Hide the example' : 'Show an example'}</button>`
+        : '';
+    return `<div class="write">
+      ${writeTop(true, 'New petition', `<span class="w-count">${w.step + 1}/${QS.length}</span>`)}
+      <div class="w-progress" aria-hidden="true"><i style="width:${((w.step + 1) / QS.length) * 100}%"></i></div>
+      <div class="w-body ${w.dir < 0 ? 'back' : ''}" id="w-body">
+        ${tag}
+        <h2 class="w-q" id="q-label">${q.q}</h2>
+        ${fieldHTML(q, 'mobile')}
+        ${q.type === 'text' ? `<p class="w-hint count"><span>${q.hint}</span><span id="w-cc">${W().a.title.length}/${q.max}</span></p>` : `<p class="w-hint">${q.hint}</p>`}
+        ${w.example && q.example && !w.aiFields.has(q.k) ? `<div class="w-example"><b>Example</b>${esc(q.example)}<br/><button data-action="w-use-example">Use this as a starting point</button></div>` : ''}
+      </div>
+      <div class="w-foot"><button class="btn-primary w-next" id="w-go" data-action="w-next" ${valid(q.k) ? '' : 'disabled'}>${last ? 'Review' : 'Next'}</button></div>
+    </div>`;
+  }
+
+  function fieldHTML(q, mode) {
+    const a = W().a;
+    const desk = mode === 'desk';
+    const bindAttrs = `data-bind="a.${q.k}" ${desk ? '' : 'id="w-field"'} aria-labelledby="${desk ? `qd-${q.k}` : 'q-label'}"`;
+    switch (q.type) {
+      case 'text':
+        return desk
+          ? `<input type="text" maxlength="${q.max}" ${bindAttrs} value="${esc(a[q.k])}" placeholder="${esc(q.ph)}" />`
+          : `<textarea class="w-input single" rows="2" maxlength="${q.max}" ${bindAttrs} placeholder="${esc(q.ph)}">${esc(a[q.k])}</textarea>`;
+      case 'area':
+        return `<textarea class="${desk ? '' : 'w-input'}" rows="${desk ? 4 : 6}" ${bindAttrs} placeholder="${esc(q.ph)}">${esc(a[q.k])}</textarea>`;
+      case 'place': {
+        const opts = ['Riverton, CA', 'Brookside, CA', 'Eastbridge campus'];
+        const other = a.place && !opts.includes(a.place) ? a.place : '';
+        return `<div class="options">${opts.map((o) => optBtn('place', o, o, '📍')).join('')}</div>
+          <input class="field-other" type="text" data-bind="a.place" data-other="1" value="${esc(other)}" placeholder="Another city or neighborhood" aria-label="Another place" />`;
+      }
+      case 'topic':
+        return `<div class="options">${Object.entries(TOPICS).map(([k, t]) => optBtn('topic', k, k, t.emoji)).join('')}</div>`;
+      case 'recipient': {
+        const ids = OFFICE_BY_TOPIC[a.topic] || ['public-works', 'parks', 'school-board'];
+        const names = ids.map((i) => OFFICES[i]);
+        const other = a.recipient && !names.includes(a.recipient) ? a.recipient : '';
+        return `<div class="options">${names.map((n) => optBtn('recipient', n, n, '🏛️')).join('')}</div>
+          <input class="field-other" type="text" data-bind="a.recipient" data-other="1" value="${esc(other)}" placeholder="Someone else (office or official)" aria-label="Another recipient" />`;
+      }
+      case 'goal': {
+        const goals = [100, 250, 500, 1000];
+        const custom = a.goal && !goals.includes(Number(a.goal)) ? a.goal : '';
+        return `<div class="goal-grid">${goals
+          .map((g) => `<button class="goal" data-action="w-pick" data-k="goal" data-v="${g}" aria-pressed="${Number(a.goal) === g}">${fmt(g)}<small>signatures</small></button>`)
+          .join('')}</div>
+          <input class="field-other" type="number" min="10" step="10" inputmode="numeric" data-bind="a.goal" data-other="1" value="${custom}" placeholder="Another number" aria-label="Custom goal" />`;
+      }
+      case 'verify':
+        return `<div class="options">${Object.entries(VERIFY)
+          .map(([k, v]) => optBtn('verify', k, `${v.label}<small>${v.d}</small>`, v.emo))
+          .join('')}</div>`;
+      default:
+        return '';
+    }
+  }
+  function optBtn(k, v, label, emo) {
+    const on = String(W().a[k]) === String(v);
+    return `<button class="opt" data-action="w-pick" data-k="${k}" data-v="${esc(v)}" aria-pressed="${on}"><span class="emo" aria-hidden="true">${emo}</span><span class="txt">${label}</span><span class="tick">${on ? ic('check', 14, 3.2) : ''}</span></button>`;
+  }
+
+  function ringHTML(s) {
+    const r = 27, c = 2 * Math.PI * r;
+    const col = s >= 88 ? '#526344' : s >= 50 ? '#8B6B37' : '#B4492F';
+    return `<div class="ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="#E6E9DF" stroke-width="7"/><circle cx="32" cy="32" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - s / 100)}"/></svg><b>${s}</b></div>`;
+  }
+  function checklistHTML() {
+    const a = W().a;
+    return `<ul class="checklist">${RULES.map(([, l, f]) => `<li class="${f(a) ? 'pass' : ''}"><span class="ck">${ic(f(a) ? 'check' : 'plus', 12, 3.2)}</span>${l}</li>`).join('')}</ul>`;
+  }
+  function scoreHTML() {
+    const s = score();
+    return `<div class="score">${ringHTML(s)}<div><h3>${s >= 88 ? 'Ready to publish' : s >= 50 ? 'Almost there' : 'Keep going'}</h3><p>The writing check runs the same rules for everyone. It is a guide, not a gate.</p></div></div>`;
+  }
+  function miniCardHTML(a) {
+    const t = TOPICS[a.topic];
+    const img = t ? t.img : 'crosswalk';
+    return `<div class="mini-card"><img src="${photo(img)}" alt="" /><div class="card-scrim"></div>
+      <span class="illus">Illustrative photo · add your own</span>
+      <div class="mc-body">
+        <div class="ci-kicker">${t ? `<span class="topic-dot" style="--c:${t.color}"></span>${esc(a.topic)}` : 'Topic'}${a.place ? ` · ${esc(a.place)}` : ''}</div>
+        <h3>${esc(a.title || 'Your petition title')}</h3>
+        <div class="ci-progress"><div class="progress"><i style="width:0%"></i></div><span><b>0</b> of ${fmt(a.goal || 0)} signed</span></div>
+        ${a.recipient ? `<div class="ci-to">${ic('landmark', 16)}To ${esc(a.recipient)}</div>` : ''}
+      </div></div>`;
+  }
+  function writeReviewMobile() {
+    const a = W().a;
+    const show = (q) => {
+      const v = a[q.k];
+      if (q.k === 'goal') return v ? `${fmt(v)} signatures` : '';
+      if (q.k === 'verify') return v ? VERIFY[v].label : '';
+      return v;
+    };
+    return `<div class="write">${writeTop(true, 'Review')}
+      <div class="w-body" style="padding-top:16px">
+        ${miniCardHTML(a)}
+        <div style="margin-top:16px">${scoreHTML()}</div>
+        ${checklistHTML()}
+        <div class="answers">${QS.map(
+          (q, i) => `<button class="answer" data-action="w-goto" data-step="${i}"><span style="flex:1;min-width:0"><span class="k">${i + 1}. ${esc(q.q)}</span><span class="v ${show(q) ? '' : 'empty'}">${esc(show(q) || 'Needs an answer')}</span></span><span class="edit">Edit</span></button>`,
+        ).join('')}</div>
+      </div>
+      <div class="w-foot"><button class="btn-primary w-next" data-action="w-publish" ${ready() ? '' : 'disabled'}>Publish petition</button></div>
+    </div>`;
+  }
+  function writeDesktop() {
+    const w = W();
+    const ok = w.desc.trim().length >= 20;
+    return `<div class="write"><div class="wd">
+      <div class="wd-form">
+        <div class="eyebrow accent">Start a petition</div>
+        <h1 class="wd-title">What would you like to change?</h1>
+        <p class="wd-sub">Start with AI, or answer the ${QS.length} questions below yourself. Everything stays editable until you publish.</p>
+        <section class="wd-ai" aria-labelledby="ai-h">
+          <h2 id="ai-h">${ic('sparkle', 24)}Draft it with AI</h2>
+          <p class="w-hint" style="margin-top:6px">Describe what's happening and what should change, in your own words.</p>
+          <textarea id="w-desc" data-bind="desc" rows="4" placeholder="Type it the way you'd tell a friend…" aria-labelledby="ai-h">${esc(w.desc)}</textarea>
+          <div class="wd-ai-row">
+            <button class="btn-primary" id="w-go" data-action="w-draft" ${ok ? '' : 'disabled'}>${ic('sparkle', 18)}Draft my petition</button>
+            <button class="w-link" data-action="w-example-desc">${ic('bulb', 18)}Use an example</button>
+            ${w.prev ? `<button class="btn-ghost" data-action="w-undo-ai" style="margin-left:auto">${ic('refresh', 18)}Undo AI draft</button>` : ''}
+          </div>
+          ${w.aiFields.size ? `<div class="wd-drafted"><span class="w-tag">${ic('sparkle', 16)}Drafted ${w.aiFields.size} answers</span> from your words. Review each one below.</div>` : ''}
+          <p class="w-note">${ic('sparkle', 18)}<span>AI drafts only from your words. It won't invent facts, numbers, names or officials, and it never picks the recipient for you.</span></p>
+        </section>
+        ${QS.map(
+          (q, i) => `<section class="qblock" aria-labelledby="qd-${q.k}">
+            <div class="qn"><span>${String(i + 1).padStart(2, '0')} / ${String(QS.length).padStart(2, '0')}</span>${w.aiFields.has(q.k) ? `<span class="w-tag" style="min-height:0;letter-spacing:0">${ic('sparkle', 14)}Drafted from your words</span>` : valid(q.k) ? `<span class="ok">${ic('check', 16, 3)}</span>` : ''}</div>
+            <h3 id="qd-${q.k}">${q.q}</h3>
+            <p class="w-hint">${q.hint}</p>
+            ${fieldHTML(q, 'desk')}
+          </section>`,
+        ).join('')}
+      </div>
+      <aside class="wd-side" id="wd-side">${deskSideHTML()}</aside>
+    </div></div>`;
+  }
+  function deskSideHTML() {
+    return `<div class="wd-side-label">Live preview</div>${miniCardHTML(W().a)}${scoreHTML()}${checklistHTML()}
+      <button class="btn-primary block" data-action="w-publish" ${ready() ? '' : 'disabled'}>Publish petition</button>
+      ${ready() ? '' : `<p class="fine center" style="margin:0">Answer all ${QS.length} questions to publish (${answeredCount()}/${QS.length} done).</p>`}`;
+  }
+  function afterWrite() {
+    const f = $('#w-field');
+    if (f && f.tagName === 'TEXTAREA') autoGrow(f);
+    if (f && !isDesk() && W().stage !== 'intro' && window.matchMedia('(hover: hover)').matches) {
+      f.focus({ preventScroll: true });
+      const n = f.value.length;
+      try {
+        f.setSelectionRange(n, n);
+      } catch {
+        /* number inputs */
+      }
+    }
+  }
+  function autoGrow(el) {
+    if (!el.classList.contains('w-input')) return;
+    el.style.height = 'auto';
+    el.style.height = Math.max(el.classList.contains('single') ? 40 : 120, el.scrollHeight) + 'px';
+  }
+  function refreshWriteLive() {
+    const w = W();
+    const go = $('#w-go');
+    if (go) {
+      if (w.stage === 'ai' || (isDesk() && go.dataset.action === 'w-draft')) go.disabled = w.desc.trim().length < 20;
+      else if (w.stage === 'q') go.disabled = !valid(QS[w.step].k);
+    }
+    const cc = $('#w-cc');
+    if (cc) cc.textContent = `${w.a.title.length}/80`;
+    const side = $('#wd-side');
+    if (side) side.innerHTML = deskSideHTML();
+  }
+  function publish() {
+    const a = W().a;
+    const t = TOPICS[a.topic];
+    const p = {
+      id: 'n' + Date.now(),
+      title: a.title.trim(),
+      action: a.action.trim(),
+      summary: a.action.trim(),
+      problem: a.problem.trim(),
+      topic: a.topic,
+      community: a.topic === 'Safer streets' ? 'c1' : a.topic === 'Environment' ? 'c2' : a.topic === 'Accessibility' ? 'c3' : 'c4',
+      recipient: a.recipient.trim(),
+      count: 0,
+      goal: Number(a.goal),
+      days: 60,
+      verify: a.verify,
+      img: t.img,
+      city: a.place.includes(',') ? a.place : `${a.place}`,
+      mine: true,
+      illustrative: true,
+    };
+    PETITIONS.unshift(p);
+    state.write = { stage: 'intro', step: 0, desc: '', aiFields: new Set(), prev: null, a: emptyAnswers(), example: false, dir: 1 };
+    state.today++;
+    openOverlay({ type: 'published', id: p.id });
+  }
+
+  // ───────────────────────── 4. DISCOVER ─────────────────────────
+  function discoverList() {
+    const q = state.q.trim().toLowerCase();
+    return PETITIONS.filter((p) => state.dTopic === 'All' || p.topic === state.dTopic).filter((p) => {
+      if (!q) return true;
+      const c = comm(p.community);
+      return [p.title, p.summary, p.topic, p.city, p.recipient, c.name].join(' ').toLowerCase().includes(q);
+    });
+  }
+  function gridHTML() {
+    const list = discoverList();
+    if (!list.length)
+      return `<div class="empty-dark" style="grid-column:1/-1"><b>No petitions match “${esc(state.q)}”</b>Try a place, a topic or an office, like “library” or “Brookside”.<br/><button class="btn-ghost" data-action="clear-search">Clear search</button></div>`;
+    return list
+      .map(
+        (p, i) => `<button class="tile" data-action="open" data-id="${p.id}" style="animation-delay:${Math.min(i, 10) * 30}ms" aria-label="${esc(p.title)}, ${fmt(p.count)} signed">
+        <img src="${photo(p.img)}" alt="" loading="lazy" />
+        ${state.signed.has(p.id) ? `<span class="tile-flag signed">${ic('check', 12, 3.2)}Signed</span>` : p.mine ? `<span class="tile-flag">Yours</span>` : p.days <= 30 ? `<span class="tile-flag">${ic('clock', 12, 2.4)}${p.days} days left</span>` : ''}
+        <span class="tile-meta"><b>${esc(p.title)}</b><span class="progress"><i style="width:${pct(p)}%"></i></span><span>${TOPICS[p.topic].emoji} ${fmt(p.count)} signed · ${esc(cityShort(p.city))}</span></span>
+      </button>`,
+      )
+      .join('');
+  }
+  function screenDiscover() {
+    return `<div class="discover">
+      <div class="disc-head"><div class="disc-head-inner">
+        <label class="search">${ic('search', 20)}<span class="sr-only">Search</span><input id="d-search" type="search" data-bind="q" value="${esc(state.q)}" placeholder="Search petitions, places, offices" autocomplete="off" /></label>
+        <div class="topic-row" role="group" aria-label="Topics">
+          ${['All', ...Object.keys(TOPICS)].map((t) => `<button class="tchip" data-action="d-topic" data-topic="${esc(t)}" aria-pressed="${state.dTopic === t}">${t === 'All' ? '' : TOPICS[t].emoji + ' '}${esc(t)}</button>`).join('')}
+        </div></div>
+      </div>
+      <div class="grid" id="d-grid">${gridHTML()}</div>
+    </div>`;
+  }
+
+  // ───────────────────────── 5. COMMUNITY ─────────────────────────
+  function recommended() {
+    const q = state.cq.trim().toLowerCase();
+    return COMMUNITIES.filter((c) => !q || [c.name, c.desc, c.topic, c.city].join(' ').toLowerCase().includes(q));
+  }
+  function recReason(c) {
+    if (state.joined.has(c.id) && c.id === 'c1') return 'You started this community';
+    if (ME.interests.includes(c.topic)) return `People who follow ${c.topic} near ${cityShort(ME.city)} also joined`;
+    return `Members of Riverton students also joined`;
+  }
+  function recHTML(c) {
+    const joined = state.joined.has(c.id);
+    const t = TOPICS[c.topic];
+    return `<div class="rec">
+      <div class="rec-thumb"><img src="${photo(c.img)}" alt="" /></div>
+      <div>
+        <div class="rec-name">${esc(c.name)} <span title="${esc(c.topic)}" aria-label="${esc(c.topic)}">${t.emoji}</span></div>
+        <div class="rec-desc">${esc(c.desc)} · ${fmt(c.members + (joined && c.id !== 'c1' ? 1 : 0))} members · ${esc(c.city)}</div>
+        <div class="rec-meta">${ic('trend', 18, 2.2)}<span>${esc(recReason(c))}</span></div>
+        ${c.id === 'c1' ? '' : `<button class="join" data-action="join" data-id="${c.id}" aria-pressed="${joined}">${joined ? ic('check', 18, 2.6) + 'Joined' : ic('plus', 20, 2.6) + 'Join'}</button>`}
+      </div>
+    </div>`;
+  }
+  function postHTML(post) {
+    const c = comm(post.community);
+    const p = byId(post.petition);
+    const open = state.expanded.has(post.id);
+    const supported = state.supported.has(post.id);
+    const short = post.text.length > 150 && !open ? post.text.slice(0, 150).replace(/\s+\S*$/, '') : post.text;
+    return `<article class="post">
+      <div class="post-head">
+        <div class="post-logo"><img src="${photo(c.img)}" alt="" /></div>
+        <div class="post-who"><b>${esc(c.name)} <span aria-hidden="true">${TOPICS[c.topic].emoji}</span></b>
+          <span>${fmt(c.members)} members</span>
+          <span>${post.suggested ? 'Suggested for you · ' : ''}${esc(post.kind)} by ${esc(post.author)} · ${post.time}</span></div>
+        <button class="icon-btn" data-action="post-more" aria-label="More options" style="color:#5f6670">${ic('more', 24, 2.4)}</button>
+      </div>
+      <div class="post-body">${esc(short)}${short !== post.text ? `…<button class="more" data-action="expand" data-id="${post.id}">more</button>` : ''}</div>
+      <img class="post-img" src="${photo(post.img)}" alt="" loading="lazy" />
+      ${p ? `<button class="post-petition" data-action="open" data-id="${p.id}"><img src="${photo(p.img)}" alt="" /><span style="flex:1;min-width:0"><b>${esc(p.title)}</b><span>${fmt(p.count)} of ${fmt(p.goal)} signed · ${p.days} days left</span><span class="progress"><i style="width:${pct(p)}%"></i></span></span>${ic('chevR', 20)}</button>` : ''}
+      <div class="post-counts"><span>👏💚 ${post.supports + (supported ? 1 : 0)}</span><span>${post.comments} comments</span></div>
+      <div class="post-actions">
+        <button data-action="support" data-id="${post.id}" aria-pressed="${supported}">${ic('support', 20)}Support</button>
+        <button data-action="comment" data-id="${post.id}">${ic('comment', 20)}Comment</button>
+        <button data-action="share-post" data-id="${post.id}">${ic('share', 20)}Share</button>
+      </div>
+    </article>`;
+  }
+  function feedHTML() {
+    const recs = recommended().filter((c) => c.id !== 'c1');
+    const list = state.showMore ? recs : recs.slice(0, 3);
+    const q = state.cq.trim().toLowerCase();
+    const posts = POSTS.filter((p) => !q || (p.text + comm(p.community).name).toLowerCase().includes(q));
+    return `<section aria-labelledby="rec-h"><h2 class="sec-title" id="rec-h">Recommended for you</h2>
+        ${list.length ? list.map(recHTML).join('') : `<p class="rec-desc" style="padding:16px">No communities match “${esc(state.cq)}”.</p>`}
+        ${recs.length > 3 || !state.showMore ? `<button class="show-more" data-action="show-more">${state.showMore ? 'Show less' : 'Show more'} ${ic(state.showMore ? 'arrowUp' : 'arrowR', 24, 2)}</button>` : ''}
+      </section>
+      <div class="band"></div>
+      ${posts.map(postHTML).join('')}`;
+  }
+  function screenCommunity() {
+    const joined = COMMUNITIES.filter((c) => state.joined.has(c.id));
+    const trending = [...PETITIONS].filter((p) => !p.mine).sort((a, b) => b.count - a.count).slice(0, 4);
+    const searchField = `<label class="search">${ic('search', 20)}<span class="sr-only">Search communities</span><input id="c-search" type="search" data-bind="cq" value="${esc(state.cq)}" placeholder="Search communities and posts" autocomplete="off" /></label>
+        <button class="icon-btn msg-btn" data-action="messages" aria-label="Messages, 2 unread">${ic('msg', 28, 2)}<span class="count">2</span></button>`;
+    const inColumn = app.dataset.mid === '1';
+    return `<div class="comm">
+      ${
+        inColumn
+          ? ''
+          : `<div class="comm-top">
+        <button data-action="tab" data-tab="profile" aria-label="Your profile">${avatar(44)}</button>
+        ${searchField}
+      </div>`
+      }
+      <div class="comm-layout">
+        <aside class="comm-side">
+          <div class="side-box"><div class="me-cover"></div><div class="me-box">${avatar(64)}<b>${ME.name}</b><span>Student organizer · ${ME.city}</span></div></div>
+          <div class="side-box"><h4>Your communities</h4>${joined
+            .map((c) => `<button class="side-item"><img src="${photo(c.img)}" alt="" /><span>${esc(c.name)}<small>${fmt(c.members)} members</small></span></button>`)
+            .join('')}</div>
+        </aside>
+        <div class="comm-center">
+          ${inColumn ? `<div class="comm-searchbar">${searchField}</div>` : ''}
+          <div class="comm-feed" id="c-feed">${feedHTML()}</div>
+        </div>
+        <aside class="comm-side right">
+          <div class="side-box"><h4>Trending near ${esc(cityShort(ME.city))}</h4>${trending
+            .map((p) => `<button class="side-item" data-action="open" data-id="${p.id}"><img src="${photo(p.img)}" alt="" /><span>${esc(p.title)}<small>${fmt(p.count)} signed · ${p.days} days left</small></span></button>`)
+            .join('')}</div>
+        </aside>
+      </div>
+    </div>`;
+  }
+
+  // ───────────────────────── 6. PROFILE ─────────────────────────
+  function levelOf(b) {
+    const v = b.value();
+    const level = b.tiers.filter((t) => v >= t).length;
+    const next = b.tiers[level] ?? b.tiers[b.tiers.length - 1];
+    return { v, level, next, max: level >= b.tiers.length };
+  }
+  let medalSeq = 0;
+  function medal(b, level, w = 64) {
+    const t = TIERS[level];
+    const id = `md${medalSeq++}`;
+    return `<svg width="${w}" height="${Math.round(w * 1.19)}" viewBox="0 0 64 76" aria-hidden="true">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${t.a}"/><stop offset="1" stop-color="${t.b}"/></linearGradient></defs>
+      <path d="M32 4 57 18.5v29L32 62 7 47.5v-29Z" fill="url(#${id})" stroke="${t.b}" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M32 11 51 22v21L32 55 13 43V22Z" fill="#fff" opacity=".22"/>
+      <text x="32" y="41" text-anchor="middle" font-size="21" ${level ? '' : 'opacity=".45" style="filter:grayscale(1)"'}>${b.emoji}</text>
+      <rect x="9" y="57" width="46" height="16" rx="8" fill="${level ? t.b : '#CDD1C5'}" stroke="#FFFFFF" stroke-width="2.5"/>
+      <text x="32" y="68.5" text-anchor="middle" font-size="8.6" font-weight="800" fill="#fff" font-family="Plus Jakarta Sans, system-ui, sans-serif" letter-spacing=".4">${level ? 'LEVEL ' + level : 'LOCKED'}</text>
+    </svg>`;
+  }
+  function chartHTML() {
+    const you = [3, 1, 4, 2, 0, 5, 2 + state.today];
+    const avg = [1, 1, 2, 1, 1, 2, 1];
+    const days = ['W', 'T', 'F', 'S', 'S', 'M', 'T'];
+    const top = Math.max(6, Math.ceil(Math.max(...you) / 3) * 3);
+    const step = top / 3;
+    const Wd = isDesk() ? 620 : 330, H = 190, L = 34, R = 14, T = 14, B = 36;
+    const x = (i) => L + (i * (Wd - L - R)) / 6;
+    const y = (v) => T + (1 - v / top) * (H - T - B);
+    const line = (arr) => arr.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const ticks = [0, step, step * 2, top];
+    return `<svg class="chart" viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Actions per day this week: you ${you.reduce((s, v) => s + v, 0)}, Riverton average ${avg.reduce((s, v) => s + v, 0)}">
+      ${ticks.map((t) => `<line x1="${L}" x2="${Wd - R}" y1="${y(t)}" y2="${y(t)}" stroke="#DDE0D5" stroke-width="1.5"/><text x="${L - 10}" y="${y(t) + 4}" text-anchor="end" font-size="12" font-weight="700" fill="#75786F">${t}</text>`).join('')}
+      <polyline points="${line(avg)}" fill="none" stroke="#CDD1C5" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      ${avg.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="5" fill="#B9BEAF"/>`).join('')}
+      <defs><linearGradient id="you-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#899878" stop-opacity=".3"/><stop offset="1" stop-color="#899878" stop-opacity="0"/></linearGradient></defs>
+      <polygon points="${x(0)},${y(0)} ${line(you)} ${x(6)},${y(0)}" fill="url(#you-fill)"/>
+      <polyline points="${line(you)}" fill="none" stroke="#526344" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      ${you.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="${i === 6 ? 7 : 5.5}" fill="#526344" stroke="#FFFFFF" stroke-width="2"/>`).join('')}
+      ${days.map((d, i) => `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" font-size="13" font-weight="700" fill="${i === 6 ? '#121113' : '#75786F'}">${d}</text>`).join('')}
+    </svg>`;
+  }
+  function profileLeft() {
+    const topics = ME.interests.map((t) => `<span class="tt" style="--c:${TOPICS[t].soft}">${TOPICS[t].emoji}</span>`).join('');
+    const backers = mine().reduce((s, p) => s + p.count, 0);
+    return `<div class="prof-hero">
+        <div class="prof-bar"><button class="icon-btn" data-action="qr" aria-label="Share profile">${ic('share', 24, 2.2)}</button><h1>${ME.name}</h1><button class="icon-btn" data-action="settings" aria-label="Settings">${ic('gear', 26, 2)}</button></div>
+        <div class="ribbon"><span>ORGANIZER</span></div>
+        <div class="prof-avatar">${mayaSvg(null)}</div>
+      </div>
+      <div class="prof-body">
+        <div class="handle">@${ME.handle} · Joined 2026</div>
+        <div class="stats">
+          <div><div class="v">${topics}</div><div class="l">Topics</div></div>
+          <div><div class="v">${state.joined.size}</div><div class="l">${state.joined.size === 1 ? 'Community' : 'Communities'}</div></div>
+          <div><div class="v">${fmt(backers)}</div><div class="l">Backers</div></div>
+        </div>
+        <div class="btn3d-row">
+          <button class="btn-primary" data-action="settings">${ic('pen', 20, 2.6)}Edit profile</button>
+          <button class="btn-square" data-action="qr" aria-label="Show profile QR code">${ic('qr', 24, 2)}</button>
+        </div>
+      </div>`;
+  }
+  function profileRight() {
+    const you = 3 + 1 + 4 + 2 + 0 + 5 + 2 + state.today;
+    const list = state.profTab === 'started' ? mine() : state.profTab === 'signed' ? PETITIONS.filter((p) => state.signed.has(p.id)) : PETITIONS.filter((p) => state.saved.has(p.id));
+    const empty = {
+      started: 'Petitions you publish appear here.',
+      signed: `Your ${ME.earlierSignatures} earlier signatures were on petitions that have closed. New ones you sign appear here.`,
+      saved: 'Tap the star on a card to save it for later.',
+    }[state.profTab];
+    return `<div class="prof-body">
+      <div class="p-sec">Weekly impact</div>
+      <div class="card-box chart-box">${chartHTML()}
+      <div class="legend"><div><i style="background:#526344"></i>${ME.name.split(' ')[0]}<span>${you} actions</span></div><div><i style="background:#B9BEAF"></i>Riverton average<span>9 actions</span></div></div></div>
+      <div class="p-sec">Overview</div>
+      <div class="overview">
+        <div class="ov"><div class="ov-top"><span class="e">🔥</span><b>${ME.streakWeeks}</b></div><span>Week streak</span></div>
+        <div class="ov"><div class="ov-top"><span class="e">✍️</span><b>${signedCount()}</b></div><span>Signatures</span></div>
+        <div class="ov"><div class="ov-top"><span class="e">📣</span><b>${mine().length}</b></div><span>Petitions started</span></div>
+        <div class="ov"><div class="ov-top"><span class="e">🌊</span><b>${ME.ripple}</b></div><span>Ripple signatures</span></div>
+      </div>
+      <div class="p-sec">Advancement badges <small>${BADGES.reduce((s, b) => s + levelOf(b).level, 0)} of ${BADGES.length * 4} levels</small></div>
+      <div class="badges">${BADGES.map((b, i) => {
+        const L = levelOf(b);
+        const t = TIERS[L.level];
+        const width = L.max ? 100 : Math.round((L.v / L.next) * 100);
+        return `<button class="badge" data-action="badge" data-i="${i}">
+          ${medal(b, L.level)}
+          <span><span class="b-name">${b.name}<small style="--tc:${t.ink}">${L.level ? t.n : 'Not yet'}</small></span>
+          <span class="b-desc">${L.max ? `Top level reached: ${fmt(L.v)} ${b.what}` : `${L.level ? `Level ${L.level + 1}` : 'Level 1'}: reach ${fmt(L.next)} ${b.what}`}</span>
+          <span class="b-bar"><span class="progress"><i style="width:${Math.max(width, 4)}%"></i></span><span>${fmt(Math.min(L.v, L.next))}/${fmt(L.next)}</span></span></span>
+        </button>`;
+      }).join('')}</div>
+      <div class="p-sec">Activity</div>
+      <div class="seg" role="group" aria-label="Activity">${[
+        ['started', 'Started'],
+        ['signed', 'Signed'],
+        ['saved', 'Saved'],
+      ]
+        .map(([k, l]) => `<button data-action="prof-tab" data-k="${k}" aria-pressed="${state.profTab === k}">${l}</button>`)
+        .join('')}</div>
+      <div class="act-list">${
+        list.length
+          ? list
+              .map(
+                (p) => `<button class="act-row" data-action="open" data-id="${p.id}"><img src="${photo(p.img)}" alt="" /><span class="grow"><b>${esc(p.title)}</b><span>${fmt(p.count)} of ${fmt(p.goal)} signed · ${p.days} days left</span><div class="progress"><i style="width:${pct(p)}%"></i></div></span></button>`,
+              )
+              .join('')
+          : `<p class="act-empty">${empty}</p>`
+      }</div>
+    </div>`;
+  }
+  function screenProfile() {
+    return `<div class="prof"><div class="prof-wrap"><div class="prof-left">${profileLeft()}</div><div class="prof-right">${profileRight()}</div></div></div>`;
+  }
+
+  const SCREENS = { swipe: screenSwipe, discover: screenDiscover, write: screenWrite, community: screenCommunity, profile: screenProfile };
+
+  // ───────────────────────── overlays ─────────────────────────
+  function openOverlay(o) {
+    state.overlay = o;
+    renderOverlay();
+  }
+  function closeOverlay() {
+    const o = state.overlay;
+    state.overlay = null;
+    overlayEl.innerHTML = '';
+    renderChrome();
+    if (o?.type === 'sign' && o.fromDeck && !state.signed.has(o.id) && state.tab === 'swipe') mountDeck('is-enter');
+    if (o && ['celebrate', 'published'].includes(o.type)) render();
+  }
+  function sheet(inner, cls = '', label = 'Dialog') {
+    return `<div class="scrim" data-action="scrim"><div class="sheet ${cls}" role="dialog" aria-modal="true" aria-label="${esc(label)}"><div class="handle-bar"></div>${inner}</div></div>`;
+  }
+  function renderOverlay() {
+    const o = state.overlay;
+    if (!o) return (overlayEl.innerHTML = '');
+    const p = o.id ? byId(o.id) : null;
+    let html = '';
+    if (o.type === 'detail') html = detailHTML(p);
+    if (o.type === 'sign') html = sheet(`<div id="sign-flow">${signFlowHTML(p)}</div>`, 'sign', 'Sign petition');
+    if (o.type === 'celebrate') html = celebrateHTML(p);
+    if (o.type === 'published') html = publishedHTML(p);
+    if (o.type === 'confirm-publish') html = confirmPublishHTML();
+    if (o.type === 'qr') html = qrHTML();
+    if (o.type === 'badge') html = badgeHTML(BADGES[o.i]);
+    if (o.type === 'comment') html = commentHTML(POSTS.find((x) => x.id === o.post));
+    overlayEl.innerHTML = html;
+    renderChrome();
+    if (o.type === 'sign') afterSignStep();
+    if (o.type === 'celebrate') confetti();
+    if (o.type === 'qr') drawQR();
+    const box = overlayEl.querySelector('.sheet, .celebrate, .published');
+    if (box) {
+      box.setAttribute('tabindex', '-1');
+      box.focus({ preventScroll: true });
+    }
+  }
+  function detailHTML(p) {
+    const c = comm(p.community);
+    const e = eligibility(p);
+    const signed = state.signed.has(p.id);
+    const saved = state.saved.has(p.id);
+    const cta = p.mine
+      ? `<button class="btn-primary" data-action="toast" data-msg="Organizer tools open in the full app">${ic('sliders', 20)}Manage petition</button>`
+      : signed
+        ? `<button class="btn-primary" disabled>${ic('check', 20, 3)}You signed this</button>`
+        : `<button class="btn-primary" data-action="sign-from-detail" data-id="${p.id}">${ACT.sign.replace('width="38" height="38"', 'width="22" height="22"').replace('url(#g-sign)', 'currentColor')}Sign petition</button>`;
+    return sheet(
+      `<div class="detail-hero"><img src="${photo(p.img)}" alt="" />${p.illustrative ? '<span class="illus">Illustrative photo</span>' : ''}<button class="close" data-action="close" aria-label="Close">${ic('x', 22)}</button></div>
+      <div class="d-kicker"><span class="topic-dot" style="--c:${TOPICS[p.topic].color}"></span>${esc(c.name)} · ${esc(p.topic)}</div>
+      <h2 class="d-title">${esc(p.title)}</h2>
+      <p class="d-summary">${esc(p.summary)}</p>
+      <div class="d-meter"><div class="progress"><i style="width:${pct(p)}%"></i></div><div class="row"><span><b>${fmt(p.count)}</b> of ${fmt(p.goal)} signatures</span><span>${p.days} days left</span></div></div>
+      <div class="ask-box"><div class="eyebrow">The ask</div><p>${esc(p.action)}</p></div>
+      <div class="d-rows">
+        <div class="d-row">${ic('landmark', 20)}<span><small>Recipient</small>${esc(p.recipient)}</span></div>
+        <div class="d-row">${ic('pin', 20)}<span><small>Where</small>${esc(p.city)}</span></div>
+        <div class="d-row">${ic(e.ok ? 'shield' : 'lock', 20)}<span><small>Who can sign</small>${esc(e.label)}${!state.signed.has(p.id) && signingError(p) ? ' · you are not eligible yet' : ''}</span></div>
+      </div>
+      <div class="eyebrow" style="margin-top:12px">Why it matters</div>
+      <p class="d-problem">${esc(p.problem)}</p>
+      <p class="fine">Sample petition · the community, office and signatures are fictional.</p>
+      <div class="d-foot">
+        <button class="btn-outline" data-action="toggle-save" data-id="${p.id}" aria-pressed="${saved}" aria-label="${saved ? 'Saved' : 'Save'}">${ic('bookmark', 22)}</button>
+        <button class="btn-outline" data-action="share-id" data-id="${p.id}" aria-label="Share">${ic('share', 22)}</button>
+        ${cta}
+      </div>`,
+      'wide',
+      p.title,
+    );
+  }
+  // ── Signing: the original three steps (src/components/signature-consent.tsx) ──
+  const SIGN_TITLES = ['Read the full request', 'How should your name appear?', 'Sign and confirm'];
+  function openSign(id, fromDeck) {
+    state.sign = { id, step: 0, identity: 'anonymous', strokes: [], consent: false, pending: false, dir: 1 };
+    openOverlay({ type: 'sign', id, fromDeck });
+  }
+  const signPoints = () => state.sign.strokes.reduce((n, s) => n + s.length, 0);
+  function signCanNext(p) {
+    const s = state.sign;
+    if (s.step === 0) return !signingError(p);
+    if (s.step === 1) return true;
+    return signPoints() >= 8 && s.consent;
+  }
+  function signNextLabel() {
+    const s = state.sign;
+    if (s.pending) return 'Confirming…';
+    if (s.step < 2) return 'Continue';
+    if (signPoints() < 8) return 'Draw your signature';
+    if (!s.consent) return 'Tick the consent box';
+    return 'Sign petition';
+  }
+  function signFlowHTML(p) {
+    const s = state.sign;
+    const err = signingError(p);
+    let body = '';
+    if (s.step === 0) {
+      body = `<div class="read-box" tabindex="0" aria-label="Full text of the petition">
+          <h3>${esc(p.title)}</h3>
+          <p>${esc(p.problem)}</p>
+          <p><b>Requested action</b><br />${esc(p.action)}</p>
+          <p class="read-meta">To ${esc(p.recipient)} · ${esc(p.city)} · closes ${closes(p)}</p>
+        </div>
+        <div class="elig-row ${err ? 'bad' : ''}" aria-live="polite">
+          <span class="elig-dot">${err ? '!' : ic('check', 13, 3.4)}</span>
+          <span>${err ? esc(err) : `Eligible · ${VERIFICATION_LABELS[p.verify]} (simulated)`}</span>
+        </div>`;
+    } else if (s.step === 1) {
+      body = `<div class="radio-list" role="radiogroup" aria-label="How your name appears">
+          ${IDENTITIES.map(
+            ([k, l]) => `<button class="radio-card" role="radio" aria-checked="${s.identity === k}" data-action="sign-identity" data-identity="${k}">
+              <span class="radio-dot"></span><span><b>${l}</b><small>Appears as “${esc(publicName(k))}”</small></span></button>`,
+          ).join('')}
+        </div>
+        <p class="micro">Your account always owns the signature privately.</p>`;
+    } else {
+      body = `<div class="sigpad"><span class="ph">Sign here</span><canvas id="sig" aria-label="Signature pad: draw your signature"></canvas>
+          <button class="sig-clear" data-action="sig-clear">Clear</button></div>
+        <button class="consent-row" role="checkbox" aria-checked="${s.consent}" data-action="sign-consent">
+          <span class="box">${s.consent ? ic('check', 13, 3.4) : ''}</span>
+          <span>I have read the full text and I am signing it as myself.</span>
+        </button>
+        <p class="micro">Only you can see your drawn signature. Others see “${esc(publicName(s.identity))}”.</p>`;
+    }
+    const can = signCanNext(p);
+    return `<div class="step-bars" aria-hidden="true">${[0, 1, 2].map((i) => `<i class="${i <= s.step ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="sign-step ${s.dir < 0 ? 'back' : ''}">
+        <div class="eyebrow">Step ${s.step + 1} of 3</div>
+        <h2 class="sign-title">${SIGN_TITLES[s.step]}</h2>
+        ${body}
+      </div>
+      <div class="sign-nav">
+        <button class="sign-back" data-action="sign-back" aria-label="${s.step === 0 ? 'Close' : 'Previous step'}">${ic('arrowL', 20, 2.2)}</button>
+        <button class="sign-next ${can ? '' : 'off'}" id="sign-next" data-action="sign-next" aria-disabled="${!can || s.pending}">${signNextLabel()}</button>
+      </div>`;
+  }
+  function renderSignFlow() {
+    const box = $('#sign-flow');
+    if (!box) return;
+    box.innerHTML = signFlowHTML(byId(state.sign.id));
+    afterSignStep();
+  }
+  function afterSignStep() {
+    if (state.sign?.step === 2) bindSigpad();
+  }
+  function updateSignNav() {
+    const btn = $('#sign-next');
+    if (!btn) return;
+    const can = signCanNext(byId(state.sign.id));
+    btn.textContent = signNextLabel();
+    btn.classList.toggle('off', !can);
+    btn.setAttribute('aria-disabled', String(!can || state.sign.pending));
+    const ph = $('.sigpad .ph');
+    if (ph) ph.style.opacity = signPoints() ? 0 : 1;
+  }
+  function confirmPublishHTML() {
+    const a = W().a;
+    return sheet(
+      `<div class="sheet-head"><div class="grow"><div class="eyebrow">Publish</div><h2>Publish “${esc(a.title)}”?</h2></div><button class="close" data-action="close" aria-label="Close">${ic('x', 22)}</button></div>
+      <p class="d-summary">It goes live right away and anyone can find it. After people sign, changes to the wording are recorded in a public edit history, and the signing rule can't change silently.</p>
+      <div class="elig">${ic('shield', 20)}<span>${esc(VERIFY[a.verify].label)} · goal ${fmt(a.goal)} signatures · to ${esc(a.recipient)}</span></div>
+      <div class="sheet-actions"><button class="btn-ghost" data-action="close">Keep editing</button><button class="btn-primary" data-action="w-publish-go">Publish now</button></div>`,
+      '',
+      'Publish petition',
+    );
+  }
+  function publishedHTML(p) {
+    return `<div class="published" role="dialog" aria-modal="true" aria-label="Petition published">
+      <div class="published-inner">
+        <div class="burst">${ic('check', 44, 3.2)}</div>
+        <h2>Your petition is live!</h2>
+        <p>Share it with the people who feel this problem most. The first 10 signatures matter most.</p>
+        ${miniCardHTML({ title: p.title, topic: p.topic, place: p.city, goal: p.goal, recipient: p.recipient })}
+        <div class="stack">
+          <button class="btn-primary block" data-action="share-id" data-id="${p.id}">${ic('share', 20)}Share link</button>
+          <button class="btn-ghost" data-action="see-published">See it in Discover</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  function qrHTML() {
+    return sheet(
+      `<div class="sheet-head"><div class="grow"><h2>Share your profile</h2></div><button class="close" data-action="close" aria-label="Close">${ic('x', 22)}</button></div>
+      <div class="qr-box" id="qr"></div>
+      <p class="d-summary center">Scan to open @${ME.handle} in Swipe4Change.</p>
+      <div class="sheet-actions"><button class="btn-primary" data-action="copy-profile">${ic('share', 20)}Copy profile link</button></div>`,
+      '',
+      'Share profile',
+    );
+  }
+  function drawQR() {
+    const box = $('#qr');
+    if (!box) return;
+    if (typeof window.qrcode !== 'function') {
+      box.innerHTML = `<p class="fine center">The QR code needs an internet connection to load.</p>`;
+      return;
+    }
+    const qr = window.qrcode(0, 'M');
+    qr.addData(`swipe4change://profile/${ME.handle}`);
+    qr.make();
+    box.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
+  }
+  function badgeHTML(b) {
+    const L = levelOf(b);
+    return sheet(
+      `<div class="sheet-head"><div class="grow"><div class="eyebrow">Advancement badge</div><h2>${b.name}</h2></div><button class="close" data-action="close" aria-label="Close">${ic('x', 22)}</button></div>
+      <p class="d-summary">Earn each level by your ${b.what}. You're at <b>${fmt(L.v)}</b>${L.max ? ', the top level.' : `; ${fmt(L.next - L.v)} more to reach ${TIERS[L.level + 1].n}.`}</p>
+      <div class="ladder">${b.tiers
+        .map((t, i) => `<div>${medal(b, L.level > i ? i + 1 : 0, 56)}<div style="color:${L.level > i ? TIERS[i + 1].ink : '#75786F'}">${TIERS[i + 1].n}</div><div>${fmt(t)}</div></div>`)
+        .join('')}</div>`,
+      '',
+      b.name,
+    );
+  }
+  function commentHTML(post) {
+    return sheet(
+      `<div class="sheet-head"><div class="grow"><div class="eyebrow">Comment</div><h2>${esc(comm(post.community).name)}</h2></div><button class="close" data-action="close" aria-label="Close">${ic('x', 22)}</button></div>
+      <form data-form="comment" data-id="${post.id}" style="margin-top:16px"><textarea class="field" id="comment-input" rows="4" maxlength="500" placeholder="Add a respectful, specific comment" aria-label="Comment"></textarea>
+      <div class="sheet-actions"><button type="button" class="btn-ghost" data-action="close">Cancel</button><button class="btn-primary" type="submit">Post comment</button></div></form>`,
+      '',
+      'Comment',
+    );
+  }
+
+  // Signature pad: strokes live in state.sign so going back and forward keeps the drawing.
+  function bindSigpad() {
+    const cv = $('#sig');
+    if (!cv) return;
+    const dpr = window.devicePixelRatio || 1;
+    const r = cv.getBoundingClientRect();
+    cv.width = r.width * dpr;
+    cv.height = r.height * dpr;
+    const ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#121113';
+    const drawStroke = (s) => {
+      ctx.beginPath();
+      s.forEach((pt, i) => (i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
+      ctx.stroke();
+    };
+    state.sign.strokes.forEach(drawStroke);
+    updateSignNav();
+    let stroke = null;
+    const pos = (e) => {
+      const b = cv.getBoundingClientRect();
+      return { x: e.clientX - b.left, y: e.clientY - b.top };
+    };
+    cv.addEventListener('pointerdown', (e) => {
+      stroke = [pos(e)];
+      state.sign.strokes.push(stroke);
+      cv.setPointerCapture(e.pointerId);
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!stroke) return;
+      const p = pos(e);
+      const last = stroke[stroke.length - 1];
+      if (Math.hypot(p.x - last.x, p.y - last.y) < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      stroke.push(p);
+      updateSignNav();
+    });
+    const stop = () => (stroke = null);
+    cv.addEventListener('pointerup', stop);
+    cv.addEventListener('pointercancel', stop);
+  }
+
+  // Toast
+  let toastTimer;
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  // ───────────────────────── events ─────────────────────────
+  const H = {
+    tab(el) {
+      if (state.tab === el.dataset.tab && el.dataset.tab === 'write' && !isDesk() && W().stage !== 'intro') return;
+      state.tab = el.dataset.tab;
+      state.overlay = null;
+      overlayEl.innerHTML = '';
+      render();
+      screen.scrollTop = 0;
+    },
+    skip: () => act('skip'),
+    save: () => act('save'),
+    sign: () => act('sign'),
+    share: () => act('share'),
+    undo: () => act('undo'),
+    'reset-skips'() {
+      state.gone = state.gone.filter((g) => g.a !== 'skip');
+      mountDeck('is-enter');
+    },
+    open(el) {
+      openDetail(el.dataset.id);
+    },
+    close: () => closeOverlay(),
+    scrim(el, e) {
+      if (e.target !== el || (state.overlay?.type === 'sign' && state.sign?.pending)) return;
+      closeOverlay();
+    },
+    'toggle-save'(el) {
+      const id = el.dataset.id;
+      state.saved.has(id) ? state.saved.delete(id) : state.saved.add(id);
+      el.setAttribute('aria-pressed', state.saved.has(id));
+      toast(state.saved.has(id) ? 'Saved for later' : 'Removed from Saved');
+    },
+    'share-id'(el) {
+      copyLink(byId(el.dataset.id));
+    },
+    'share-signed'(el) {
+      copyLink(byId(el.dataset.id));
+    },
+    'sign-from-detail'(el) {
+      openSign(el.dataset.id, false);
+    },
+    'sign-identity'(el) {
+      state.sign.identity = el.dataset.identity;
+      $$('.radio-card').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.identity === state.sign.identity)));
+    },
+    'sign-consent'(el) {
+      state.sign.consent = !state.sign.consent;
+      el.setAttribute('aria-checked', String(state.sign.consent));
+      el.querySelector('.box').innerHTML = state.sign.consent ? ic('check', 13, 3.4) : '';
+      updateSignNav();
+    },
+    'sig-clear'() {
+      state.sign.strokes = [];
+      const cv = $('#sig');
+      cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+      updateSignNav();
+    },
+    'sign-back'() {
+      const s = state.sign;
+      if (s.pending) return;
+      if (s.step === 0) return closeOverlay();
+      s.step -= 1;
+      s.dir = -1;
+      renderSignFlow();
+    },
+    'sign-next'() {
+      const s = state.sign;
+      const p = byId(s.id);
+      if (s.pending) return;
+      if (!signCanNext(p)) {
+        toast(s.step === 0 ? signingError(p) : signPoints() < 8 ? 'Draw your signature first.' : 'Explicit consent is required.');
+        return;
+      }
+      if (s.step < 2) {
+        s.step += 1;
+        s.dir = 1;
+        return renderSignFlow();
+      }
+      // The real app moves on only after the server accepts the signature.
+      s.pending = true;
+      updateSignNav();
+      setTimeout(
+        () => {
+          state.signed.add(p.id);
+          p.count += 1;
+          state.today += 1;
+          if (state.saved.has(p.id)) state.saved.delete(p.id);
+          openOverlay({ type: 'celebrate', id: p.id });
+        },
+        reduceMotion() ? 0 : 600,
+      );
+    },
+    react(el) {
+      sendCheer(el.dataset.emoji);
+    },
+    // Write
+    'w-ai'() {
+      W().stage = 'ai';
+      W().dir = 1;
+      render();
+    },
+    'w-manual'() {
+      const w = W();
+      w.stage = 'q';
+      w.step = 0;
+      w.dir = 1;
+      render();
+    },
+    'w-resume'() {
+      const w = W();
+      w.stage = 'q';
+      w.step = Math.max(0, QS.findIndex((q) => !valid(q.k)));
+      if (ready()) w.stage = 'review';
+      render();
+    },
+    'w-example-desc'() {
+      W().desc = EXAMPLE_DESC;
+      render();
+    },
+    'w-draft': () => startDraft(),
+    'w-undo-ai'() {
+      const w = W();
+      if (!w.prev) return;
+      w.a = w.prev;
+      w.prev = null;
+      w.aiFields = new Set();
+      render();
+      toast('AI draft undone');
+    },
+    'w-back'() {
+      const w = W();
+      w.example = false;
+      w.dir = -1;
+      if (w.stage === 'ai') w.stage = 'intro';
+      else if (w.stage === 'review') {
+        w.stage = 'q';
+        w.step = QS.length - 1;
+      } else if (w.stage === 'q') {
+        if (w.step > 0) w.step--;
+        else w.stage = w.aiFields.size ? 'ai' : 'intro';
+      }
+      render();
+    },
+    'w-next'() {
+      const w = W();
+      if (!valid(QS[w.step].k)) return;
+      w.example = false;
+      w.dir = 1;
+      if (w.step < QS.length - 1) w.step++;
+      else w.stage = 'review';
+      render();
+      screen.scrollTop = 0;
+    },
+    'w-goto'(el) {
+      const w = W();
+      w.stage = 'q';
+      w.step = Number(el.dataset.step);
+      w.dir = -1;
+      render();
+    },
+    'w-example'() {
+      W().example = !W().example;
+      render();
+    },
+    'w-use-example'() {
+      const w = W();
+      const q = QS[w.step];
+      w.a[q.k] = q.example;
+      w.example = false;
+      render();
+    },
+    'w-pick'(el) {
+      const w = W();
+      const k = el.dataset.k;
+      w.a[k] = k === 'goal' ? Number(el.dataset.v) : el.dataset.v;
+      w.aiFields.delete(k);
+      if (k === 'topic' && w.a.recipient) {
+        // keep the creator's own recipient; suggestions just change
+      }
+      render();
+    },
+    'w-publish'() {
+      if (ready()) openOverlay({ type: 'confirm-publish' });
+    },
+    'w-publish-go': () => publish(),
+    'see-published'() {
+      state.tab = 'discover';
+      state.q = '';
+      state.dTopic = 'All';
+      closeOverlay();
+    },
+    // Discover
+    'd-topic'(el) {
+      state.dTopic = el.dataset.topic;
+      $$('.tchip').forEach((b) => b.setAttribute('aria-pressed', b.dataset.topic === state.dTopic));
+      $('#d-grid').innerHTML = gridHTML();
+    },
+    'clear-search'() {
+      state.q = '';
+      $('#d-search').value = '';
+      $('#d-grid').innerHTML = gridHTML();
+    },
+    // Community
+    join(el) {
+      const id = el.dataset.id;
+      if (state.joined.has(id)) {
+        state.joined.delete(id);
+        toast(`Left ${comm(id).name}`);
+      } else {
+        state.joined.add(id);
+        state.today++;
+        toast(`Welcome to ${comm(id).name}`);
+      }
+      render();
+    },
+    'show-more'() {
+      state.showMore = !state.showMore;
+      $('#c-feed').innerHTML = feedHTML();
+    },
+    expand(el) {
+      state.expanded.add(el.dataset.id);
+      $('#c-feed').innerHTML = feedHTML();
+    },
+    support(el) {
+      const id = el.dataset.id;
+      state.supported.has(id) ? state.supported.delete(id) : state.supported.add(id);
+      $('#c-feed').innerHTML = feedHTML();
+    },
+    comment(el) {
+      openOverlay({ type: 'comment', post: el.dataset.id });
+    },
+    'share-post'() {
+      toast('Post link copied');
+    },
+    'post-more'() {
+      toast('Report or hide options open here');
+    },
+    messages() {
+      toast('Messages: 2 unread from Riverton students organizers');
+    },
+    // Profile
+    'prof-tab'(el) {
+      state.profTab = el.dataset.k;
+      render();
+    },
+    badge(el) {
+      openOverlay({ type: 'badge', i: Number(el.dataset.i) });
+    },
+    qr: () => openOverlay({ type: 'qr' }),
+    'copy-profile'() {
+      try {
+        navigator.clipboard?.writeText(`swipe4change://profile/${ME.handle}`).catch(() => {});
+      } catch {
+        /* ignore */
+      }
+      toast('Profile link copied');
+    },
+    settings() {
+      toast('Profile and privacy settings open here');
+    },
+    toast(el) {
+      toast(el.dataset.msg);
+    },
+  };
+
+  function openDetail(id) {
+    openOverlay({ type: 'detail', id });
+  }
+  function sendCheer(text) {
+    const p = byId(state.overlay?.id);
+    toast(`Sent to the ${comm(p.community).name} discussion`);
+    state.myPosts++;
+    setTimeout(closeOverlay, 700);
+  }
+
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el || el.disabled) return;
+    const h = H[el.dataset.action];
+    if (h) h(el, e);
+  });
+  document.addEventListener('submit', (e) => {
+    const f = e.target.closest('[data-form]');
+    if (!f) return;
+    e.preventDefault();
+    if (f.dataset.form === 'say') {
+      const v = $('#say-input').value.trim();
+      if (v) sendCheer(v);
+    }
+    if (f.dataset.form === 'comment') {
+      const v = $('#comment-input').value.trim();
+      if (!v) return;
+      const post = POSTS.find((x) => x.id === f.dataset.id);
+      post.comments++;
+      state.myPosts++;
+      closeOverlay();
+      $('#c-feed') && ($('#c-feed').innerHTML = feedHTML());
+      toast('Comment posted');
+    }
+  });
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (el.id === 'say-input') $('#say-send').disabled = !el.value.trim();
+    const bind = el.dataset.bind;
+    if (!bind) return;
+    if (bind === 'q') {
+      state.q = el.value;
+      $('#d-grid').innerHTML = gridHTML();
+      return;
+    }
+    if (bind === 'cq') {
+      state.cq = el.value;
+      $('#c-feed').innerHTML = feedHTML();
+      return;
+    }
+    const w = W();
+    if (bind === 'desc') w.desc = el.value;
+    else if (bind.startsWith('a.')) {
+      const k = bind.slice(2);
+      w.a[k] = k === 'goal' ? Number(el.value) || 0 : el.value;
+      w.aiFields.delete(k);
+      if (el.dataset.other) {
+        // typing a custom value clears the preset selection visually
+        $$(`[data-action="w-pick"][data-k="${k}"]`).forEach((b) => {
+          b.setAttribute('aria-pressed', 'false');
+          const tick = b.querySelector('.tick');
+          if (tick) tick.innerHTML = '';
+        });
+      }
+    }
+    if (el.classList.contains('w-input')) autoGrow(el);
+    refreshWriteLive();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.overlay) return state.overlay.type === 'sign' && state.sign?.pending ? undefined : closeOverlay();
+    const typing = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || '');
+    if (typing) {
+      if (e.key === 'Enter' && !e.shiftKey && state.tab === 'write' && W().stage === 'q' && document.activeElement.classList.contains('single')) {
+        e.preventDefault();
+        H['w-next']();
+      }
+      return;
+    }
+    if (state.tab !== 'swipe' || state.overlay) return;
+    const map = { ArrowLeft: 'skip', ArrowRight: 'sign', ArrowUp: 'save', z: 'undo', Z: 'undo' };
+    if (map[e.key]) {
+      e.preventDefault();
+      act(map[e.key]);
+    } else if (e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (e.key === 'ArrowDown') {
+        const id = topId();
+        if (id) openDetail(id);
+      } else setPage((state.page + 1) % 3);
+    }
+  });
+
+  // ───────────────────────── responsive sizing + preview frame ─────────────────────────
+  // PC layout (sidebar, multi-column screens) on any mouse-and-keyboard window from 720 px, and on
+  // any screen from 1024 px. Narrow PC windows get an icon rail instead of the full sidebar. Columns
+  // inside each screen follow the content width (window minus sidebar), not the window.
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  function measure() {
+    const w = app.clientWidth;
+    const h = app.clientHeight;
+    const s = w >= 1024 || (w >= 720 && finePointer.matches) ? 'desktop' : w >= 640 ? 'tablet' : 'phone';
+    const rail = s === 'desktop' && w < 1100 ? '1' : '0';
+    const cw = s === 'desktop' ? w - (rail === '1' ? 88 : 248) : w;
+    const flags = {
+      size: s,
+      rail,
+      mid: s === 'desktop' && cw >= 760 ? '1' : '0',
+      wide: s === 'desktop' && cw >= 1000 ? '1' : '0',
+      xwide: s === 'desktop' && cw >= 1180 ? '1' : '0',
+    };
+    // Compact swipe card for short or narrow phones (320 × 568) and short PC windows.
+    app.dataset.compact = (s === 'phone' && (h < 700 || w < 360)) || (s !== 'phone' && h < 680) ? '1' : '0';
+    const changed = Object.entries(flags).some(([k, v]) => app.dataset[k] !== v);
+    if (changed) {
+      Object.assign(app.dataset, flags);
+      render();
+      if (state.overlay) renderOverlay();
+    }
+  }
+  finePointer.addEventListener?.('change', measure);
+  new ResizeObserver(measure).observe(app);
+  const vv = window.visualViewport;
+  if (vv) {
+    const setVV = () => {
+      if (stage.dataset.frame !== 'phone') document.documentElement.style.setProperty('--vvh', vv.height + 'px');
+      else document.documentElement.style.removeProperty('--vvh');
+    };
+    vv.addEventListener('resize', setVV);
+    setVV();
+  }
+  function setFrame(mode) {
+    stage.dataset.frame = mode;
+    $$('.preview-toggle button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.frame === mode));
+    store.set('s4c-frame', mode);
+    if (mode === 'phone') document.documentElement.style.removeProperty('--vvh');
+    else if (vv) document.documentElement.style.setProperty('--vvh', vv.height + 'px');
+    measure();
+  }
+  $$('.preview-toggle button').forEach((b) => b.addEventListener('click', () => setFrame(b.dataset.frame)));
+  const params = new URLSearchParams(location.search);
+  if (params.get('tab') && SCREENS[params.get('tab')]) state.tab = params.get('tab');
+  const hashTab = location.hash.slice(1);
+  if (SCREENS[hashTab]) state.tab = hashTab;
+  const startFrame = params.get('frame') || store.get('s4c-frame') || 'off';
+  stage.dataset.frame = startFrame === 'phone' && window.innerWidth >= 760 ? 'phone' : 'off';
+  $$('.preview-toggle button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.frame === stage.dataset.frame));
+  app.dataset.size = '';
+  measure();
+})();
+
+</script>
+
+</body></html>

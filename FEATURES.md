@@ -194,9 +194,9 @@ Current as of October 12, 2026. Every account, community, office, signature and 
 
 - 44-point minimum touch targets, semantic labels and screen-reader text, and support for large system text.
 - Reduced-motion support for the swipe deck, progress animation and ripple rings.
-- Keyboard-usable on web: the focused swipe card takes ← to pass, → to sign and ↑ or Enter to read.
+- Keyboard-usable on web: the focused swipe card takes ← to pass, → to sign, ↑ or Enter to read, Space for its next page and Z to undo a pass; desktop shows these keys under the deck.
 - Responsive layouts from 320-pixel phones to desktop, with phone-specific layouts below 760 points.
-- A shared design system: sage/olive civic palette, Newsreader headings, Work Sans body text, one 12-step type scale, seven corner radii and named colours, kept that way by a test. One line-icon set throughout, with no emoji standing in for icons.
+- A shared design system (the v3 design): sage/olive civic palette, Plus Jakarta Sans, one 17-step type scale, twelve corner radii and named colours, kept that way by a test. One line-icon set throughout; emoji only mark topics beside their names, never stand in for an icon alone.
 - Haptic feedback on phones (swipe commit line, save, confirmed signature); none on the web.
 - Friendly empty, loading and error states, and confirmation before signing, publishing, reporting, closing or archiving.
 

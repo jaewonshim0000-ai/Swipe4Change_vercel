@@ -1,6 +1,5 @@
-import { ResponsiveGrid } from '../../src/components/responsive';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { isDemo, useCommand, useSnapshot } from '../../src/data/provider';
@@ -16,22 +15,16 @@ import {
   fonts,
   styles,
 } from '../../src/components/ui';
-import {
-  Cover,
-  PillChip,
-  Press,
-  Scrim,
-  Screen,
-  Sheet,
-  toast,
-  topicImage,
-} from '../../src/components/kit';
+import { Cover, PillChip, Press, Screen, Sheet, toast, topicImage } from '../../src/components/kit';
+import { Glyph } from '../../src/components/glyph';
 import { stag } from '../../src/components/motion';
+import { shadows, topicColors } from '../../src/components/theme';
 
 export default function Communities() {
   const q = useSnapshot();
   const m = useCommand();
   const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
@@ -66,159 +59,235 @@ export default function Communities() {
       },
     );
   }
+  const term = search.trim().toLowerCase();
+  const shown = s.communities.filter(
+    (c) => !term || [c.name, c.description, c.city, c.topic].join(' ').toLowerCase().includes(term),
+  );
+  const live = s.petitions.filter((p) => p.status === 'active');
+  const open = (id: string) => router.push(`/community/${id}`);
   return (
-    <Screen wide>
-      <Text style={styles.label}>Communities</Text>
-      <Text accessibilityRole="header" style={[styles.title, { marginTop: 8, marginBottom: 6 }]}>
-        Your people, nearby.
-      </Text>
-      <Text style={[styles.muted, { fontSize: 13, lineHeight: 21, marginBottom: 16 }]}>
-        {isDemo ? 'Local groups in a fictional town.' : 'Local groups near you.'} Members vote on
-        which petitions their community backs, and some petitions only members can sign.
-      </Text>
-      <View style={{ gap: 14 }}>
-        <ResponsiveGrid>
-          {s.communities.map((c, i) => {
-            const on = !!s.profile?.joined.includes(c.id);
-            const live = s.petitions.filter((p) => p.status === 'active');
-            const own = live.filter((p) => p.communityId === c.id);
-            const membersOnly = own.filter((p) => p.verification === 'community').length;
-            const backed = live.filter((p) => backers(p).includes(c.id)).length;
-            return (
-              <Animated.View key={c.id} style={stag(i)}>
-                <View
+    <Screen gutter={12}>
+      <View style={{ paddingHorizontal: 6, gap: 6, marginBottom: 14 }}>
+        <Text style={styles.label}>Communities</Text>
+        <Text accessibilityRole="header" style={styles.title}>
+          Your people, nearby.
+        </Text>
+        <Text style={styles.muted}>
+          {isDemo ? 'Local groups in a fictional town.' : 'Local groups near you.'} Members vote on
+          which petitions their community backs, and some petitions only members can sign.
+        </Text>
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          height: 48,
+          paddingHorizontal: 16,
+          marginBottom: 12,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: colors.line,
+          backgroundColor: colors.white,
+        }}
+      >
+        <Glyph name="search" size={20} weight={2} color={colors.muted} />
+        <TextInput
+          accessibilityLabel="Search communities"
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search communities"
+          placeholderTextColor={colors.muted}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            height: '100%',
+            fontFamily: fonts.body,
+            fontSize: 16,
+            color: colors.ink,
+          }}
+        />
+      </View>
+      <View
+        style={[
+          {
+            backgroundColor: colors.white,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: colors.line,
+            overflow: 'hidden',
+          },
+          shadows.card,
+        ]}
+      >
+        <Text
+          accessibilityRole="header"
+          style={[styles.label, { color: colors.muted, paddingTop: 20, paddingHorizontal: 16 }]}
+        >
+          {term ? 'Matching communities' : 'Recommended for you'}
+        </Text>
+        {shown.map((c, i) => {
+          const on = !!s.profile?.joined.includes(c.id);
+          const own = live.filter((p) => p.communityId === c.id);
+          const membersOnly = own.filter((p) => p.verification === 'community').length;
+          const backed = live.filter((p) => backers(p).includes(c.id)).length;
+          const why = on
+            ? 'You’re a member'
+            : s.profile?.interests.includes(c.topic)
+              ? `Matches your interest in ${c.topic}`
+              : `Active in ${c.city.split(',')[0]}`;
+          return (
+            <Animated.View
+              key={c.id}
+              style={[
+                {
+                  flexDirection: 'row',
+                  gap: 14,
+                  padding: 16,
+                  borderTopWidth: i ? 1 : 0,
+                  borderTopColor: colors.line,
+                },
+                stag(i),
+              ]}
+            >
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel={`Open ${c.name}`}
+                onPress={() => open(c.id)}
+              >
+                <Cover
+                  source={topicImage(c.topic)}
+                  style={{ width: 56, height: 56, borderRadius: 999 }}
+                />
+              </Pressable>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Pressable accessibilityRole="link" onPress={() => open(c.id)}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.bold,
+                      fontSize: 17,
+                      lineHeight: 22,
+                      color: colors.ink,
+                    }}
+                  >
+                    {c.name} {topicColors[c.topic].emoji}
+                  </Text>
+                  <Text
+                    numberOfLines={2}
+                    style={{
+                      marginTop: 2,
+                      fontFamily: fonts.body,
+                      fontSize: 15,
+                      lineHeight: 21,
+                      color: colors.secondary,
+                    }}
+                  >
+                    {c.description} · {c.members.toLocaleString()} members · {c.city}
+                  </Text>
+                </Pressable>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+                  <Glyph name="trend" size={18} weight={2.2} color={colors.muted} />
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      lineHeight: 18,
+                      color: colors.muted,
+                    }}
+                  >
+                    {[
+                      why,
+                      `${own.length} campaigns`,
+                      membersOnly ? `${membersOnly} for members only` : '',
+                      backed ? `${backed} backed` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </Text>
+                </View>
+                <Press
+                  accessibilityLabel={on ? `Leave ${c.name}` : `Join ${c.name}`}
+                  disabled={m.isPending}
+                  onPress={() =>
+                    s.profile
+                      ? m.mutate(
+                          { type: 'join', communityId: c.id },
+                          {
+                            onSuccess: () =>
+                              toast(on ? `Left ${c.name}.` : `Welcome to ${c.name}!`),
+                          },
+                        )
+                      : router.push('/(auth)/sign-in')
+                  }
                   style={{
-                    backgroundColor: colors.white,
-                    borderRadius: 30,
-                    overflow: 'hidden',
-                    boxShadow: '0px 12px 28px -18px rgba(32,38,26,0.4)',
+                    alignSelf: 'flex-start',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    height: 44,
+                    marginTop: 12,
+                    paddingLeft: 14,
+                    paddingRight: 18,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: on ? colors.handle : colors.sage,
+                    backgroundColor: on ? colors.field : colors.soft,
                   }}
                 >
-                  <Pressable
-                    accessibilityRole="link"
-                    accessibilityLabel={`Open ${c.name}`}
-                    onPress={() => router.push(`/community/${c.id}`)}
-                    style={{ height: 120 }}
+                  <Glyph
+                    name={on ? 'check' : 'create'}
+                    size={18}
+                    weight={2.6}
+                    color={on ? colors.secondary : colors.accent}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: fonts.bold,
+                      fontSize: 15,
+                      color: on ? colors.secondary : colors.accent,
+                    }}
                   >
-                    <Cover source={topicImage(c.topic)} style={{ width: '100%', height: '100%' }} />
-                    <Scrim stops="rgba(18,20,15,0) 20%, rgba(18,20,15,0.75) 100%" />
-                    <Text
-                      style={{
-                        position: 'absolute',
-                        left: 16,
-                        right: 16,
-                        bottom: 12,
-                        fontFamily: fonts.heading,
-                        fontSize: 21,
-                        lineHeight: 24,
-                        letterSpacing: -0.5,
-                        color: colors.white,
-                      }}
-                    >
-                      {c.name}
-                    </Text>
-                  </Pressable>
-                  <View
-                    style={{ paddingTop: 14, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: fonts.body,
-                        fontSize: 13,
-                        lineHeight: 19.5,
-                        color: colors.muted,
-                      }}
-                    >
-                      {c.description}
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 10,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          flexShrink: 1,
-                          fontFamily: fonts.medium,
-                          fontSize: 12,
-                          color: colors.secondary,
-                        }}
-                      >
-                        {[
-                          `${c.members} members`,
-                          `${own.length} campaigns`,
-                          membersOnly ? `${membersOnly} for members only` : '',
-                          backed ? `${backed} backed` : '',
-                        ]
-                          .filter(Boolean)
-                          // Lines break between stats, never inside one.
-                          .map((stat) => stat.replace(/ /g, ' '))
-                          .join(' · ')}
-                      </Text>
-                      <Press
-                        accessibilityLabel={on ? `Leave ${c.name}` : `Join ${c.name}`}
-                        disabled={m.isPending}
-                        onPress={() =>
-                          s.profile
-                            ? m.mutate(
-                                { type: 'join', communityId: c.id },
-                                {
-                                  onSuccess: () =>
-                                    toast(on ? `Left ${c.name}.` : `Welcome to ${c.name}!`),
-                                },
-                              )
-                            : router.push('/(auth)/sign-in')
-                        }
-                        style={{
-                          minHeight: 40,
-                          paddingHorizontal: 18,
-                          borderRadius: 999,
-                          justifyContent: 'center',
-                          backgroundColor: on ? colors.soft : colors.dark,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontFamily: fonts.semibold,
-                            fontSize: 13,
-                            color: on ? colors.accent : colors.white,
-                          }}
-                        >
-                          {on ? '✓ Joined' : 'Join'}
-                        </Text>
-                      </Press>
-                    </View>
-                  </View>
-                </View>
-              </Animated.View>
-            );
-          })}
-        </ResponsiveGrid>
-        {m.error && !creating && <Notice error text={m.error.message} />}
+                    {on ? 'Joined' : 'Join'}
+                  </Text>
+                </Press>
+              </View>
+            </Animated.View>
+          );
+        })}
+        {!shown.length && (
+          <Text style={[styles.muted, { padding: 16 }]}>
+            No communities match “{search.trim()}”.
+          </Text>
+        )}
         <Pressable
           accessibilityRole="button"
           onPress={() => (s.profile ? setCreating(true) : router.push('/(auth)/sign-in'))}
-          style={{
-            borderWidth: 1.5,
-            borderStyle: 'dashed',
-            borderColor: colors.stone,
-            minHeight: 54,
-            borderRadius: 24,
+          style={({ pressed }) => ({
+            flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-          }}
+            gap: 10,
+            height: 56,
+            borderTopWidth: 1,
+            borderTopColor: colors.line,
+            backgroundColor: pressed ? colors.field : 'transparent',
+          })}
         >
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
-            + Create a community
+          <Glyph name="create" size={20} weight={2.2} color={colors.secondary} />
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 16, color: colors.secondary }}>
+            Create a community
           </Text>
         </Pressable>
       </View>
+      {m.error && !creating && (
+        <View style={{ marginTop: 12 }}>
+          <Notice error text={m.error.message} />
+        </View>
+      )}
       <Sheet visible={creating} onClose={() => setCreating(false)} locked={m.isPending}>
         <View style={{ gap: 12 }}>
-          <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 26 }]}>
+          <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 29 }]}>
             Start a community
           </Text>
           <Text style={styles.muted}>
@@ -236,11 +305,11 @@ export default function Communities() {
           <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
             Main topic
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {topics.map((t) => (
               <PillChip
                 key={t}
-                label={t}
+                label={`${topicColors[t].emoji} ${t}`}
                 height={36}
                 selected={topic === t}
                 onPress={() => setTopic(t)}

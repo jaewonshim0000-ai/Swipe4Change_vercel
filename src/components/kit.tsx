@@ -15,6 +15,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, {
   Easing,
@@ -29,31 +30,57 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname } from 'expo-router';
 import type { PetitionPhoto, Topic } from '../domain/model';
 import { useResponsiveLayout, webLayout } from './responsive';
-import { colors, fonts, frost, gradient, topicColors } from './theme';
+import { blur, colors, fonts, gradient, gradients, topicColors } from './theme';
+import { Glyph } from './glyph';
 import { EASE_IN_OUT, anim, kf, reducedMotion, transition } from './motion';
 
 const images: Record<Topic, ImageProps['source']> = {
-  'Safer streets': require('../../assets/theme/safer-streets.jpg'),
-  Environment: require('../../assets/theme/environment.jpg'),
-  Education: require('../../assets/theme/education.jpg'),
-  'Public spaces': require('../../assets/theme/public-spaces.jpg'),
-  Accessibility: require('../../assets/theme/accessibility.jpg'),
+  'Safer streets': require('../../assets/photos/crosswalk.jpg'),
+  Environment: require('../../assets/photos/shade-trees.jpg'),
+  Education: require('../../assets/photos/library.jpg'),
+  'Public spaces': require('../../assets/photos/garden.jpg'),
+  Accessibility: require('../../assets/photos/accessible-park.jpg'),
 };
 export const topicImage = (topic: Topic) => images[topic];
-/** The organizer's photo when there is one, otherwise the topic's stock image. */
-export const petitionImage = (p: { topic: Topic; photo?: PetitionPhoto }): ImageProps['source'] =>
-  p.photo ? { uri: p.photo.url } : images[p.topic];
-export const gatheringImage: ImageProps['source'] = require('../../assets/theme/civic-gathering.jpg');
+/** Illustrative photos for the twelve fictional sample petitions, in seed order (petitionId(1…12)). */
+const samplePhotos: ImageProps['source'][] = [
+  require('../../assets/photos/lighting.jpg'),
+  require('../../assets/photos/shade-trees.jpg'),
+  require('../../assets/photos/library.jpg'),
+  require('../../assets/photos/accessible-park.jpg'),
+  require('../../assets/photos/garden.jpg'),
+  require('../../assets/photos/crosswalk.jpg'),
+  require('../../assets/photos/water-refill.jpg'),
+  require('../../assets/photos/quiet-room.jpg'),
+  require('../../assets/photos/bus-bench.jpg'),
+  require('../../assets/photos/courts.jpg'),
+  require('../../assets/photos/bike-lane.jpg'),
+  require('../../assets/photos/food-scraps.jpg'),
+];
+const sampleId = /^20000000-0000-4000-8000-0000000000(\d\d)$/;
+/** The organizer's photo when there is one, then a sample petition's photo, then the topic's. */
+export const petitionImage = (p: {
+  id?: string;
+  topic: Topic;
+  photo?: PetitionPhoto;
+}): ImageProps['source'] => {
+  if (p.photo) return { uri: p.photo.url };
+  const n = Number(p.id?.match(sampleId)?.[1]);
+  return samplePhotos[n - 1] ?? images[p.topic];
+};
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 /** A pressable that shrinks slightly while held (`style-active="transform:scale(.97)"`). */
 export function Press({
   scale = 0.97,
+  dim = true,
   style,
   children,
   ...props
 }: Omit<PressableProps, 'style' | 'children'> & {
   scale?: number;
+  /** Fade while disabled; off when the style itself shows the disabled state. */
+  dim?: boolean;
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
 }) {
@@ -74,7 +101,7 @@ export function Press({
         style,
         { transform: [{ scale: down ? scale : 1 }] },
         transition(['transform', 'backgroundColor', 'borderColor', 'opacity'], 200),
-        props.disabled ? { opacity: 0.4 } : null,
+        props.disabled && dim ? { opacity: 0.4 } : null,
       ]}
     >
       {children}
@@ -146,8 +173,8 @@ export function TopicPill({ topic, soft = false }: { topic: Topic; soft?: boolea
       <Text
         numberOfLines={1}
         style={{
-          fontFamily: fonts.semibold,
-          fontSize: soft ? 10 : 10.5,
+          fontFamily: fonts.bold,
+          fontSize: 11,
           letterSpacing: 0.5,
           textTransform: 'uppercase',
           color: t.accent,
@@ -159,22 +186,67 @@ export function TopicPill({ topic, soft = false }: { topic: Topic; soft?: boolea
   );
 }
 
-/** Frosted label over imagery ("Local spotlight", "12 days left"). */
-export function GlassPill({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
+/** The design's kicker: a topic dot, then "Community · Topic". */
+export function Kicker({
+  topic,
+  text,
+  light = false,
+  small = false,
+}: {
+  topic: Topic;
+  text: string;
+  /** On a photo. */
+  light?: boolean;
+  /** Inside a list row. */
+  small?: boolean;
+}) {
   return (
-    <View style={[{ borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 }, frost()]}>
-      <Text style={[{ fontFamily: fonts.medium, fontSize: 12, color: colors.white }, style]}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: small ? 6 : 8 }}>
+      <View
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: light ? colors.pale : topicColors[topic].accent,
+        }}
+      />
+      <Text
+        numberOfLines={1}
+        style={{
+          flexShrink: 1,
+          fontFamily: small ? fonts.medium : fonts.semibold,
+          fontSize: small ? 12 : 14,
+          color: light ? colors.onImage : small ? colors.muted : colors.secondary,
+        }}
+      >
         {text}
       </Text>
     </View>
   );
 }
 
-/** Progress bar that grows in from the left and eases to new values. */
+/** A small dark flag over imagery ("Local spotlight", "12 days left", "Signed"). */
+export function GlassPill({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
+  return (
+    <View
+      style={[
+        { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+        { backgroundColor: 'rgba(0,0,0,0.6)' },
+        blur(8),
+      ]}
+    >
+      <Text style={[{ fontFamily: fonts.semibold, fontSize: 12, color: colors.white }, style]}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/** The design's one progress bar: sage-to-olive fill, pale on photos; it grows in and eases. */
 export function Bar({
   pct,
   tone = 'sage',
-  height = 6,
+  height = 8,
   track,
   label,
 }: {
@@ -194,7 +266,7 @@ export function Bar({
         height,
         borderRadius: height,
         overflow: 'hidden',
-        backgroundColor: track ?? (tone === 'light' ? 'rgba(255,255,255,0.25)' : colors.track),
+        backgroundColor: track ?? (tone === 'light' ? 'rgba(255,255,255,0.24)' : colors.track),
       }}
     >
       <Animated.View
@@ -202,14 +274,12 @@ export function Bar({
           {
             width: `${width}%`,
             height: '100%',
-            borderRadius: 8,
+            borderRadius: height,
             transformOrigin: 'left',
             backgroundColor:
               tone === 'light' ? colors.pale : tone === 'muted' ? colors.stone : colors.sage,
           },
-          tone === 'big'
-            ? gradient(`linear-gradient(90deg, ${colors.sage}, ${colors.accent})`)
-            : null,
+          tone === 'muted' ? null : gradient(tone === 'light' ? gradients.barLight : gradients.bar),
           anim(kf.grow, 1100),
           transition(['width'], 600),
         ]}
@@ -218,13 +288,14 @@ export function Bar({
   );
 }
 
-/** ♥ / ♡, with a little pulse the moment something is saved. */
-export function Heart({
+/** The save bookmark: outlined, then filled slate blue with a little pulse once saved. */
+export function SaveMark({
   on,
   dark = false,
-  size = 18,
+  size = 20,
 }: {
   on: boolean;
+  /** On a light ground (otherwise on a photo). */
   dark?: boolean;
   size?: number;
 }) {
@@ -234,19 +305,11 @@ export function Heart({
     setPulse(on && mounted.current);
     mounted.current = true;
   }, [on]);
+  const color = on ? (dark ? colors.blue : colors.blueLight) : dark ? colors.dark : colors.white;
   return (
-    <Animated.Text
-      style={[
-        {
-          fontSize: size,
-          lineHeight: size + 2,
-          color: on ? (dark ? colors.heart : colors.heartLight) : dark ? colors.dark : colors.white,
-        },
-        pulse ? anim(kf.heart, 450, { ease: 'ease' }) : null,
-      ]}
-    >
-      {on ? '♥' : '♡'}
-    </Animated.Text>
+    <Animated.View style={pulse ? anim(kf.heart, 450, { ease: 'ease' }) : null}>
+      <Glyph name="bookmark" size={size} weight={2} color={color} fill={on ? color : 'none'} />
+    </Animated.View>
   );
 }
 
@@ -406,25 +469,21 @@ export function PillChip({
       style={[
         {
           minHeight: Math.max(height, 32),
-          paddingHorizontal: height <= 32 ? 12 : 16,
+          paddingHorizontal: height <= 32 ? 12 : height <= 36 ? 14 : 16,
           borderRadius: 999,
           justifyContent: 'center',
           flexShrink: 0,
+          borderWidth: 1,
         },
         outline
           ? {
-              backgroundColor: selected ? colors.pale : 'transparent',
-              borderWidth: 1,
+              backgroundColor: selected ? colors.soft : 'transparent',
               borderColor: selected ? colors.sage : colors.handle,
             }
           : {
-              backgroundColor: selected ? colors.dark : colors.white,
               // The hairline keeps an unselected chip visible on white cards as well as the canvas.
-              borderWidth: 1,
+              backgroundColor: selected ? colors.dark : colors.white,
               borderColor: selected ? colors.dark : colors.line,
-              boxShadow: selected
-                ? '0px 8px 18px -10px rgba(18,20,15,0.6)'
-                : '0px 4px 12px -10px rgba(32,38,26,0.4)',
             },
       ]}
     >
@@ -432,8 +491,8 @@ export function PillChip({
         numberOfLines={1}
         style={{
           fontFamily: fonts.semibold,
-          fontSize: height <= 32 ? 11.5 : 12.5,
-          color: selected && !outline ? colors.white : colors.secondary,
+          fontSize: height <= 32 ? 13 : 14,
+          color: selected && !outline ? colors.white : selected ? colors.accent : colors.secondary,
           textTransform: capitalize ? 'capitalize' : 'none',
         }}
       >
@@ -522,7 +581,7 @@ function useMouseDrag(ref: React.RefObject<ScrollView | null>) {
   }, [ref]);
 }
 
-/** Segmented control with a sliding dark knob. */
+/** Segmented control: white pill track with the design's dark selected pill sliding between. */
 export function Segmented({
   options,
   value,
@@ -544,7 +603,9 @@ export function Segmented({
       onLayout={(e) => setMeasured(e.nativeEvent.layout.width)}
       style={{
         flexDirection: 'row',
-        backgroundColor: colors.knob,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.line,
         borderRadius: 999,
         padding: pad,
         alignSelf: itemWidth ? 'flex-end' : 'stretch',
@@ -586,8 +647,8 @@ export function Segmented({
             style={[
               {
                 fontFamily: fonts.semibold,
-                fontSize: itemWidth ? 12 : 13,
-                color: value === i ? colors.white : colors.muted,
+                fontSize: itemWidth ? 13 : 14,
+                color: value === i ? colors.white : colors.secondary,
               },
               transition(['all'], 300),
             ]}
@@ -632,7 +693,7 @@ export function StepBars({ count, current }: { count: number; current: number })
   );
 }
 
-/** Radio indicator: a dark ring filled with a white inset when on. */
+/** Radio indicator: a dark ring with a dark dot when on. */
 export function Radio({ on }: { on: boolean }) {
   return (
     <View
@@ -643,13 +704,12 @@ export function Radio({ on }: { on: boolean }) {
         marginTop: 1,
         borderWidth: 2,
         borderColor: on ? colors.dark : colors.radio,
-        backgroundColor: on ? colors.dark : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
       {on && (
-        <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: colors.white }} />
+        <View style={{ width: 10, height: 10, borderRadius: 999, backgroundColor: colors.dark }} />
       )}
     </View>
   );
@@ -703,32 +763,43 @@ export function Sheet({
           accessibilityViewIsModal
           style={[
             {
-              width: '100%',
+              width: wide ? '92%' : '100%',
               maxWidth: wide ? 560 : 480,
-              borderRadius: wide ? 30 : undefined,
-              maxHeight: '88%',
+              borderRadius: wide ? 28 : undefined,
+              maxHeight: wide ? '90%' : '88%',
               backgroundColor: colors.sheet,
-              borderTopLeftRadius: 30,
-              borderTopRightRadius: 30,
-              paddingTop: 10,
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              borderWidth: 1,
+              borderBottomWidth: wide ? 1 : 0,
+              borderColor: colors.line,
+              paddingTop: wide ? 24 : 8,
+              boxShadow: '0px -20px 40px -20px rgba(32,38,26,0.45)',
             },
-            anim(kf.sheet, 450),
+            // Wide screens get a centred dialog that pops in; phones a sheet sliding up.
+            wide ? anim(kf.dialog, 300) : anim(kf.sheet, 380),
           ]}
         >
-          <View
-            style={{
-              width: 40,
-              height: 4,
-              borderRadius: 999,
-              backgroundColor: colors.handle,
-              alignSelf: 'center',
-              marginBottom: 14,
-            }}
-          />
+          {!wide && (
+            <View
+              style={{
+                width: 40,
+                height: 5,
+                borderRadius: 999,
+                backgroundColor: colors.handle,
+                alignSelf: 'center',
+                marginTop: 4,
+                marginBottom: 12,
+              }}
+            />
+          )}
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 34 + insets.bottom }}
+            contentContainerStyle={{
+              paddingHorizontal: wide ? 28 : 20,
+              paddingBottom: (wide ? 28 : 24) + insets.bottom,
+            }}
           >
             {children}
           </ScrollView>
@@ -793,7 +864,8 @@ export function Screen({
         contentContainerStyle={{
           flexGrow: fill ? 1 : undefined,
           paddingTop: top ? (insets.top > 0 ? insets.top + 6 : 28) : 0,
-          paddingBottom: (tabs ? 120 : 60) + insets.bottom,
+          // Phones and tablets clear the floating tab bar; desktop has the sidebar instead.
+          paddingBottom: (tabs && !desktop ? 120 : 60) + insets.bottom,
           paddingHorizontal: desktop && gutter > 0 ? 32 : gutter,
         }}
       >
@@ -833,6 +905,9 @@ export function ToastHost() {
   );
   const path = usePathname();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  // Wide screens have the sidebar instead of a floating tab bar to clear.
+  const { wide } = useResponsiveLayout();
   if (!t) return null;
   const aboveBar = barRoutes.includes(path) || path.startsWith('/petition/');
   return (
@@ -844,24 +919,24 @@ export function ToastHost() {
         {
           position: 'absolute',
           alignSelf: 'center',
-          width: '90%',
-          maxWidth: 520,
-          bottom: (aboveBar ? 108 : 34) + insets.bottom,
+          maxWidth: Math.min(520, width - 32),
+          bottom: (aboveBar && !wide ? 100 : 24) + insets.bottom,
           zIndex: 90,
           backgroundColor: colors.dark,
-          borderRadius: 20,
-          paddingHorizontal: 16,
-          paddingVertical: 13,
-          boxShadow: '0px 16px 32px -12px rgba(18,20,15,0.55)',
+          borderRadius: 24,
+          paddingHorizontal: 18,
+          paddingVertical: 12,
+          boxShadow: '0px 18px 36px -12px rgba(18,20,15,0.55)',
         },
         anim(kf.toast, 2600, { ease: 'ease' }),
       ]}
     >
       <Text
         style={{
-          fontFamily: fonts.medium,
-          fontSize: 13,
-          lineHeight: 19,
+          fontFamily: fonts.semibold,
+          fontSize: 14,
+          lineHeight: 20,
+          textAlign: 'center',
           color: colors.onDarkBright,
         }}
       >

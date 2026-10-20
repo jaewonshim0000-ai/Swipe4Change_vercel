@@ -41,8 +41,9 @@ import {
   Scrim,
   Screen,
   Segmented,
-  StepBars,
-  TopicPill,
+  Kicker,
+  GlassPill,
+  Bar,
   toast,
   topicImage,
 } from '../../src/components/kit';
@@ -55,7 +56,8 @@ import { heldMessage } from '../../src/components/held-notice';
 import { SimilarPetitions } from '../../src/components/similar-petitions';
 import { similarPetitions } from '../../src/domain/similar';
 import { isSampleCity } from '../../src/data/civic-lookup';
-import { anim, kf, reducedMotion } from '../../src/components/motion';
+import { anim, kf, reducedMotion, transition } from '../../src/components/motion';
+import { gradient, gradients, shadows } from '../../src/components/theme';
 import {
   Button,
   Confirm,
@@ -126,7 +128,16 @@ const flagLabels: Record<string, string> = {
   'At least one supplied source (not fact-checked)': 'Evidence',
   'A measurable signature goal': 'Goal',
 };
-const white = { backgroundColor: colors.white, borderRadius: 24, padding: 16, gap: 14 };
+/** The design's question block: a white card with a hairline border. */
+const white = {
+  backgroundColor: colors.white,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: colors.line,
+  padding: 20,
+  gap: 16,
+  ...shadows.card,
+};
 
 export default function CreateRoute() {
   const q = useSnapshot();
@@ -168,13 +179,13 @@ function ScoreRing({ score }: { score: number }) {
         viewBox="0 0 64 64"
         style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}
       >
-        <Circle cx={32} cy={32} r={27} fill="none" stroke={colors.canvas} strokeWidth={7} />
+        <Circle cx={32} cy={32} r={27} fill="none" stroke={colors.track} strokeWidth={7} />
         <AnimatedCircle
           cx={32}
           cy={32}
           r={27}
           fill="none"
-          stroke={colors.sage}
+          stroke={score >= 80 ? colors.accent : score >= 50 ? colors.orange : colors.heart}
           strokeWidth={7}
           strokeLinecap="round"
           strokeDasharray={RING}
@@ -425,34 +436,62 @@ function Create({
   );
   return (
     <Screen>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <Text style={styles.label}>Start a petition · {step + 1} of 4</Text>
+      {/* The design's Write header: title, step count, a thin progress line, and Save draft. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.label}>Start a petition</Text>
+          <Text
+            style={{
+              marginTop: 2,
+              fontFamily: fonts.semibold,
+              fontSize: 14,
+              color: colors.muted,
+            }}
+          >
+            Step {step + 1} of 4
+          </Text>
+        </View>
         <Press
           accessibilityLabel="Save draft"
           disabled={!ready || command.isPending}
           onPress={saveDraft}
           style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
             backgroundColor: colors.white,
+            borderWidth: 1,
+            borderColor: colors.handle,
             borderRadius: 999,
-            minHeight: 36,
-            paddingHorizontal: 14,
-            justifyContent: 'center',
+            minHeight: 44,
+            paddingHorizontal: 16,
           }}
         >
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.dark }}>
+          <Glyph name="bookmark" size={16} weight={2} color={colors.dark} />
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.dark }}>
             Save draft
           </Text>
         </Press>
       </View>
-      <View style={{ marginTop: 14, marginBottom: 18 }}>
-        <StepBars count={4} current={step} />
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel={`Step ${step + 1} of 4`}
+        style={{
+          height: 4,
+          borderRadius: 4,
+          marginTop: 14,
+          marginBottom: 24,
+          backgroundColor: colors.track,
+          overflow: 'hidden',
+        }}
+      >
+        <Animated.View
+          style={[
+            { height: '100%', width: `${((step + 1) / 4) * 100}%`, backgroundColor: colors.sage },
+            gradient(gradients.bar),
+            transition(['width'], 400),
+          ]}
+        />
       </View>
       {!!draftMessage && (
         <View style={{ marginBottom: 12 }}>
@@ -462,11 +501,18 @@ function Create({
       <Animated.View key={step} style={anim(step % 2 ? kf.tickA : kf.tickB, 450)}>
         <Text
           accessibilityRole="header"
-          style={[styles.title, { lineHeight: 32, marginBottom: 6 }]}
+          style={{
+            fontFamily: fonts.bold,
+            fontSize: 28,
+            lineHeight: 35,
+            letterSpacing: -0.5,
+            color: colors.ink,
+            marginBottom: 8,
+          }}
         >
           {steps[step][0]}
         </Text>
-        <Text style={[styles.body, { fontSize: 14.5, color: colors.muted, marginBottom: 16 }]}>
+        <Text style={[styles.muted, { fontSize: 15, lineHeight: 22, marginBottom: 20 }]}>
           {steps[step][1]}
         </Text>
         {step === 0 && (
@@ -763,46 +809,78 @@ function Create({
             </View>
             {preview === 0 ? (
               <View
-                style={{
-                  height: 300,
-                  borderRadius: 30,
-                  overflow: 'hidden',
-                  backgroundColor: colors.dark,
-                  boxShadow: '0px 22px 40px -22px rgba(32,38,26,0.55)',
-                }}
+                style={[
+                  {
+                    aspectRatio: 3 / 3.6,
+                    maxHeight: 460,
+                    borderRadius: 24,
+                    overflow: 'hidden',
+                    backgroundColor: colors.dark,
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                  },
+                  shadows.deck,
+                ]}
               >
                 <Cover
                   source={photo ? { uri: photo.uri } : topicImage(draft.topic)}
                   style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 />
-                <Scrim stops="rgba(18,20,15,0) 30%, rgba(18,20,15,0.9) 100%" />
-                <View style={{ position: 'absolute', left: 18, right: 18, bottom: 18, gap: 8 }}>
-                  <TopicPill topic={draft.topic} />
+                <Scrim stops="rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 80%, rgba(0,0,0,1) 100%" />
+                {!photo && (
+                  <View style={{ position: 'absolute', top: 12, left: 12 }}>
+                    <GlassPill text="Illustrative photo · add your own" style={{ fontSize: 11 }} />
+                  </View>
+                )}
+                <View style={{ position: 'absolute', left: 16, right: 16, bottom: 16, gap: 6 }}>
+                  <Kicker light topic={draft.topic} text={`${draft.topic} · ${draft.city}`} />
                   <Text
                     style={{
-                      fontFamily: fonts.heading,
-                      fontSize: 24,
-                      lineHeight: 27,
-                      letterSpacing: -0.7,
+                      fontFamily: fonts.bold,
+                      fontSize: 22,
+                      lineHeight: 26,
+                      letterSpacing: -0.4,
                       color: colors.white,
                     }}
                   >
-                    {draft.title || 'Untitled petition'}
+                    {draft.title || 'Your petition title'}
                   </Text>
                   <Text
                     numberOfLines={3}
                     style={{
                       fontFamily: fonts.body,
                       fontSize: 13,
-                      lineHeight: 19.5,
+                      lineHeight: 19,
                       color: colors.onImage,
                     }}
                   >
                     {draft.action || 'Add the exact change you are asking for.'}
                   </Text>
-                  <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
-                    To {draft.recipient || 'no recipient yet'} · goal {draft.goal} · {days} days
-                  </Text>
+                  <View
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}
+                  >
+                    <View style={{ width: 88 }}>
+                      <Bar pct={0} tone="light" height={6} />
+                    </View>
+                    <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: colors.onImage }}>
+                      <Text style={{ fontFamily: fonts.bold, color: colors.white }}>0</Text> of{' '}
+                      {draft.goal.toLocaleString()} · {days} days
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Glyph name="landmark" size={16} color={colors.onImage} />
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        flexShrink: 1,
+                        fontFamily: fonts.medium,
+                        fontSize: 13,
+                        color: colors.onImage,
+                      }}
+                    >
+                      To {draft.recipient || 'no recipient yet'}
+                    </Text>
+                  </View>
                 </View>
               </View>
             ) : (
@@ -810,7 +888,7 @@ function Create({
                 <Text style={styles.label}>
                   {draft.topic} · {draft.city} · {community?.name}
                 </Text>
-                <Text style={[styles.title, { fontSize: 27, lineHeight: 28 }]}>
+                <Text style={[styles.title, { fontSize: 28, lineHeight: 34 }]}>
                   {draft.title || 'Untitled petition'}
                 </Text>
                 <Text style={styles.body}>{draft.action}</Text>
@@ -858,7 +936,7 @@ function Create({
                   <DrawnCheck size={22} color={colors.dark} delay={200} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}>
+                  <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
                     {held ? 'Saved · not public yet' : 'Published · Change starter earned'}
                   </Text>
                   <Text
@@ -889,7 +967,7 @@ function Create({
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 14.5,
+                fontSize: 15,
                 lineHeight: 20,
                 color: colors.ink,
                 marginTop: 4,
@@ -943,7 +1021,7 @@ function Create({
               numberOfLines={6}
               style={{
                 fontFamily: fonts.heading,
-                fontSize: 14.5,
+                fontSize: 15,
                 lineHeight: 19.5,
                 color: colors.ink,
               }}

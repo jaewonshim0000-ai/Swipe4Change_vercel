@@ -77,7 +77,7 @@ export function FederalCard({
           fontFamily: fonts.heading,
           fontSize: 16,
           lineHeight: 20,
-          letterSpacing: -0.3,
+          letterSpacing: -0.2,
           color: colors.ink,
         }}
       >

@@ -17,7 +17,7 @@ export function ProfileEditor({ snapshot: s, onDone }: { snapshot: Snapshot; onD
   const m = useCommand();
   return (
     <View style={{ gap: 12 }}>
-      <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 26 }]}>
+      <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 29 }]}>
         Profile and privacy
       </Text>
       <Field label="Display name" value={name} onChangeText={setName} maxLength={100} />
@@ -47,7 +47,7 @@ export function ProfileEditor({ snapshot: s, onDone }: { snapshot: Snapshot; onD
         }}
       >
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
             Personalize For You using my activity
           </Text>
           <Text style={[styles.small, { fontSize: 12, marginTop: 2 }]}>

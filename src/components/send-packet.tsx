@@ -78,7 +78,7 @@ export function SendPacket({
     <View style={{ gap: 10 }}>
       {official && (
         <View style={{ backgroundColor: colors.soft, borderRadius: 14, padding: 12, gap: 3 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
             {official.name} · {official.office} ({official.district})
           </Text>
           {official.phone && <Text style={styles.muted}>Phone: {official.phone}</Text>}

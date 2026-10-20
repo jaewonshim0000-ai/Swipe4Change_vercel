@@ -117,8 +117,8 @@ export default function Community() {
               style={{
                 fontFamily: fonts.display,
                 fontSize: 30,
-                lineHeight: 31,
-                letterSpacing: -1,
+                lineHeight: 36,
+                letterSpacing: -0.6,
                 color: colors.white,
                 marginTop: 6,
               }}
@@ -140,7 +140,7 @@ export default function Community() {
           <Text
             style={{
               fontFamily: fonts.body,
-              fontSize: 14.5,
+              fontSize: 15,
               lineHeight: 22.5,
               color: colors.secondary,
             }}
@@ -163,7 +163,7 @@ export default function Community() {
                 <Text
                   style={{
                     fontFamily: fonts.display,
-                    fontSize: 21,
+                    fontSize: 20,
                     lineHeight: 24,
                     color: colors.ink,
                   }}
@@ -208,7 +208,7 @@ export default function Community() {
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 14.5,
+                fontSize: 15,
                 color: joined ? colors.accent : colors.white,
               }}
             >

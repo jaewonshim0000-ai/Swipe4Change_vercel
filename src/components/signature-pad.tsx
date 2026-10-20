@@ -70,7 +70,7 @@ export function SignaturePad({
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontFamily: fonts.italic, fontSize: 21, color: colors.watermark }}>
+            <Text style={{ fontFamily: fonts.italic, fontSize: 20, color: colors.watermark }}>
               Draw your signature here
             </Text>
           </View>

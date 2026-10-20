@@ -97,7 +97,7 @@ export function RipplePanel({
         <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
           <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.3 }]}>Your ripple</Text>
           <Text
-            style={{ fontFamily: fonts.heading, fontSize: 18, lineHeight: 21, color: colors.ink }}
+            style={{ fontFamily: fonts.heading, fontSize: 18, lineHeight: 22, color: colors.ink }}
           >
             {!signed
               ? 'Sign first, then start a ripple'
@@ -139,7 +139,7 @@ export function RippleSummary({ snapshot: s }: { snapshot: Snapshot }) {
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
           <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.3 }]}>Your ripple</Text>
           <Text
-            style={{ fontFamily: fonts.display, fontSize: 27, lineHeight: 28, color: colors.ink }}
+            style={{ fontFamily: fonts.display, fontSize: 28, lineHeight: 34, color: colors.ink }}
           >
             {total}
           </Text>

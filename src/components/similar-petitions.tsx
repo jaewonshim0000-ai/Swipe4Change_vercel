@@ -50,7 +50,7 @@ export function SimilarPetitions({
             <Text
               style={{
                 fontFamily: fonts.heading,
-                fontSize: 14.5,
+                fontSize: 15,
                 lineHeight: 18,
                 color: colors.ink,
               }}

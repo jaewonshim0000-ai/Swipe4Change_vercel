@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Platform, Pressable, Share, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
@@ -7,9 +7,10 @@ import { Petition, Snapshot } from '../domain/model';
 import { daysLeft, milestoneLabel } from '../domain/discovery';
 import { useCommand } from '../data/provider';
 import { recordSignal } from '../data/signals';
-import { Bar, Cover, GlassPill, Heart, Press, Scrim, TopicPill, toast, petitionImage } from './kit';
+import { Bar, Cover, GlassPill, Kicker, SaveMark, Press, toast, petitionImage } from './kit';
+import { Glyph } from './glyph';
 import { haptic, stag } from './motion';
-import { colors, fonts } from './theme';
+import { blur, colors, fonts, gradient, shadows, topicColors } from './theme';
 
 /**
  * A petition's link. Once you have signed, it carries your ripple code, so everyone who signs
@@ -58,28 +59,18 @@ export function useSave(s: Snapshot) {
   };
 }
 
-const cardShadow = { boxShadow: '0px 10px 26px -16px rgba(32,38,26,0.35)' };
-
-/**
- * A petition as a white list row: thumbnail, topic, title, progress. `detail` adds the save heart,
- * why it matched, and days left (Explore); without it the row is the compact feed version.
- */
+/** A petition as a white list row: thumbnail, kicker, title, progress and its numbers. */
 export function PetitionRow({
   petition: p,
   snapshot: s,
   index = 0,
-  match,
 }: {
   petition: Petition;
   snapshot: Snapshot;
   index?: number;
-  /** Explore's "why this matched" line. Its presence switches on the detailed layout. */
-  match?: string;
 }) {
-  const save = useSave(s);
   const [now] = useState(Date.now);
-  const detail = match !== undefined;
-  const saved = s.saved.includes(p.id);
+  const community = s.communities.find((c) => c.id === p.communityId);
   return (
     <Animated.View style={stag(index)}>
       <Press
@@ -90,136 +81,199 @@ export function PetitionRow({
         style={[
           {
             backgroundColor: colors.white,
-            borderRadius: 24,
-            padding: 10,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: colors.line,
+            padding: 12,
             flexDirection: 'row',
-            gap: 12,
+            alignItems: 'center',
+            gap: 14,
           },
-          cardShadow,
+          shadows.card,
+        ]}
+      >
+        <Cover source={petitionImage(p)} style={{ width: 64, height: 64, borderRadius: 14 }} />
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <Kicker topic={p.topic} text={`${community?.name ?? p.city} · ${p.topic}`} small />
+          <Text style={{ fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, color: colors.ink }}>
+            {p.title}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted }}
+          >
+            {p.count.toLocaleString()} of {p.goal.toLocaleString()} signed · {daysLeft(p, now)} days
+            left
+          </Text>
+          <View style={{ marginTop: 4 }}>
+            <Bar pct={(100 * p.count) / p.goal} height={4} label="Signature goal progress" />
+          </View>
+        </View>
+        <Glyph name="next" size={20} color={colors.muted} />
+      </Press>
+    </Animated.View>
+  );
+}
+
+/**
+ * The design's photo tile: status flag, title, progress and one line of numbers on the photo.
+ * `note` says why it is here ("Near you"); `badge` labels a tile with no status flag of its own.
+ */
+export function PetitionTile({
+  petition: p,
+  snapshot: s,
+  note,
+  badge,
+  width,
+  index = 0,
+}: {
+  petition: Petition;
+  snapshot: Snapshot;
+  note?: string;
+  badge?: string;
+  /** Fixed width in a rail; omitted, the tile fills its grid cell. */
+  width?: number;
+  index?: number;
+}) {
+  const save = useSave(s);
+  const [now] = useState(Date.now);
+  const saved = s.saved.includes(p.id);
+  const left = daysLeft(p, now);
+  const flag = s.signed.includes(p.id)
+    ? 'signed'
+    : s.profile && p.ownerId === s.profile.id
+      ? 'Yours'
+      : left <= 30
+        ? `${left} days left`
+        : badge;
+  return (
+    <Animated.View style={[{ width }, stag(index)]}>
+      <Press
+        accessibilityRole="link"
+        accessibilityLabel={`${p.title}, ${p.count.toLocaleString()} signed`}
+        accessibilityHint={note}
+        scale={0.98}
+        onPress={() => router.push(`/petition/${p.id}`)}
+        style={[
+          {
+            aspectRatio: 4 / 5,
+            borderRadius: 14,
+            overflow: 'hidden',
+            backgroundColor: colors.track,
+          },
+          shadows.card,
         ]}
       >
         <Cover
           source={petitionImage(p)}
-          style={{ width: detail ? 98 : 96, height: detail ? 122 : 112, borderRadius: 20 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
         <View
-          style={{ flex: 1, minWidth: 0, gap: 6, paddingVertical: 4, paddingRight: detail ? 2 : 4 }}
+          style={{
+            position: 'absolute',
+            top: 10,
+            left: 10,
+            right: 46,
+            flexDirection: 'row',
+          }}
         >
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <View style={{ flexShrink: 1 }}>
-              <TopicPill topic={p.topic} soft />
+          {flag === 'signed' ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                borderRadius: 999,
+                paddingHorizontal: 9,
+                paddingVertical: 4,
+                backgroundColor: colors.pale,
+              }}
+            >
+              <Glyph name="check" size={12} weight={3.2} color={colors.dark} />
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 11, color: colors.dark }}>
+                Signed
+              </Text>
             </View>
-            {detail && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={saved ? `Unsave ${p.title}` : `Save ${p.title}`}
-                hitSlop={6}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  save(p);
-                }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 999,
-                  backgroundColor: colors.field,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Heart on={saved} dark size={16} />
-              </Pressable>
-            )}
-          </View>
+          ) : (
+            !!flag && <GlassPill text={flag} style={{ fontSize: 11 }} />
+          )}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={saved ? `Unsave ${p.title}` : `Save ${p.title}`}
+          hitSlop={6}
+          onPress={(e) => {
+            e.stopPropagation();
+            save(p);
+          }}
+          style={[
+            {
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              width: 36,
+              height: 36,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0,0,0,0.45)',
+            },
+            blur(8),
+          ]}
+        >
+          <SaveMark on={saved} size={18} />
+        </Pressable>
+        <View
+          style={[
+            { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12, paddingTop: 40 },
+            gradient('linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.82))'),
+          ]}
+        >
           <Text
+            numberOfLines={2}
             style={{
-              fontFamily: fonts.heading,
-              fontSize: 16,
-              lineHeight: 19.5,
-              letterSpacing: -0.3,
-              color: colors.ink,
+              fontFamily: fonts.semibold,
+              fontSize: 14,
+              lineHeight: 18,
+              color: colors.white,
             }}
           >
             {p.title}
           </Text>
-          {detail && (
-            <Text
-              numberOfLines={1}
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 12,
-                lineHeight: 16,
-                color: colors.accent,
-              }}
-            >
-              ✦ {match}
-            </Text>
-          )}
-          <View style={{ marginTop: 'auto', gap: 6 }}>
-            <Bar pct={(100 * p.count) / p.goal} height={5} label="Signature goal progress" />
-            <Text
-              numberOfLines={1}
-              style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}
-            >
-              {p.count.toLocaleString()} of {p.goal.toLocaleString()} ·{' '}
-              {detail ? `${daysLeft(p, now)}d left` : p.city}
-            </Text>
+          <View style={{ marginTop: 8 }}>
+            <Bar pct={(100 * p.count) / p.goal} tone="light" height={4} />
           </View>
+          <Text
+            numberOfLines={1}
+            style={{ marginTop: 6, fontFamily: fonts.medium, fontSize: 12, color: colors.onImage }}
+          >
+            {topicColors[p.topic].emoji} {p.count.toLocaleString()} signed
+            {note ? ` · ${note}` : ` · ${p.city.split(',')[0]}`}
+          </Text>
         </View>
       </Press>
     </Animated.View>
   );
 }
 
-/** The tall image card in Home's horizontal collections. */
-export function CollectionCard({ petition: p, badge }: { petition: Petition; badge: string }) {
+/** Tiles in even columns: two on phones, three on small tablets, as many 200pt columns as fit wider. */
+export function TileGrid({ children }: { children: React.ReactNode }) {
+  const [width, setWidth] = useState(0);
+  const gap = width >= 760 ? 12 : 8;
+  const cols = width >= 760 ? Math.floor((width + gap) / (200 + gap)) : width >= 600 ? 3 : 2;
+  const cell = width ? (width - gap * (cols - 1)) / cols : 0;
   return (
-    <Press
-      accessibilityRole="link"
-      accessibilityLabel={`View ${p.title}`}
-      onPress={() => router.push(`/petition/${p.id}`)}
-      style={{
-        width: 206,
-        height: 252,
-        borderRadius: 24,
-        overflow: 'hidden',
-        backgroundColor: colors.dark,
-        boxShadow: '0px 16px 30px -20px rgba(32,38,26,0.55)',
-      }}
+    <View
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}
     >
-      <Cover
-        source={petitionImage(p)}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      />
-      <Scrim stops="rgba(18,20,15,0) 30%, rgba(18,20,15,0.88) 100%" />
-      <View style={{ position: 'absolute', top: 12, left: 12 }}>
-        <GlassPill text={badge} style={{ fontFamily: fonts.semibold, fontSize: 11 }} />
-      </View>
-      <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14, gap: 7 }}>
-        <Text
-          style={{
-            fontFamily: fonts.heading,
-            fontSize: 18,
-            lineHeight: 20,
-            letterSpacing: -0.4,
-            color: colors.white,
-          }}
-        >
-          {p.title}
-        </Text>
-        <Bar pct={(100 * p.count) / p.goal} tone="light" height={4} />
-        <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.onImage }}>
-          {p.count.toLocaleString()} of {p.goal.toLocaleString()}
-        </Text>
-      </View>
-    </Press>
+      {!!cell &&
+        React.Children.toArray(children).map((child, i) => (
+          <View key={React.isValidElement(child) ? (child.key ?? i) : i} style={{ width: cell }}>
+            {child}
+          </View>
+        ))}
+    </View>
   );
 }
 
@@ -246,8 +300,8 @@ export function Progress({
           style={{
             fontFamily: fonts.display,
             fontSize: 34,
-            lineHeight: 34,
-            letterSpacing: -1,
+            lineHeight: 41,
+            letterSpacing: -0.6,
             color: colors.ink,
           }}
         >

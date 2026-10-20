@@ -13,7 +13,7 @@ import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { isDemo } from '../data/provider';
-import { colors, fonts, styles } from './theme';
+import { colors, fonts, gradient, gradients, shadows, styles } from './theme';
 import { anim, kf } from './motion';
 import { CircleButton, PillChip, Press, Screen, Sheet } from './kit';
 import { Glyph } from './glyph';
@@ -40,13 +40,13 @@ export function Icon({
 }
 
 const buttonTone = {
-  primary: { bg: colors.dark, fg: colors.white, height: 52 },
-  pale: { bg: colors.pale, fg: colors.dark, height: 46 },
-  secondary: { bg: colors.white, fg: colors.dark, height: 50 },
-  danger: { bg: colors.white, fg: colors.error, height: 50 },
-  ghost: { bg: 'transparent', fg: colors.accent, height: 44 },
+  primary: { bg: colors.dark, fg: colors.white, height: 54 },
+  pale: { bg: colors.pale, fg: colors.dark, height: 48 },
+  secondary: { bg: colors.white, fg: colors.ink, height: 52 },
+  danger: { bg: colors.white, fg: colors.error, height: 52 },
+  ghost: { bg: 'transparent', fg: colors.secondary, height: 46 },
 };
-/** The design's pill buttons: dark primary, white secondary, pale on dark, bare ghost. */
+/** The design's buttons: dark gradient primary, white outline, pale on dark, bare ghost. */
 export function Button({
   title,
   onPress,
@@ -55,6 +55,7 @@ export function Button({
   icon,
   testID,
   style,
+  color,
 }: {
   title: string;
   onPress: () => void;
@@ -62,9 +63,14 @@ export function Button({
   disabled?: boolean;
   icon?: React.ComponentProps<typeof Ionicons>['name'];
   testID?: string;
+  /** Text colour override (ghost buttons on dark grounds). */
+  color?: string;
   style?: StyleProp<ViewStyle>;
 }) {
   const t = buttonTone[variant];
+  const primary = variant === 'primary';
+  // A disabled primary turns quiet grey, as in the design, rather than a faded dark button.
+  const off = primary && disabled;
   return (
     <Press
       testID={testID}
@@ -72,32 +78,34 @@ export function Button({
       accessibilityLabel={title}
       accessibilityState={{ disabled }}
       disabled={disabled}
+      dim={!off}
       onPress={onPress}
       style={[
         {
           minHeight: t.height,
           maxWidth: '100%',
-          paddingHorizontal: variant === 'ghost' ? 8 : 20,
-          borderRadius: 999,
+          paddingHorizontal: variant === 'ghost' ? 12 : 22,
+          borderRadius: 16,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
-          backgroundColor: t.bg,
+          backgroundColor: off ? colors.track : t.bg,
         },
+        primary && !off ? [gradient(gradients.sign), shadows.button] : null,
         // White buttons get a hairline so they still read as buttons on white cards.
-        t.bg === colors.white ? { borderWidth: 1, borderColor: colors.line } : null,
+        t.bg === colors.white ? { borderWidth: 1, borderColor: colors.handle } : null,
         style,
       ]}
     >
-      {icon && <Icon name={icon} size={17} color={t.fg} />}
+      {icon && <Icon name={icon} size={18} color={off ? colors.muted : (color ?? t.fg)} />}
       <Text
         style={{
           flexShrink: 1,
           textAlign: 'center',
-          fontSize: variant === 'ghost' ? 13 : 14,
-          fontFamily: fonts.semibold,
-          color: t.fg,
+          fontSize: primary ? 16 : 15,
+          fontFamily: primary ? fonts.bold : fonts.semibold,
+          color: off ? colors.muted : (color ?? t.fg),
         }}
       >
         {title}
@@ -313,7 +321,7 @@ export function Empty({ title, body }: { title: string; body: string }) {
       <Text
         style={{
           fontFamily: fonts.heading,
-          fontSize: 21,
+          fontSize: 20,
           lineHeight: 26,
           color: colors.ink,
           textAlign: 'center',
@@ -355,7 +363,7 @@ export function Confirm({
       <View key={contentKey} style={{ gap: 14 }}>
         <Text
           accessibilityRole="header"
-          style={[styles.title, { fontSize: 24, lineHeight: 26, letterSpacing: -0.7 }]}
+          style={[styles.title, { fontSize: 24, lineHeight: 29, letterSpacing: -0.4 }]}
         >
           {title}
         </Text>

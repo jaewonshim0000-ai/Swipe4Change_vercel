@@ -5,8 +5,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
     "@clerk/expo": "^4.6.5",
-    "@expo-google-fonts/newsreader": "^0.4.1",
-    "@expo-google-fonts/work-sans": "^0.4.2",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.2",
     "@hookform/resolvers": "^5.9.1",
     "@react-native-async-storage/async-storage": "2.2.0",

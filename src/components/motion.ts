@@ -59,6 +59,11 @@ export const kf = {
     from: { transform: [{ translateY: '100%' }] },
     to: { transform: [{ translateY: 0 }] },
   }),
+  /** A centred dialog settling in (wide screens). */
+  dialog: css.keyframes({
+    from: { opacity: 0, transform: [{ translateY: 12 }, { scale: 0.98 }] },
+    to: { opacity: 1, transform: [{ translateY: 0 }, { scale: 1 }] },
+  }),
   grow: css.keyframes({ from: { transform: [{ scaleX: 0 }] }, to: { transform: [{ scaleX: 1 }] } }),
   ken: css.keyframes({
     from: { transform: [{ scale: 1.02 }, { translateX: 0 }, { translateY: 0 }] },

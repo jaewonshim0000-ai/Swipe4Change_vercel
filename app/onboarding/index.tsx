@@ -66,7 +66,7 @@ export default function Onboarding() {
         accessibilityRole="header"
         style={[
           styles.title,
-          { fontSize: 34, lineHeight: 36, letterSpacing: -1.3, marginTop: 10, marginBottom: 8 },
+          { fontSize: 34, lineHeight: 41, letterSpacing: -0.7, marginTop: 10, marginBottom: 8 },
         ]}
       >
         What matters to you?
@@ -136,8 +136,8 @@ export default function Onboarding() {
                       right: 12,
                       bottom: 11,
                       fontFamily: fonts.semibold,
-                      fontSize: 14.5,
-                      lineHeight: 17,
+                      fontSize: 15,
+                      lineHeight: 18,
                       color: colors.white,
                     }}
                   >
@@ -189,7 +189,7 @@ export default function Onboarding() {
           <Text
             style={{
               fontFamily: fonts.semibold,
-              fontSize: 14.5,
+              fontSize: 15,
               color: city ? colors.ink : colors.muted,
               paddingTop: 3,
             }}
@@ -248,7 +248,7 @@ export default function Onboarding() {
             <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.white }}>✓</Text>
           )}
         </View>
-        <Text style={[styles.body, { flex: 1, fontSize: 14.5 }]}>
+        <Text style={[styles.body, { flex: 1, fontSize: 15 }]}>
           I’m 13 or older and agree to the Terms and Privacy Policy
         </Text>
       </Pressable>
@@ -277,7 +277,7 @@ export default function Onboarding() {
           opacity: selected.length < 3 ? 0.4 : 1,
         }}
       >
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
           {selected.length < 3 ? `Pick ${3 - selected.length} more` : 'Find my community →'}
         </Text>
       </Press>

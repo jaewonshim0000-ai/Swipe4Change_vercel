@@ -2,6 +2,7 @@ import { AuthButtons } from '../../src/components/auth-buttons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { isDemo, localAdapter, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
@@ -20,8 +21,11 @@ import {
   styles,
 } from '../../src/components/ui';
 import {
+  Bar,
   Cover,
+  Initials,
   PillChip,
+  Press,
   Rail,
   Ring,
   Screen,
@@ -36,9 +40,20 @@ import { ProfileEditor } from '../../src/components/profile-personalization';
 import { RippleSummary } from '../../src/components/ripple';
 import { Medal, badgeLook } from '../../src/components/badge-medal';
 import { Glyph } from '../../src/components/glyph';
-import { shadows } from '../../src/components/theme';
+import { useResponsiveLayout } from '../../src/components/responsive';
+import { gradient, gradients, shadows, topicColors } from '../../src/components/theme';
 
 type SheetName = 'drafts' | 'reports' | 'ripple' | 'profile' | null;
+const statValue = { fontFamily: fonts.bold, fontSize: 24, color: colors.ink };
+/** The design's section label. */
+const sectionLabel = {
+  fontFamily: fonts.bold,
+  fontSize: 12,
+  letterSpacing: 1,
+  textTransform: 'uppercase' as const,
+  color: colors.muted,
+  marginBottom: 14,
+};
 
 export default function Profile() {
   const q = useSnapshot();
@@ -46,6 +61,8 @@ export default function Profile() {
   const client = useQueryClient();
   const m = useCommand();
   const { read } = useReads(q.data?.profile?.id);
+  const insets = useSafeAreaInsets();
+  const { wide } = useResponsiveLayout();
   const [part, setPart] = useState('Created');
   const [panel, setPanel] = useState<SheetName>(null);
   const [reset, setReset] = useState(false);
@@ -117,107 +134,179 @@ export default function Profile() {
       toast(e instanceof Error ? e.message : 'Sign-out failed.');
     }
   }
-  return (
-    <Screen>
-      <Animated.View
+  const hero = (
+    <Animated.View
+      style={[
+        {
+          overflow: 'hidden',
+          backgroundColor: colors.white,
+          borderColor: colors.line,
+          borderBottomWidth: 1,
+        },
+        wide ? { borderWidth: 1, borderRadius: 20 } : null,
+        anim(kf.in, 500),
+      ]}
+    >
+      <View
         style={[
           {
-            backgroundColor: colors.white,
-            borderRadius: 30,
-            padding: 20,
-            boxShadow: '0px 14px 30px -20px rgba(32,38,26,0.45)',
+            height: (wide ? 0 : insets.top) + 248,
+            paddingTop: (wide ? 0 : insets.top) + 6,
+            paddingHorizontal: 8,
+            alignItems: 'center',
           },
-          anim(kf.in, 500),
+          gradient(gradients.hero),
+          { backgroundColor: colors.pale },
         ]}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View style={{ width: 72, height: 72 }}>
-            <Ring ms={2800} />
-            <View
-              style={{
-                position: 'absolute',
-                top: 6,
-                left: 6,
-                right: 6,
-                bottom: 6,
-                borderRadius: 30,
-                backgroundColor: colors.pale,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 21, color: colors.accent }}>
-                {initialsOf(p.name)}
-              </Text>
-            </View>
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              accessibilityRole="header"
-              style={{
-                fontFamily: fonts.display,
-                fontSize: 24,
-                lineHeight: 26,
-                letterSpacing: -0.7,
-                color: colors.ink,
-              }}
-            >
-              {p.name}
-            </Text>
-            <Text
-              style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 3 }}
-            >
-              {isDemo ? 'Fictional demo account' : 'Community member'} · {p.city}
-            </Text>
-          </View>
-        </View>
-        {!!p.bio && (
-          <Text
+        <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' }}>
+          <Press
+            accessibilityLabel={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+            scale={0.94}
+            onPress={() => router.push('/notifications')}
             style={{
-              fontFamily: fonts.body,
-              fontSize: 13,
-              lineHeight: 21,
-              color: colors.secondary,
-              marginTop: 12,
+              width: 48,
+              height: 48,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {p.bio}
-          </Text>
-        )}
-        <View style={{ flexDirection: 'row', gap: 6, marginTop: 14 }}>
-          {[
-            { value: created.length, label: 'Started' },
-            { value: s.signed.length, label: 'Signed' },
-            { value: rippleTotal(s.ripple), label: 'Ripple' },
-            { value: p.joined.length, label: 'Groups' },
-          ].map((x) => (
-            <View
-              key={x.label}
-              style={{
-                flex: 1,
-                backgroundColor: colors.quiet,
-                borderRadius: 14,
-                paddingVertical: 10,
-                paddingHorizontal: 8,
-                alignItems: 'center',
-              }}
-            >
-              <Text
+            <Glyph name="bell" size={24} weight={2} />
+            {unread > 0 && (
+              <View
                 style={{
-                  fontFamily: fonts.display,
-                  fontSize: 21,
-                  lineHeight: 23,
-                  color: colors.ink,
+                  position: 'absolute',
+                  top: 11,
+                  right: 11,
+                  width: 10,
+                  height: 10,
+                  borderRadius: 999,
+                  backgroundColor: colors.heart,
+                  borderWidth: 2,
+                  borderColor: colors.pale,
                 }}
-              >
-                {x.value}
-              </Text>
+              />
+            )}
+          </Press>
+          <Text
+            accessibilityRole="header"
+            numberOfLines={1}
+            style={{
+              flex: 1,
+              textAlign: 'center',
+              fontFamily: fonts.bold,
+              fontSize: 20,
+              lineHeight: 26,
+              color: colors.ink,
+            }}
+          >
+            {p.name}
+          </Text>
+          <Press
+            accessibilityLabel="Profile and privacy settings"
+            scale={0.94}
+            onPress={() => setPanel('profile')}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Glyph name="gear" size={24} weight={2} />
+          </Press>
+        </View>
+        <View
+          style={{
+            position: 'absolute',
+            top: (wide ? 0 : insets.top) + 64,
+            right: 20,
+            height: 28,
+            paddingHorizontal: 12,
+            justifyContent: 'center',
+            borderRadius: 8,
+            backgroundColor: colors.dark,
+            transform: [{ skewX: '-12deg' }],
+          }}
+        >
+          <Text
+            style={{
+              transform: [{ skewX: '12deg' }],
+              fontFamily: fonts.sticker,
+              fontSize: 12,
+              letterSpacing: 1,
+              color: colors.pale,
+            }}
+          >
+            {created.length ? 'ORGANIZER' : 'SUPPORTER'}
+          </Text>
+        </View>
+        <View style={{ position: 'absolute', bottom: 20 }}>
+          <Ring ms={2800} inset={-10} color={colors.sage} />
+          <Initials text={initialsOf(p.name)} size={140} ring={colors.white} />
+        </View>
+      </View>
+      <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: wide ? 22 : 4 }}>
+        <Text
+          style={{
+            fontFamily: fonts.bold,
+            fontSize: 13,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+            color: colors.muted,
+          }}
+        >
+          {isDemo ? 'Fictional demo account' : 'Community member'} · {p.city}
+        </Text>
+        {!!p.bio && <Text style={[styles.body, { marginTop: 8 }]}>{p.bio}</Text>}
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+          {[
+            {
+              value: (
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {p.interests.slice(0, 3).map((t) => (
+                    <View
+                      key={t}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        backgroundColor: topicColors[t].soft,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 16 }}>{topicColors[t].emoji}</Text>
+                    </View>
+                  ))}
+                  {!p.interests.length && <Text style={statValue}>0</Text>}
+                </View>
+              ),
+              label: 'Topics',
+              grow: 1.3,
+            },
+            {
+              value: <Text style={statValue}>{p.joined.length}</Text>,
+              label: p.joined.length === 1 ? 'Community' : 'Communities',
+              grow: 1,
+            },
+            {
+              value: <Text style={statValue}>{rippleTotal(s.ripple)}</Text>,
+              label: 'Ripple',
+              grow: 1,
+            },
+          ].map((x) => (
+            <View key={x.label} style={{ flex: x.grow, minWidth: 0 }}>
+              <View style={{ minHeight: 34, justifyContent: 'center' }}>{x.value}</View>
               <Text
+                numberOfLines={1}
                 style={{
-                  fontFamily: fonts.medium,
-                  fontSize: 11,
+                  marginTop: 2,
+                  fontFamily: fonts.semibold,
+                  fontSize: 13,
                   color: colors.muted,
-                  marginTop: 4,
                 }}
               >
                 {x.label}
@@ -225,25 +314,109 @@ export default function Profile() {
             </View>
           ))}
         </View>
-      </Animated.View>
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 24 }}>
+          <Button
+            title="Edit profile"
+            icon="create-outline"
+            onPress={() => setPanel('profile')}
+            style={{ flex: 1 }}
+          />
+          <Press
+            accessibilityLabel="Interests and location"
+            onPress={() => router.push('/onboarding')}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.handle,
+              backgroundColor: colors.white,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Glyph name="pin" size={24} weight={2} />
+          </Press>
+        </View>
+      </View>
+    </Animated.View>
+  );
+  const body = (
+    <View style={{ paddingHorizontal: wide ? 0 : 20 }}>
+      <Text accessibilityRole="header" style={[sectionLabel, { marginTop: wide ? 4 : 36 }]}>
+        Overview
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        {[
+          { e: '✍️', value: s.signed.length, label: 'Signatures' },
+          { e: '📣', value: created.length, label: 'Petitions started' },
+          { e: '🔖', value: s.saved.length, label: 'Saved' },
+          { e: '🙋', value: s.volunteering.length, label: 'Volunteering' },
+        ].map((x) => (
+          <View
+            key={x.label}
+            style={[
+              {
+                flexGrow: 1,
+                flexBasis: wide ? '22%' : '40%',
+                backgroundColor: colors.white,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.line,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+              },
+              shadows.card,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={{ fontSize: 20 }}>{x.e}</Text>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 22, color: colors.ink }}>
+                {x.value}
+              </Text>
+            </View>
+            <Text
+              style={{
+                marginTop: 4,
+                fontFamily: fonts.semibold,
+                fontSize: 13,
+                color: colors.muted,
+              }}
+            >
+              {x.label}
+            </Text>
+          </View>
+        ))}
+      </View>
 
       <View
         style={{
           flexDirection: 'row',
-          alignItems: 'baseline',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: 24,
-          marginBottom: 12,
+          marginTop: 36,
+          marginBottom: 14,
         }}
       >
-        <Text accessibilityRole="header" style={styles.h2}>
+        <Text accessibilityRole="header" style={sectionLabel}>
           Badges
         </Text>
-        <Text style={styles.small}>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.muted }}>
           {earnedCount} of {badges.length} earned
         </Text>
       </View>
-      <Rail gap={10} style={{ paddingBottom: 6 }}>
+      <View
+        style={[
+          {
+            backgroundColor: colors.white,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: colors.line,
+            overflow: 'hidden',
+          },
+          shadows.card,
+        ]}
+      >
         {badges.map((b, i) => {
           const { tone } = badgeLook(b.name);
           return (
@@ -253,92 +426,95 @@ export default function Profile() {
               accessibilityLabel={`${b.name}. ${b.criteria} ${b.earned ? 'Earned.' : `${b.progress} of ${b.target}.`}`}
               style={[
                 {
-                  width: 148,
-                  minHeight: 196,
-                  borderRadius: 24,
-                  padding: 14,
-                  paddingTop: 16,
-                  gap: 6,
+                  flexDirection: 'row',
                   alignItems: 'center',
-                  backgroundColor: b.earned ? colors.white : colors.quiet,
+                  gap: 16,
+                  padding: 16,
+                  borderTopWidth: i ? 1 : 0,
+                  borderTopColor: colors.line,
                 },
-                b.earned ? shadows.raised : null,
                 stag(i),
               ]}
             >
-              <Animated.View
-                style={[
-                  { marginBottom: 6 },
-                  b.earned ? anim(kf.float, 3000, { loop: true, ease: 'ease-in-out' }) : null,
-                ]}
-              >
-                <Medal name={b.name} earned={b.earned} progress={b.progress / b.target} />
-              </Animated.View>
-              <Text
-                style={{
-                  fontFamily: fonts.semibold,
-                  fontSize: 13,
-                  lineHeight: 17,
-                  color: b.earned ? colors.ink : colors.secondary,
-                  textAlign: 'center',
-                }}
-              >
-                {b.name}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 11,
-                  lineHeight: 15.5,
-                  color: colors.muted,
-                  textAlign: 'center',
-                }}
-              >
-                {b.criteria}
-              </Text>
-              <View
-                style={{
-                  marginTop: 'auto',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  borderRadius: 999,
-                  paddingVertical: 4,
-                  paddingHorizontal: 10,
-                  backgroundColor: b.earned ? tone.soft : colors.white,
-                }}
-              >
-                {b.earned && <Glyph name="check" size={12} color={tone.accent} weight={2.6} />}
-                <Text
-                  style={{
-                    fontFamily: fonts.semibold,
-                    fontSize: 11,
-                    color: b.earned ? tone.accent : colors.muted,
-                  }}
+              <Medal name={b.name} earned={b.earned} progress={b.progress / b.target} size={56} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                  <Text
+                    style={{
+                      flexShrink: 1,
+                      fontFamily: fonts.bold,
+                      fontSize: 16,
+                      color: colors.ink,
+                    }}
+                  >
+                    {b.name}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fonts.bold,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                      textTransform: 'uppercase',
+                      color: b.earned ? tone.accent : colors.outline,
+                    }}
+                  >
+                    {b.earned ? 'Earned' : 'Not yet'}
+                  </Text>
+                </View>
+                <Text style={[styles.small, { marginTop: 2 }]}>{b.criteria}</Text>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}
                 >
-                  {b.earned ? 'Earned' : `${b.progress} of ${b.target}`}
-                </Text>
+                  <View style={{ flex: 1 }}>
+                    <Bar pct={Math.max(4, (100 * b.progress) / b.target)} />
+                  </View>
+                  <Text
+                    style={{
+                      minWidth: 44,
+                      textAlign: 'right',
+                      fontFamily: fonts.semibold,
+                      fontSize: 13,
+                      color: colors.muted,
+                    }}
+                  >
+                    {Math.min(b.progress, b.target)}/{b.target}
+                  </Text>
+                </View>
               </View>
             </Animated.View>
           );
         })}
-      </Rail>
-      <Text style={[styles.micro, { marginTop: 4 }]}>
+      </View>
+      <Text style={[styles.micro, { marginTop: 8 }]}>
         Badges recognize participation, not verified impact.
       </Text>
 
-      <Rail style={{ marginTop: 20 }}>
+      <Text accessibilityRole="header" style={[sectionLabel, { marginTop: 36 }]}>
+        Activity
+      </Text>
+      <Rail gutter={wide ? 0 : 20}>
         {Object.keys(parts).map((c) => (
           <PillChip
             key={c}
             label={`${c} · ${parts[c].length}`}
-            height={36}
             selected={part === c}
             onPress={() => setPart(c)}
           />
         ))}
       </Rail>
-      <View style={{ gap: 10, marginTop: 12 }}>
+      <View
+        style={[
+          {
+            marginTop: 12,
+            backgroundColor: colors.white,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: colors.line,
+            paddingHorizontal: 16,
+          },
+          shadows.card,
+        ]}
+      >
         {list.map((x, i) => (
           <Animated.View key={x.id} style={stag(i)}>
             <Pressable
@@ -346,12 +522,12 @@ export default function Profile() {
               accessibilityLabel={`View ${x.title}`}
               onPress={() => router.push(`/petition/${x.id}`)}
               style={{
-                backgroundColor: colors.white,
-                borderRadius: 20,
-                padding: 8,
+                paddingVertical: 12,
                 flexDirection: 'row',
-                gap: 12,
+                gap: 14,
                 alignItems: 'center',
+                borderTopWidth: i ? 1 : 0,
+                borderTopColor: colors.line,
               }}
             >
               <Cover
@@ -359,27 +535,23 @@ export default function Profile() {
                 style={{ width: 56, height: 56, borderRadius: 14 }}
               />
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text
-                  style={{
-                    fontFamily: fonts.heading,
-                    fontSize: 14.5,
-                    lineHeight: 18,
-                    color: colors.ink,
-                  }}
-                >
+                <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.ink }}>
                   {x.title}
                 </Text>
                 <Text
                   style={{
                     fontFamily: fonts.body,
-                    fontSize: 12,
+                    fontSize: 13,
                     color: colors.muted,
-                    marginTop: 3,
+                    marginTop: 2,
                   }}
                 >
-                  {x.count.toLocaleString()} of {x.goal.toLocaleString()}
+                  {x.count.toLocaleString()} of {x.goal.toLocaleString()} signed
                   {x.status !== 'active' ? ` · ${x.status}` : ''}
                 </Text>
+                <View style={{ marginTop: 8 }}>
+                  <Bar pct={(100 * x.count) / x.goal} height={4} />
+                </View>
               </View>
             </Pressable>
           </Animated.View>
@@ -387,15 +559,11 @@ export default function Profile() {
         {!list.length && (
           <Text
             style={{
-              backgroundColor: colors.white,
-              borderRadius: 20,
-              padding: 18,
+              paddingVertical: 20,
               fontFamily: fonts.body,
-              fontSize: 13,
-              lineHeight: 19.5,
+              fontSize: 14,
+              lineHeight: 21,
               color: colors.muted,
-              textAlign: 'center',
-              overflow: 'hidden',
             }}
           >
             {part === 'Volunteering'
@@ -407,13 +575,20 @@ export default function Profile() {
         )}
       </View>
 
+      <Text accessibilityRole="header" style={[sectionLabel, { marginTop: 36 }]}>
+        Settings
+      </Text>
       <View
-        style={{
-          backgroundColor: colors.white,
-          borderRadius: 24,
-          marginTop: 20,
-          overflow: 'hidden',
-        }}
+        style={[
+          {
+            backgroundColor: colors.white,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: colors.line,
+            overflow: 'hidden',
+          },
+          shadows.card,
+        ]}
       >
         {rows.map((r, i) => (
           <Pressable
@@ -421,43 +596,34 @@ export default function Profile() {
             accessibilityRole="button"
             accessibilityLabel={r.value !== '' ? `${r.label}, ${r.value}` : r.label}
             onPress={r.onPress}
-            style={{
+            style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: 10,
-              minHeight: 54,
+              minHeight: 56,
               paddingHorizontal: 16,
-              borderBottomWidth: i < rows.length - 1 ? 1 : 0,
-              borderBottomColor: colors.canvas,
-            }}
+              borderTopWidth: i ? 1 : 0,
+              borderTopColor: colors.line,
+              backgroundColor: pressed ? colors.field : 'transparent',
+            })}
           >
-            <Text style={{ fontFamily: fonts.medium, fontSize: 14.5, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
               {r.label}
             </Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted }}>
-              {r.value} ›
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.muted }}>
+                {r.value}
+              </Text>
+              <Glyph name="next" size={18} weight={2} color={colors.muted} />
+            </View>
           </Pressable>
         ))}
       </View>
 
       {isDemo && (
         <>
-          <Text
-            style={{
-              fontFamily: fonts.semibold,
-              fontSize: 11,
-              letterSpacing: 1.3,
-              textTransform: 'uppercase',
-              color: colors.muted,
-              marginTop: 22,
-              marginBottom: 10,
-              marginHorizontal: 4,
-            }}
-          >
-            Demo controls
-          </Text>
+          <Text style={[sectionLabel, { marginTop: 28 }]}>Demo controls</Text>
           <Pressable
             accessibilityRole="switch"
             accessibilityState={{ checked: failing }}
@@ -472,13 +638,15 @@ export default function Profile() {
               justifyContent: 'space-between',
               gap: 12,
               backgroundColor: colors.white,
-              borderRadius: 24,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.line,
               paddingVertical: 14,
               paddingHorizontal: 16,
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
                 Simulate next write failure
               </Text>
               <Text
@@ -498,7 +666,7 @@ export default function Profile() {
             title="Reset all local demo data"
             variant="danger"
             onPress={() => setReset(true)}
-            style={{ marginTop: 10, borderRadius: 24 }}
+            style={{ marginTop: 10 }}
           />
         </>
       )}
@@ -513,8 +681,23 @@ export default function Profile() {
           title="Delete account"
           variant="danger"
           onPress={() => setDeleting(true)}
-          style={{ marginTop: 10, borderRadius: 24 }}
+          style={{ marginTop: 10 }}
         />
+      )}
+    </View>
+  );
+  return (
+    <Screen top={false} gutter={wide ? 32 : 0} wide={wide}>
+      {wide ? (
+        <View style={{ flexDirection: 'row', gap: 32, paddingTop: 32, alignItems: 'flex-start' }}>
+          <View style={{ width: 360 }}>{hero}</View>
+          <View style={{ flex: 1, minWidth: 0 }}>{body}</View>
+        </View>
+      ) : (
+        <>
+          {hero}
+          {body}
+        </>
       )}
 
       <Sheet visible={panel === 'profile'} onClose={() => setPanel(null)} locked={m.isPending}>
@@ -525,7 +708,7 @@ export default function Profile() {
       </Sheet>
       <Sheet visible={panel === 'drafts'} onClose={() => setPanel(null)}>
         <View style={{ gap: 12 }}>
-          <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 26 }]}>
+          <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 29 }]}>
             Private drafts
           </Text>
           <Text style={styles.muted}>
@@ -570,7 +753,7 @@ export default function Profile() {
       </Sheet>
       <Sheet visible={panel === 'reports'} onClose={() => setPanel(null)} locked={m.isPending}>
         <View style={{ gap: 12 }}>
-          <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 26 }]}>
+          <Text accessibilityRole="header" style={[styles.title, { fontSize: 24, lineHeight: 29 }]}>
             Reports and appeals
           </Text>
           {s.reports.length ? (

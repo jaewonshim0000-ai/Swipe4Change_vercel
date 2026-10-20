@@ -51,8 +51,8 @@ export default function Notifications() {
             flex: 1,
             fontFamily: fonts.display,
             fontSize: 24,
-            lineHeight: 26,
-            letterSpacing: -0.7,
+            lineHeight: 29,
+            letterSpacing: -0.4,
             color: colors.ink,
           }}
         >

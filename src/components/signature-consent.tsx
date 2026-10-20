@@ -6,21 +6,11 @@ import { Identity, Petition, Snapshot, identityLabels, verificationLabels } from
 import { publicName, signingStatus } from '../domain/rules';
 import { SignaturePoint, SignatureReceipt, petitionDisclosure } from '../domain/signature-record';
 import { SignaturePad } from './signature-pad';
-import { forgetVia, recallVia, RippleRings } from './ripple';
+import { forgetVia, recallVia } from './ripple';
 import { share } from './petition-card';
-import {
-  CircleButton,
-  Confetti,
-  DrawnCheck,
-  Press,
-  Radio,
-  Ring,
-  Sheet,
-  StepBars,
-  toast,
-} from './kit';
+import { CircleButton, Press, Radio, Sheet, StepBars, toast } from './kit';
 import { Glyph } from './glyph';
-import { Medal, badgeLook } from './badge-medal';
+import { Celebrate } from './celebrate';
 import { anim, haptic, kf } from './motion';
 import { Button, Notice, colors, fonts, styles } from './ui';
 
@@ -60,9 +50,7 @@ export function OptionCard({
     >
       <Radio on={selected} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
-          {label}
-        </Text>
+        <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>{label}</Text>
         <Text
           style={{
             fontFamily: fonts.body,
@@ -155,344 +143,240 @@ export function SignatureConsent({
         : !consent
           ? 'Tick the consent box'
           : 'Sign petition';
+  // Only the server's confirmation reaches the celebration.
+  if (done)
+    return (
+      <Celebrate
+        petition={petition}
+        name={name}
+        shownAs={publicName(name, identity)}
+        firstBadge={firstBadge}
+        onClose={onClose}
+        onShare={() => {
+          onClose();
+          void share(petition, snapshot);
+        }}
+      />
+    );
   return (
     <Sheet visible onClose={onClose} locked={command.isPending}>
-      {done ? (
-        <View style={{ alignItems: 'center', gap: 10, paddingTop: 8 }}>
-          <View style={{ width: 92, height: 92, alignItems: 'center', justifyContent: 'center' }}>
-            <Confetti />
-            <Ring ms={1800} delay={300} />
-            <Animated.View
-              style={[
-                {
-                  width: 76,
-                  height: 76,
-                  borderRadius: 999,
-                  backgroundColor: colors.accent,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                anim(kf.pop, 550, { ease: 'ease' }),
-              ]}
-            >
-              <DrawnCheck />
-            </Animated.View>
-          </View>
-          <Animated.Text
+      <>
+        <View style={{ marginBottom: 16 }}>
+          <StepBars count={3} current={step} />
+        </View>
+        <Animated.View key={step} style={anim(step % 2 ? kf.tickA : kf.tickB, 400)}>
+          <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.3 }]}>
+            Step {step + 1} of 3
+          </Text>
+          <Text
             accessibilityRole="header"
-            style={[
-              {
-                fontFamily: fonts.display,
-                fontSize: 27,
-                lineHeight: 30,
-                letterSpacing: -0.9,
-                color: colors.ink,
-                textAlign: 'center',
-              },
-              anim(kf.in, 500, { delay: 300 }),
-            ]}
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 24,
+              lineHeight: 29,
+              letterSpacing: -0.4,
+              color: colors.ink,
+              marginTop: 8,
+              marginBottom: 12,
+            }}
           >
-            You added your voice.
-          </Animated.Text>
-          <Animated.Text
-            style={[
-              { ...styles.muted, fontSize: 14.5, lineHeight: 21.5, textAlign: 'center' },
-              anim(kf.in, 500, { delay: 400 }),
-            ]}
-          >
-            Supporter #{petition.count.toLocaleString()} on “{petition.title}”, as{' '}
-            {publicName(name, identity)}.
-          </Animated.Text>
-          <Animated.View
-            style={[
-              {
-                width: '100%',
-                backgroundColor: colors.white,
-                borderRadius: 24,
-                padding: 16,
-                flexDirection: 'row',
-                gap: 14,
-                alignItems: 'center',
-                marginTop: 6,
-              },
-              anim(kf.in, 500, { delay: 500 }),
-            ]}
-          >
-            <RippleRings moving size={64} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
-                Now start a ripple
-              </Text>
-              <Text style={[styles.small, { fontSize: 12, marginTop: 2 }]}>
-                Everyone who signs through your link joins your ripple. Counts only, never names.
-              </Text>
-            </View>
-          </Animated.View>
-          {firstBadge && (
-            <Animated.View
-              style={[
-                {
-                  width: '100%',
+            {titles[step]}
+          </Text>
+          {step === 0 && (
+            <>
+              <View
+                style={{
+                  backgroundColor: colors.white,
+                  borderRadius: 20,
+                  maxHeight: 190,
+                  overflow: 'hidden',
+                }}
+              >
+                <ScrollView nestedScrollEnabled contentContainerStyle={{ padding: 16, gap: 8 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.heading,
+                      fontSize: 16,
+                      lineHeight: 21,
+                      color: colors.ink,
+                    }}
+                  >
+                    {disclosure.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      lineHeight: 21.5,
+                      color: colors.secondary,
+                    }}
+                  >
+                    {disclosure.fullText}
+                  </Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
+                    To {disclosure.recipient} · {disclosure.approximateLocation} · closes{' '}
+                    {disclosure.deadline}
+                  </Text>
+                </ScrollView>
+              </View>
+              <View
+                accessibilityLiveRegion="polite"
+                style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 12,
-                  backgroundColor: badgeLook('First voice').tone.soft,
+                  gap: 10,
+                  backgroundColor: eligibility.message ? colors.errorSoft : colors.soft,
                   borderRadius: 20,
                   paddingVertical: 12,
                   paddingHorizontal: 14,
-                },
-                anim(kf.in, 500, { delay: 600 }),
-              ]}
-            >
-              <Animated.View style={anim(kf.float, 2400, { loop: true, ease: 'ease-in-out' })}>
-                <Medal name="First voice" earned size={40} />
-              </Animated.View>
-              <Text
-                style={{
-                  fontFamily: fonts.medium,
-                  fontSize: 13,
-                  lineHeight: 18,
-                  color: colors.secondary,
+                  marginTop: 10,
                 }}
               >
-                Badge earned · <Text style={{ fontFamily: fonts.bold }}>First voice</Text>
-              </Text>
-            </Animated.View>
-          )}
-          <View style={{ width: '100%', flexDirection: 'row', gap: 10, marginTop: 8 }}>
-            <Button title="Done" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
-            <Button
-              title="Share my link"
-              onPress={() => {
-                onClose();
-                void share(petition, snapshot);
-              }}
-              style={{ flex: 1.6 }}
-            />
-          </View>
-          <Text style={[styles.micro, { fontSize: 11, textAlign: 'center' }]}>
-            Private receipt saved to your profile. Withdraw any time.
-          </Text>
-        </View>
-      ) : (
-        <>
-          <View style={{ marginBottom: 16 }}>
-            <StepBars count={3} current={step} />
-          </View>
-          <Animated.View key={step} style={anim(step % 2 ? kf.tickA : kf.tickB, 400)}>
-            <Text style={[styles.label, { fontSize: 11, letterSpacing: 1.3 }]}>
-              Step {step + 1} of 3
-            </Text>
-            <Text
-              accessibilityRole="header"
-              style={{
-                fontFamily: fonts.display,
-                fontSize: 24,
-                lineHeight: 27.5,
-                letterSpacing: -0.8,
-                color: colors.ink,
-                marginTop: 8,
-                marginBottom: 12,
-              }}
-            >
-              {titles[step]}
-            </Text>
-            {step === 0 && (
-              <>
-                <View
-                  style={{
-                    backgroundColor: colors.white,
-                    borderRadius: 20,
-                    maxHeight: 190,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <ScrollView nestedScrollEnabled contentContainerStyle={{ padding: 16, gap: 8 }}>
-                    <Text
-                      style={{
-                        fontFamily: fonts.heading,
-                        fontSize: 16,
-                        lineHeight: 21,
-                        color: colors.ink,
-                      }}
-                    >
-                      {disclosure.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: fonts.body,
-                        fontSize: 13,
-                        lineHeight: 21.5,
-                        color: colors.secondary,
-                      }}
-                    >
-                      {disclosure.fullText}
-                    </Text>
-                    <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
-                      To {disclosure.recipient} · {disclosure.approximateLocation} · closes{' '}
-                      {disclosure.deadline}
-                    </Text>
-                  </ScrollView>
-                </View>
-                <View
-                  accessibilityLiveRegion="polite"
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    backgroundColor: eligibility.message ? colors.errorSoft : colors.soft,
-                    borderRadius: 20,
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    marginTop: 10,
-                  }}
-                >
-                  <Animated.View
-                    style={[
-                      {
-                        width: 22,
-                        height: 22,
-                        borderRadius: 999,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: eligibility.message ? colors.error : colors.success,
-                      },
-                      anim(kf.pop, 400, { delay: 200, ease: 'ease' }),
-                    ]}
-                  >
-                    <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.white }}>
-                      {eligibility.message ? '!' : '✓'}
-                    </Text>
-                  </Animated.View>
-                  <Text
-                    style={{
-                      flex: 1,
-                      fontFamily: fonts.medium,
-                      fontSize: 13,
-                      lineHeight: 18,
-                      color: colors.secondary,
-                    }}
-                  >
-                    {eligibility.message ??
-                      `Eligible · ${verificationLabels[petition.verification]}${isDemo ? ' (simulated)' : ''}`}
-                  </Text>
-                </View>
-              </>
-            )}
-            {step === 1 && (
-              <>
-                <View style={{ gap: 8 }}>
-                  {petition.identities.map((i) => (
-                    <OptionCard
-                      key={i}
-                      label={identityLabels[i]}
-                      note={`Appears as “${publicName(name, i)}”`}
-                      selected={identity === i}
-                      onPress={() => setIdentity(i)}
-                    />
-                  ))}
-                </View>
-                <Text style={[styles.micro, { fontSize: 12, marginTop: 10 }]}>
-                  Your account always owns the signature privately.
-                </Text>
-              </>
-            )}
-            {step === 2 && (
-              <>
-                <SignaturePad value={signature} onChange={setSignature} />
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: consent }}
-                  aria-checked={consent}
-                  onPress={() => setConsent(!consent)}
-                  style={{
-                    flexDirection: 'row',
-                    gap: 12,
-                    alignItems: 'flex-start',
-                    backgroundColor: colors.white,
-                    borderRadius: 20,
-                    padding: 14,
-                    marginTop: 10,
-                  }}
-                >
-                  <View
-                    style={{
+                <Animated.View
+                  style={[
+                    {
                       width: 22,
                       height: 22,
-                      borderRadius: 8,
-                      borderWidth: 2,
-                      borderColor: consent ? colors.dark : colors.radio,
-                      backgroundColor: consent ? colors.dark : 'transparent',
+                      borderRadius: 999,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      transform: [{ scale: consent ? 1.06 : 1 }],
-                    }}
-                  >
-                    {consent && (
-                      <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.white }}>
-                        ✓
-                      </Text>
-                    )}
-                  </View>
-                  <Text
-                    style={{
-                      flex: 1,
-                      fontFamily: fonts.body,
-                      fontSize: 13,
-                      lineHeight: 20,
-                      color: colors.secondary,
-                    }}
-                  >
-                    {isDemo
-                      ? 'I have read the request and understand this fictional signature has no legal validity.'
-                      : 'I have read the full text and I am signing it as myself.'}
+                      backgroundColor: eligibility.message ? colors.error : colors.success,
+                    },
+                    anim(kf.pop, 400, { delay: 200, ease: 'ease' }),
+                  ]}
+                >
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.white }}>
+                    {eligibility.message ? '!' : '✓'}
                   </Text>
-                </Pressable>
-                <Text style={[styles.micro, { marginTop: 8 }]}>
-                  Only you can see your drawn signature. Others see “{publicName(name, identity)}”.
+                </Animated.View>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontFamily: fonts.medium,
+                    fontSize: 13,
+                    lineHeight: 18,
+                    color: colors.secondary,
+                  }}
+                >
+                  {eligibility.message ??
+                    `Eligible · ${verificationLabels[petition.verification]}${isDemo ? ' (simulated)' : ''}`}
                 </Text>
-              </>
-            )}
-          </Animated.View>
-          {!!error && (
-            <View style={{ marginTop: 12 }}>
-              <Notice error text={error} />
-            </View>
+              </View>
+            </>
           )}
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-            <CircleButton
-              label={step === 0 ? 'Close' : 'Previous step'}
-              light={false}
-              size={52}
-              onPress={() => (step === 0 ? onClose() : setStep(step - 1))}
-            >
-              <Glyph name="back" size={18} weight={2} />
-            </CircleButton>
-            <Press
-              testID="sign-next"
-              accessibilityLabel={nextLabel}
-              accessibilityState={{ disabled: !canNext || command.isPending }}
-              // `disabled={false}` would overwrite accessibilityState.disabled, so pass it only while pending.
-              disabled={command.isPending || undefined}
-              scale={0.97}
-              onPress={next}
-              style={{
-                flex: 1,
-                minHeight: 52,
-                borderRadius: 999,
-                backgroundColor: colors.dark,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: canNext ? 1 : 0.4,
-              }}
-            >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white }}>
-                {nextLabel}
+          {step === 1 && (
+            <>
+              <View style={{ gap: 8 }}>
+                {petition.identities.map((i) => (
+                  <OptionCard
+                    key={i}
+                    label={identityLabels[i]}
+                    note={`Appears as “${publicName(name, i)}”`}
+                    selected={identity === i}
+                    onPress={() => setIdentity(i)}
+                  />
+                ))}
+              </View>
+              <Text style={[styles.micro, { fontSize: 12, marginTop: 10 }]}>
+                Your account always owns the signature privately.
               </Text>
-            </Press>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <SignaturePad value={signature} onChange={setSignature} />
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: consent }}
+                aria-checked={consent}
+                onPress={() => setConsent(!consent)}
+                style={{
+                  flexDirection: 'row',
+                  gap: 12,
+                  alignItems: 'flex-start',
+                  backgroundColor: colors.white,
+                  borderRadius: 20,
+                  padding: 14,
+                  marginTop: 10,
+                }}
+              >
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: consent ? colors.dark : colors.radio,
+                    backgroundColor: consent ? colors.dark : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transform: [{ scale: consent ? 1.06 : 1 }],
+                  }}
+                >
+                  {consent && (
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.white }}>
+                      ✓
+                    </Text>
+                  )}
+                </View>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    lineHeight: 20,
+                    color: colors.secondary,
+                  }}
+                >
+                  {isDemo
+                    ? 'I have read the request and understand this fictional signature has no legal validity.'
+                    : 'I have read the full text and I am signing it as myself.'}
+                </Text>
+              </Pressable>
+              <Text style={[styles.micro, { marginTop: 8 }]}>
+                Only you can see your drawn signature. Others see “{publicName(name, identity)}”.
+              </Text>
+            </>
+          )}
+        </Animated.View>
+        {!!error && (
+          <View style={{ marginTop: 12 }}>
+            <Notice error text={error} />
           </View>
-        </>
-      )}
+        )}
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+          <CircleButton
+            label={step === 0 ? 'Close' : 'Previous step'}
+            light={false}
+            size={52}
+            onPress={() => (step === 0 ? onClose() : setStep(step - 1))}
+          >
+            <Glyph name="back" size={18} weight={2} />
+          </CircleButton>
+          <Press
+            testID="sign-next"
+            accessibilityLabel={nextLabel}
+            accessibilityState={{ disabled: !canNext || command.isPending }}
+            // `disabled={false}` would overwrite accessibilityState.disabled, so pass it only while pending.
+            disabled={command.isPending || undefined}
+            scale={0.97}
+            onPress={next}
+            style={{
+              flex: 1,
+              minHeight: 52,
+              borderRadius: 999,
+              backgroundColor: colors.dark,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: canNext ? 1 : 0.4,
+            }}
+          >
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
+              {nextLabel}
+            </Text>
+          </Press>
+        </View>
+      </>
     </Sheet>
   );
 }

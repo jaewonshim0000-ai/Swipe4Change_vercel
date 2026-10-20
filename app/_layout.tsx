@@ -2,26 +2,24 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { useFonts } from 'expo-font';
-import { Newsreader_600SemiBold } from '@expo-google-fonts/newsreader/600SemiBold';
-import { Newsreader_700Bold } from '@expo-google-fonts/newsreader/700Bold';
-import { Newsreader_400Regular_Italic } from '@expo-google-fonts/newsreader/400Regular_Italic';
-import { WorkSans_400Regular } from '@expo-google-fonts/work-sans/400Regular';
-import { WorkSans_500Medium } from '@expo-google-fonts/work-sans/500Medium';
-import { WorkSans_600SemiBold } from '@expo-google-fonts/work-sans/600SemiBold';
-import { WorkSans_700Bold } from '@expo-google-fonts/work-sans/700Bold';
+import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
+import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
+import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
+import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
+import { PlusJakartaSans_400Regular_Italic } from '@expo-google-fonts/plus-jakarta-sans/400Regular_Italic';
+import { PlusJakartaSans_800ExtraBold_Italic } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold_Italic';
 import { Providers } from '../src/data/provider';
 import { colors } from '../src/components/theme';
 import { ToastHost } from '../src/components/kit';
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    Newsreader_600SemiBold,
-    Newsreader_700Bold,
-    Newsreader_400Regular_Italic,
-    WorkSans_400Regular,
-    WorkSans_500Medium,
-    WorkSans_600SemiBold,
-    WorkSans_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_400Regular_Italic,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+    PlusJakartaSans_800ExtraBold_Italic,
   });
   if (!loaded && !error)
     return (

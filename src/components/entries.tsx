@@ -184,7 +184,7 @@ export function Composer({
           minHeight: 48,
           maxHeight: 140,
           fontFamily: fonts.body,
-          fontSize: 14.5,
+          fontSize: 15,
           lineHeight: 20,
           color: colors.ink,
           backgroundColor: bare ? 'transparent' : colors.field,

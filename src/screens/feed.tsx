@@ -21,13 +21,13 @@ import {
   nextMilestone,
 } from '../domain/discovery';
 import { governmentLevels, levelLabels } from '../domain/recipients';
-import { ResponsiveGrid } from '../components/responsive';
+import { ResponsiveGrid, useResponsiveLayout } from '../components/responsive';
 import { SwipeDeck } from '../components/swipe-deck';
-import { CollectionCard, PetitionRow, useSave } from '../components/petition-card';
+import { PetitionTile, TileGrid, useSave } from '../components/petition-card';
 import {
   Bar,
   Cover,
-  Heart,
+  SaveMark,
   Initials,
   KenBurns,
   LiveDot,
@@ -48,7 +48,7 @@ import { Glyph } from '../components/glyph';
 import { CitySheet } from '../components/city-picker';
 import { anim, kf } from '../components/motion';
 import { Button, Empty, Loading, Notice, Page, colors, fonts, styles } from '../components/ui';
-import { frost, topicColors } from '../components/theme';
+import { frost, shadows, topicColors } from '../components/theme';
 
 export function Feed({ explore = false }: { explore?: boolean }) {
   const q = useSnapshot();
@@ -65,9 +65,9 @@ export function Feed({ explore = false }: { explore?: boolean }) {
 
 const sectionTitle = {
   fontFamily: fonts.display,
-  fontSize: 21,
+  fontSize: 20,
   lineHeight: 24,
-  letterSpacing: -0.6,
+  letterSpacing: -0.3,
   color: colors.ink,
 };
 const note = {
@@ -216,7 +216,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
       onPress={() => router.push(`/petition/${p.id}`)}
       style={{
         height: 318,
-        borderRadius: 30,
+        borderRadius: 28,
         overflow: 'hidden',
         backgroundColor: colors.dark,
         boxShadow: '0px 22px 40px -22px rgba(32,38,26,0.55)',
@@ -270,7 +270,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
           frost(0.22),
         ]}
       >
-        <Heart on={s.saved.includes(p.id)} />
+        <SaveMark on={s.saved.includes(p.id)} />
       </Pressable>
       <View style={{ position: 'absolute', left: 18, right: 18, bottom: 16, gap: 9 }}>
         <TopicPill topic={p.topic} />
@@ -278,8 +278,8 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
           style={{
             fontFamily: fonts.heading,
             fontSize: 24,
-            lineHeight: 28,
-            letterSpacing: -0.8,
+            lineHeight: 29,
+            letterSpacing: -0.4,
             color: colors.white,
           }}
         >
@@ -331,8 +331,8 @@ function WhySheet({ visible, onClose }: { visible: boolean; onClose: () => void 
         style={{
           fontFamily: fonts.display,
           fontSize: 24,
-          lineHeight: 26,
-          letterSpacing: -0.7,
+          lineHeight: 29,
+          letterSpacing: -0.4,
           color: colors.ink,
         }}
       >
@@ -414,6 +414,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
   const local = ranked.filter((p) => sameCity(p.city, s.profile?.city));
   const hour = new Date(now).getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const { wide } = useResponsiveLayout();
   const unread = s.notifications.filter((n) => !read.includes(n.id)).length;
   function moveTo(city: string) {
     if (!s.profile) return;
@@ -423,23 +424,26 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
     );
   }
   return (
-    <Screen wide fill>
+    <Screen wide fill gutter={wide ? 32 : 12}>
       <Animated.View
-        style={[{ flexDirection: 'row', alignItems: 'center', gap: 12 }, anim(kf.in, 500)]}
+        style={[
+          { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: wide ? 0 : 6 },
+          anim(kf.in, 500),
+        ]}
       >
         <Press
           accessibilityLabel={s.profile ? 'Profile' : 'Sign in'}
           scale={0.94}
           onPress={() => router.push(s.profile ? '/(tabs)/profile' : '/(auth)/sign-in')}
-          style={{ borderRadius: 24, boxShadow: '0px 6px 16px -8px rgba(32,38,26,0.4)' }}
+          style={{ borderRadius: 999 }}
         >
           {s.profile ? (
-            <Initials text={initialsOf(s.profile.name)} size={46} ring={colors.white} />
+            <Initials text={initialsOf(s.profile.name)} size={44} ring={colors.white} />
           ) : (
             <View
               style={{
-                width: 46,
-                height: 46,
+                width: 44,
+                height: 44,
                 borderRadius: 999,
                 borderWidth: 2,
                 borderColor: colors.white,
@@ -448,97 +452,105 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
                 justifyContent: 'center',
               }}
             >
-              <Glyph name="profile" size={20} weight={1.8} color={colors.accent} />
+              <Glyph name="user" size={20} weight={2} color={colors.accent} />
             </View>
           )}
         </Press>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
             accessibilityRole="header"
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 24,
-              lineHeight: 26,
-              letterSpacing: -0.8,
-              color: colors.ink,
-            }}
+            numberOfLines={1}
+            style={{ fontFamily: fonts.bold, fontSize: 20, lineHeight: 26, color: colors.ink }}
           >
             {greeting}
-            {s.profile ? `, ${s.profile.name.split(' ')[0]}` : ''}.
+            {s.profile ? `, ${s.profile.name.split(' ')[0]}` : ''}
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={s.profile ? 'Change location' : 'Sign in for causes near you'}
-            onPress={() => (s.profile ? setPicking(true) : router.push('/(auth)/sign-in'))}
-            style={{ paddingTop: 3, flexDirection: 'row', gap: 4 }}
-          >
-            {s.profile ? (
-              <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={s.profile ? 'Change location' : 'Sign in for causes near you'}
+              onPress={() => (s.profile ? setPicking(true) : router.push('/(auth)/sign-in'))}
+              style={{ flexDirection: 'row', gap: 4, paddingVertical: 2, flexShrink: 1 }}
+            >
+              {s.profile ? (
+                <>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      flexShrink: 1,
+                      fontFamily: fonts.medium,
+                      fontSize: 13,
+                      color: colors.muted,
+                    }}
+                  >
+                    {s.profile.city
+                      ? `${local.length} causes near ${s.profile.city.split(',')[0]}`
+                      : 'Choose your city'}
+                  </Text>
+                  <Text
+                    style={{
+                      flexShrink: 0,
+                      fontFamily: fonts.semibold,
+                      fontSize: 13,
+                      color: colors.accent,
+                    }}
+                  >
+                    · Change
+                  </Text>
+                </>
+              ) : (
                 <Text
                   numberOfLines={1}
                   style={{
                     flexShrink: 1,
-                    fontFamily: fonts.body,
-                    fontSize: 13,
-                    color: colors.muted,
-                  }}
-                >
-                  {s.profile.city
-                    ? `${local.length} causes near ${s.profile.city.split(',')[0]}`
-                    : 'Choose your city'}
-                </Text>
-                <Text
-                  style={{
-                    flexShrink: 0,
                     fontFamily: fonts.semibold,
                     fontSize: 13,
                     color: colors.accent,
                   }}
                 >
-                  · Change
+                  Sign in for causes near you →
                 </Text>
-              </>
-            ) : (
-              <Text
-                numberOfLines={1}
-                style={{
-                  flexShrink: 1,
-                  fontFamily: fonts.semibold,
-                  fontSize: 13,
-                  color: colors.accent,
-                }}
-              >
-                Sign in for causes near you →
+              )}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Why these petitions?"
+              onPress={() => setWhy(true)}
+              style={{ paddingVertical: 2, paddingLeft: 4 }}
+            >
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
+                · Why these?
               </Text>
-            )}
-          </Pressable>
+            </Pressable>
+          </View>
         </View>
         <Press
           accessibilityLabel={unread ? `Notifications, ${unread} unread` : 'Notifications'}
           scale={0.94}
           onPress={() => router.push('/notifications')}
           style={{
-            width: 46,
-            height: 46,
+            width: 44,
+            height: 44,
             borderRadius: 999,
             backgroundColor: colors.white,
+            borderWidth: 1,
+            borderColor: colors.line,
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0px 6px 16px -8px rgba(32,38,26,0.35)',
           }}
         >
-          <Glyph name="bell" size={20} weight={1.7} />
+          <Glyph name="bell" size={22} weight={2} />
           {unread > 0 && (
             <Animated.View
               style={[
                 {
                   position: 'absolute',
-                  top: 8,
-                  right: 9,
-                  minWidth: 17,
-                  height: 17,
+                  top: 6,
+                  right: 6,
+                  minWidth: 18,
+                  height: 18,
                   borderRadius: 999,
-                  backgroundColor: colors.orange,
+                  backgroundColor: colors.heart,
                   borderWidth: 2,
                   borderColor: colors.white,
                   alignItems: 'center',
@@ -552,7 +564,7 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
                 style={{
                   fontFamily: fonts.bold,
                   fontSize: 11,
-                  lineHeight: 11,
+                  lineHeight: 13,
                   color: colors.white,
                 }}
               >
@@ -562,47 +574,19 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           )}
         </Press>
       </Animated.View>
-      <View
-        style={{
-          paddingTop: 22,
-          paddingBottom: 12,
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 10,
-        }}
-      >
-        <Text
-          accessibilityRole="header"
-          style={{
-            fontFamily: fonts.display,
-            fontSize: 24,
-            lineHeight: 25,
-            letterSpacing: -0.7,
-            color: colors.ink,
-          }}
-        >
-          For you
-        </Text>
-        <Pressable accessibilityRole="button" onPress={() => setWhy(true)} style={{ padding: 4 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
-            Why these?
-          </Text>
-        </Pressable>
-      </View>
-      {/* Takes the height left above the tab bar and centers the card in it. */}
+      {/* The deck takes the height left above the tab bar. */}
       <View
         style={{
           flex: 1,
-          justifyContent: 'center',
           width: '100%',
-          maxWidth: 540,
+          maxWidth: wide ? 460 : 540,
           alignSelf: 'center',
+          paddingTop: 12,
         }}
       >
-        <SwipeDeck petitions={ranked} rules={rules} snapshot={s} reasons={reasons} />
+        <SwipeDeck petitions={ranked} rules={rules} snapshot={s} reasons={reasons} hints={wide} />
       </View>
-      <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 10 }]}>
+      <Text style={[styles.micro, { textAlign: 'center', paddingTop: 12, paddingHorizontal: 10 }]}>
         {isDemo
           ? 'Fictional sample data. Nothing here establishes legal validity.'
           : 'Your voice. Your community. Your choice.'}
@@ -661,7 +645,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
             <Text
               style={{
                 fontFamily: fonts.semibold,
-                fontSize: 14.5,
+                fontSize: 15,
                 lineHeight: 19.5,
                 color: colors.ink,
               }}
@@ -688,7 +672,7 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
         style={{
           marginTop: 14,
           backgroundColor: colors.dark,
-          borderRadius: 30,
+          borderRadius: 28,
           padding: 22,
           gap: 10,
           overflow: 'hidden',
@@ -700,9 +684,9 @@ function KeepGoing({ snapshot: s }: { snapshot: Snapshot }) {
         <Text
           style={{
             fontFamily: fonts.heading,
-            fontSize: 21,
+            fontSize: 20,
             lineHeight: 25,
-            letterSpacing: -0.5,
+            letterSpacing: -0.3,
             color: colors.white,
             maxWidth: 260,
           }}
@@ -824,7 +808,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
         <FederalRules interests={s.profile?.interests ?? []} />
       ) : (
         <>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <View
               style={{
                 flex: 1,
@@ -832,26 +816,28 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                 alignItems: 'center',
                 gap: 10,
                 backgroundColor: colors.white,
+                borderWidth: 1,
+                borderColor: colors.line,
                 borderRadius: 999,
-                paddingHorizontal: 16,
-                minHeight: 52,
-                boxShadow: '0px 8px 22px -14px rgba(32,38,26,0.35)',
+                paddingLeft: 16,
+                paddingRight: 6,
+                height: 48,
               }}
             >
-              <Glyph name="search" size={18} color={colors.muted} />
+              <Glyph name="search" size={20} weight={2} color={colors.muted} />
               <TextInput
                 accessibilityLabel="Search petitions"
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Try lighting, Riverton, a community…"
-                placeholderTextColor="#8C9086"
+                placeholder="Search petitions, places, offices"
+                placeholderTextColor={colors.muted}
                 style={{
                   flex: 1,
                   minWidth: 0,
+                  height: '100%',
                   fontFamily: fonts.body,
-                  fontSize: 14.5,
+                  fontSize: 16,
                   color: colors.ink,
-                  paddingVertical: 12,
                 }}
               />
               {!!search && (
@@ -860,17 +846,15 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                   accessibilityLabel="Clear search"
                   onPress={() => setSearch('')}
                   style={{
-                    width: 26,
-                    height: 26,
+                    width: 36,
+                    height: 36,
                     borderRadius: 999,
-                    backgroundColor: colors.canvas,
+                    backgroundColor: colors.field,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontFamily: fonts.medium, fontSize: 14.5, color: colors.muted }}>
-                    ×
-                  </Text>
+                  <Glyph name="close" size={16} weight={2.4} color={colors.muted} />
                 </Pressable>
               )}
             </View>
@@ -879,15 +863,15 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
               scale={0.94}
               onPress={() => setDraft(filters)}
               style={{
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 borderRadius: 999,
                 backgroundColor: colors.dark,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Glyph name="filters" size={19} color={colors.white} />
+              <Glyph name="filters" size={20} weight={2} color={colors.white} />
               {count > 0 && (
                 <Animated.View
                   style={[
@@ -895,8 +879,8 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                       position: 'absolute',
                       top: -2,
                       right: -2,
-                      width: 19,
-                      height: 19,
+                      width: 20,
+                      height: 20,
                       borderRadius: 999,
                       backgroundColor: colors.pale,
                       alignItems: 'center',
@@ -912,11 +896,12 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
               )}
             </Press>
           </View>
-          <Rail style={{ paddingTop: 14, paddingBottom: 4 }}>
+          <Rail style={{ paddingTop: 10, paddingBottom: 2 }}>
             {(['', ...topics] as const).map((t) => (
               <PillChip
                 key={t || 'all'}
-                label={t || 'All topics'}
+                label={t ? `${topicColors[t].emoji} ${t}` : 'All'}
+                height={36}
                 selected={filters.topic === t}
                 onPress={() => setFilters({ ...filters, topic: t })}
               />
@@ -929,7 +914,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                 label={c.label}
                 selected={c.on}
                 onPress={c.toggle}
-                height={34}
+                height={32}
                 outline
               />
             ))}
@@ -954,11 +939,13 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                         </Text>
                         <Text style={note}>{c.note}</Text>
                       </View>
-                      <Rail gap={12} style={{ paddingBottom: 12 }}>
+                      <Rail gap={10} style={{ paddingBottom: 12 }}>
                         {c.items.slice(0, 6).map((p) => (
-                          <CollectionCard
+                          <PetitionTile
                             key={p.id}
                             petition={p}
+                            snapshot={s}
+                            width={172}
                             badge={
                               sameCity(p.city, city)
                                 ? 'Near you'
@@ -987,40 +974,40 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
           >
             {list.length} {browsing ? 'active' : 'matching'} petition{list.length === 1 ? '' : 's'}
           </Text>
-          <ResponsiveGrid>
-            {list.map((p, i) => (
-              <PetitionRow
-                key={p.id}
-                petition={p}
-                snapshot={s}
-                index={i}
-                match={
-                  q
-                    ? `Matches “${q}”`
-                    : sameCity(p.city, city)
-                      ? `Near you · ${p.city}`
+          {list.length ? (
+            <TileGrid>
+              {list.map((p, i) => (
+                <PetitionTile
+                  key={p.id}
+                  petition={p}
+                  snapshot={s}
+                  index={i}
+                  note={
+                    sameCity(p.city, city)
+                      ? 'Near you'
                       : s.profile?.interests.includes(p.topic)
-                        ? 'One of your interests'
-                        : `Active in ${s.communities.find((c) => c.id === p.communityId)?.name ?? p.city}`
-                }
+                        ? 'Your interest'
+                        : p.city.split(',')[0]
+                  }
+                />
+              ))}
+            </TileGrid>
+          ) : (
+            <View style={{ gap: 12 }}>
+              <Empty
+                title={q ? `No petitions match “${q}”` : 'Nothing matches yet'}
+                body="Try a place, a topic or an office, like “library” or “Brookside”."
               />
-            ))}
-            {!list.length && (
-              <View style={{ gap: 12 }}>
-                <Empty
-                  title="Nothing matches yet"
-                  body="Try a place like Brookside or a word like lighting."
-                />
-                <Button
-                  title="Clear search and filters"
-                  onPress={() => {
-                    setSearch('');
-                    setFilters(emptyFilters);
-                  }}
-                />
-              </View>
-            )}
-          </ResponsiveGrid>
+              <Button
+                title="Clear search and filters"
+                variant="secondary"
+                onPress={() => {
+                  setSearch('');
+                  setFilters(emptyFilters);
+                }}
+              />
+            </View>
+          )}
         </>
       )}
       <View style={{ paddingTop: 26 }}>
@@ -1034,47 +1021,30 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
               accessibilityRole="link"
               accessibilityLabel={`Open ${c.name}`}
               onPress={() => router.push(`/community/${c.id}`)}
-              style={{
-                width: 168,
-                backgroundColor: colors.white,
-                borderRadius: 24,
-                padding: 14,
-                gap: 6,
-                boxShadow: '0px 10px 24px -16px rgba(32,38,26,0.35)',
-              }}
+              style={[
+                {
+                  width: 176,
+                  backgroundColor: colors.white,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: colors.line,
+                  padding: 14,
+                  gap: 8,
+                },
+                shadows.card,
+              ]}
             >
-              <View
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 999,
-                  backgroundColor: topicColors[c.topic].soft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: 16,
-                    color: topicColors[c.topic].accent,
-                  }}
-                >
-                  {c.name[0]}
-                </Text>
-              </View>
+              <Cover
+                source={topicImage(c.topic)}
+                style={{ width: 48, height: 48, borderRadius: 999 }}
+              />
               <Text
-                style={{
-                  fontFamily: fonts.semibold,
-                  fontSize: 14.5,
-                  lineHeight: 17.5,
-                  color: colors.ink,
-                }}
+                style={{ fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, color: colors.ink }}
               >
-                {c.name}
+                {c.name} {topicColors[c.topic].emoji}
               </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
-                {c.members} members
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted }}>
+                {c.members.toLocaleString()} members · {c.city.split(',')[0]}
               </Text>
             </Press>
           ))}
@@ -1087,8 +1057,8 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
           style={{
             fontFamily: fonts.display,
             fontSize: 24,
-            lineHeight: 26,
-            letterSpacing: -0.7,
+            lineHeight: 29,
+            letterSpacing: -0.4,
             color: colors.ink,
             marginBottom: 12,
           }}

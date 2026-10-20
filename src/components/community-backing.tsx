@@ -45,7 +45,7 @@ export function CommunityBacking({ p, s }: { p: Petition; s: Snapshot }) {
       {backed.map((b) => (
         <Text
           key={b.communityId}
-          style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}
+          style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}
         >
           ★ Backed by {community(b.communityId)?.name}
           {b.yes + b.no > 0 && (
@@ -61,7 +61,7 @@ export function CommunityBacking({ p, s }: { p: Petition; s: Snapshot }) {
         const mine = s.backingVotes.find((v) => v.petitionId === p.id && v.communityId === id);
         return (
           <View key={id} style={{ gap: 8 }}>
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 14.5, color: colors.ink }}>
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>
               Should {community(id)?.name} back this?
             </Text>
             <Text style={styles.small}>

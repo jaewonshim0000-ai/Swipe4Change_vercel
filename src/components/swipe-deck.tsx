@@ -18,9 +18,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { router } from 'expo-router';
 import { Petition, Snapshot } from '../domain/model';
-import { backerNames, daysLeft, milestoneLabel, requirementLabel } from '../domain/discovery';
+import { backerNames, daysLeft, requirementLabel } from '../domain/discovery';
+import { signingStatus } from '../domain/rules';
 import {
   DeckItem,
   FederalRule,
@@ -28,12 +30,12 @@ import {
   withFederalRules,
 } from '../domain/federal';
 import { recordSignal } from '../data/signals';
-import { useSave } from './petition-card';
-import { Bar, GlassPill, Press, Scrim, TopicPill, toast, petitionImage, topicImage } from './kit';
-import { Glyph } from './glyph';
+import { share, useSave } from './petition-card';
+import { Bar, Kicker, Press, Scrim, toast, petitionImage, topicImage } from './kit';
+import { Glyph, GlyphName } from './glyph';
 import { KindBadge } from './federal-card';
-import { anim, haptic, kf } from './motion';
-import { colors, fonts } from './theme';
+import { anim, haptic, kf, transition } from './motion';
+import { colors, fonts, gradient, gradients, shadows } from './theme';
 
 type Direction = 'pass' | 'support' | 'learn';
 /** The design's release easing, `cubic-bezier(.2,.8,.2,1)` over 380ms. */
@@ -42,6 +44,8 @@ const release = { duration: 380, easing: Easing.bezier(0.2, 0.8, 0.2, 1) };
 const snapBack = { damping: 15, stiffness: 190, mass: 0.9 };
 /** Release speed, in points per millisecond, that commits a short drag. */
 const FLICK = 0.6;
+/** A petition card's three pages: the overview, the problem, the ask. */
+const PAGES = 3;
 
 /**
  * Which way a drag ended: far enough that way, or a quick flick that way. Null springs the card
@@ -59,7 +63,22 @@ const imageOf = (item: DeckItem) =>
 const pageOf = (item: DeckItem) =>
   item.kind === 'petition' ? `/petition/${item.id}` : `/federal/${item.id}`;
 
-/** The rubber stamp that fades in as the card heads one way. */
+/** Who can sign, in the few words the card's chip has room for, and whether you can. */
+function eligibilityChip(p: Petition, s: Snapshot): { icon: GlyphName; text: string; ok: boolean } {
+  const text = {
+    account: 'Anyone can sign',
+    email: 'Verified email',
+    community: 'Members can sign',
+    location: `${p.city.split(',')[0]} residents`,
+    custom: 'Organizer review',
+  }[p.verification];
+  if (p.verification === 'custom') return { icon: 'clock', text, ok: false };
+  if (!s.profile) return { icon: 'shield', text, ok: false };
+  const ok = signingStatus(p, s, p.identities[0]).state === 'eligible';
+  return { icon: ok ? 'shield' : 'lock', text, ok };
+}
+
+/** The design's outlined rubber stamp that fades in as the card heads one way. */
 function Stamp({
   label,
   color,
@@ -79,7 +98,7 @@ function Stamp({
 }) {
   const style = useAnimatedStyle(() => {
     const on = weight(dx.get(), dy.get());
-    return { opacity: on, transform: [{ rotate: `${rotate}deg` }, { scale: 0.8 + 0.2 * on }] };
+    return { opacity: on, transform: [{ rotate: `${rotate}deg` }, { scale: 0.85 + 0.15 * on }] };
   });
   return (
     <Animated.View
@@ -87,13 +106,12 @@ function Stamp({
       style={[
         {
           position: 'absolute',
-          top: 70,
-          paddingVertical: 8,
-          paddingHorizontal: 16,
-          borderRadius: 14,
-          borderWidth: 3,
+          zIndex: 4,
+          top: 64,
+          paddingHorizontal: 14,
+          borderRadius: 12,
+          borderWidth: 5,
           borderColor: color,
-          backgroundColor: 'rgba(255,255,255,0.92)',
         },
         place,
         style,
@@ -102,8 +120,9 @@ function Stamp({
       <Text
         style={{
           fontFamily: fonts.bold,
-          fontSize: 16,
-          letterSpacing: 2,
+          fontSize: 40,
+          lineHeight: 50,
+          letterSpacing: 1.6,
           textTransform: 'uppercase',
           color,
         }}
@@ -114,50 +133,191 @@ function Stamp({
   );
 }
 
-/** One of the two cards resting behind the top card; they rise as it is dragged away. */
+/** The next card waiting behind, dimmed; it rises and brightens as the top card is dragged. */
 function Behind({
   item,
-  depth,
   dx,
   dy,
 }: {
   item: DeckItem;
-  depth: 1 | 2;
   dx: SharedValue<number>;
   dy: SharedValue<number>;
 }) {
-  const style = useAnimatedStyle(() => {
-    const prog = Math.min(1, Math.hypot(dx.get(), dy.get()) / 160);
-    return {
-      opacity: depth === 2 ? 0.6 + 0.4 * prog : 1,
-      transform: [
-        { translateY: depth * 16 - 16 * prog },
-        { scale: 1 - depth * 0.055 + 0.055 * prog },
-      ],
-    };
+  const card = useAnimatedStyle(() => {
+    const k = Math.min(1, Math.hypot(dx.get(), dy.get()) / 160);
+    return { transform: [{ translateY: 10 - 10 * k }, { scale: 0.95 + 0.05 * k }] };
   });
+  const shade = useAnimatedStyle(() => ({
+    opacity: 1 - Math.min(1, Math.hypot(dx.get(), dy.get()) / 160),
+  }));
   return (
     <Animated.View
       pointerEvents="none"
       style={[
         StyleSheet.absoluteFill,
-        {
-          borderRadius: 30,
-          overflow: 'hidden',
-          backgroundColor: colors.dark,
-          transformOrigin: '50% 100%',
-          zIndex: 3 - depth,
-        },
-        style,
+        { borderRadius: 28, overflow: 'hidden', backgroundColor: colors.dark, zIndex: 1 },
+        card,
       ]}
     >
       <Image source={imageOf(item)} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(18,20,15,0.25)' }]} />
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }, shade]}
+      />
     </Animated.View>
   );
 }
 
-/** Web keyboard equivalents of the swipes, matching the on-screen hint. */
+type ActionKind = 'undo' | 'pass' | 'save' | 'sign' | 'share';
+const fills = {
+  pass: [colors.heart, colors.heart],
+  save: [colors.blue, colors.blue],
+  sign: [colors.sage, colors.accent],
+} as const;
+/** The round action icons from the design, with their gradient fills. */
+function ActionIcon({ kind }: { kind: ActionKind }) {
+  if (kind === 'undo')
+    return (
+      <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <Path
+          d="M3 4v6h6M3.5 15a8.5 8.5 0 1 0 2-8.8L3 10"
+          stroke={colors.outline}
+          strokeWidth={2.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  if (kind === 'share')
+    return (
+      <Svg width={26} height={26} viewBox="0 0 24 24" aria-hidden>
+        <Path
+          d="M21.3 2.7 2.9 9.5c-.8.3-.8 1.4 0 1.7l7.2 2.7 2.7 7.2c.3.8 1.4.8 1.7 0l6.8-18.4c.3-.7-.4-1.3-1-1Z"
+          fill={colors.muted}
+        />
+      </Svg>
+    );
+  const [a, b] = fills[kind];
+  const paint = `url(#act-${kind})`;
+  const size = kind === 'sign' ? 36 : kind === 'pass' ? 32 : 30;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <Defs>
+        <LinearGradient id={`act-${kind}`} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={a} />
+          <Stop offset="1" stopColor={b} />
+        </LinearGradient>
+      </Defs>
+      {kind === 'pass' ? (
+        <Path
+          d="M5.5 5.5l13 13M18.5 5.5l-13 13"
+          stroke={paint}
+          strokeWidth={3.6}
+          strokeLinecap="round"
+        />
+      ) : kind === 'save' ? (
+        <Path
+          d="M12 2.6l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 16.9l-5.6 2.9 1.1-6.2L3 9.2l6.2-.9z"
+          fill={paint}
+          stroke={paint}
+          strokeWidth={1.4}
+          strokeLinejoin="round"
+        />
+      ) : (
+        <Path
+          d="M12 21s-7.6-4.6-9.7-9.4C.8 8.1 3 4.4 6.6 4c2-.2 3.9.8 5.4 2.7 1.5-1.9 3.4-2.9 5.4-2.7 3.6.4 5.8 4.1 4.3 7.6C19.6 16.4 12 21 12 21Z"
+          fill={paint}
+        />
+      )}
+    </Svg>
+  );
+}
+
+/** One of the white round buttons floating at the foot of the card. */
+function Action({
+  kind,
+  label,
+  onPress,
+  disabled = false,
+  large = false,
+  on = false,
+}: {
+  kind: ActionKind;
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  large?: boolean;
+  /** Saved: the star sits on a pale blue disc. */
+  on?: boolean;
+}) {
+  const size = large ? 70 : 56;
+  return (
+    <Press
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, selected: on }}
+      disabled={disabled}
+      scale={0.9}
+      onPress={onPress}
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: on ? colors.blueSoft : colors.white,
+          borderWidth: 1,
+          borderColor: on ? colors.blueLight : 'rgba(255,255,255,0.6)',
+        },
+        shadows.act,
+      ]}
+    >
+      <ActionIcon kind={kind} />
+    </Press>
+  );
+}
+
+/** "684 of 1,000 · 18 days left" beside a short pale bar. */
+function ProgressLine({ p, now }: { p: Petition; now: number }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
+      <View style={{ width: 88 }}>
+        <Bar
+          pct={(100 * p.count) / p.goal}
+          tone="light"
+          height={6}
+          label="Signature goal progress"
+        />
+      </View>
+      <Text
+        numberOfLines={1}
+        style={{ flexShrink: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.onImage }}
+      >
+        <Text style={{ fontFamily: fonts.bold, color: colors.white }}>
+          {p.count.toLocaleString()}
+        </Text>{' '}
+        of {p.goal.toLocaleString()} · {daysLeft(p, now)} days left
+      </Text>
+    </View>
+  );
+}
+
+const pageLabel = {
+  fontFamily: fonts.bold,
+  fontSize: 12,
+  letterSpacing: 1,
+  textTransform: 'uppercase' as const,
+  color: colors.pale,
+  marginBottom: 6,
+};
+const metaRow = {
+  flexDirection: 'row' as const,
+  alignItems: 'center' as const,
+  gap: 8,
+  marginTop: 12,
+};
+const metaText = { flexShrink: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.onImage };
+
+/** Web keyboard equivalents of the swipes, matching the desktop hint row. */
 const keys: Record<string, Direction> = {
   ArrowLeft: 'pass',
   ArrowRight: 'support',
@@ -170,6 +330,7 @@ export function SwipeDeck({
   rules = [],
   snapshot,
   reasons,
+  hints = false,
 }: {
   petitions: Petition[];
   /** Real federal proposals open for comment, mixed in as their own cards. */
@@ -177,8 +338,11 @@ export function SwipeDeck({
   snapshot: Snapshot;
   /** Why each petition is in the feed, keyed by id. */
   reasons?: Map<string, string[]>;
+  /** The keyboard hint row under the deck (desktop). */
+  hints?: boolean;
 }) {
   const [skipped, setSkipped] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [busy, setBusy] = useState(false);
   const [now] = useState(Date.now);
@@ -188,6 +352,8 @@ export function SwipeDeck({
   /** The latest drag sample, for release velocity, and the commit zone the drag is in. */
   const last = useRef({ x: 0, y: 0, t: 0, vx: 0, vy: 0 });
   const zone = useRef<Direction | null>(null);
+  const cardRef = useRef<View>(null);
+  const infoRef = useRef<View>(null);
   const save = useSave(snapshot);
   useEffect(() => {
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -200,11 +366,17 @@ export function SwipeDeck({
   const current = remaining[0];
   const petition = current?.kind === 'petition' ? current.petition : undefined;
   const rule = current?.kind === 'federal' ? current.rule : undefined;
+  // Each new card starts on its first page.
+  const [shownId, setShownId] = useState(current?.id);
+  if (current?.id !== shownId) {
+    setShownId(current?.id);
+    setPage(0);
+  }
   const top = useAnimatedStyle(() => ({
     transform: [
       { translateX: dx.get() },
       { translateY: dy.get() },
-      { rotate: `${dx.get() / 18}deg` },
+      { rotate: `${dx.get() / 16}deg` },
     ],
   }));
   function settle(x: number, y: number) {
@@ -247,89 +419,140 @@ export function SwipeDeck({
       setTimeout(finish, 300);
     }
   }
+  const undo = () => setSkipped((ids) => ids.slice(0, -1));
+  /** A tap on the photo steps through the pages (left half back, right half on); lower, it opens. */
+  function tap(pageX: number, pageY: number) {
+    if (!current) return;
+    const card = cardRef.current;
+    const info = infoRef.current;
+    if (!petition || !card?.measure || !info?.measure) return router.push(pageOf(current));
+    card.measure((_x, _y, width, _h, left) => {
+      info.measure((_a, _b, _c, _d, _e, infoTop) => {
+        if (pageY >= infoTop + 20) return router.push(pageOf(current));
+        setPage((n) =>
+          pageX - left > width / 2 ? Math.min(PAGES - 1, n + 1) : Math.max(0, n - 1),
+        );
+      });
+    });
+  }
   if (!current)
     return (
       <Animated.View
         style={[
           {
-            minHeight: 300,
-            borderRadius: 30,
+            flex: 1,
+            minHeight: 360,
+            borderRadius: 28,
+            borderWidth: 1,
+            borderColor: colors.line,
             backgroundColor: colors.white,
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 10,
-            padding: 28,
+            gap: 12,
+            padding: 32,
           },
+          gradient(
+            'radial-gradient(70% 50% at 50% 35%, rgba(228,230,195,0.9) 0%, rgba(228,230,195,0) 70%)',
+          ),
           anim(kf.pop, 450, { ease: 'ease' }),
         ]}
       >
+        <View
+          style={{
+            width: 88,
+            height: 88,
+            borderRadius: 999,
+            backgroundColor: colors.soft,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Glyph name="check" size={40} weight={2.4} color={colors.accent} />
+        </View>
         <Text
           accessibilityRole="header"
-          style={{ fontFamily: fonts.heading, fontSize: 21, lineHeight: 26, color: colors.ink }}
+          style={{
+            fontFamily: fonts.bold,
+            fontSize: 24,
+            lineHeight: 30,
+            color: colors.ink,
+            marginTop: 8,
+          }}
         >
           You’re all caught up
         </Text>
         <Text
           style={{
             fontFamily: fonts.body,
-            fontSize: 13,
-            lineHeight: 20,
-            color: colors.muted,
+            fontSize: 16,
+            lineHeight: 24,
+            color: colors.secondary,
             textAlign: 'center',
+            maxWidth: 300,
+            marginBottom: 8,
           }}
         >
-          Signed petitions live in your profile. Want another look at the ones you passed?
+          Signed petitions live in your profile. Browse Explore, or look again at the ones you
+          passed.
         </Text>
+        <Press
+          accessibilityRole="link"
+          accessibilityLabel="Explore more petitions"
+          onPress={() => router.push('/(tabs)/explore')}
+          style={[
+            {
+              minHeight: 56,
+              paddingHorizontal: 24,
+              borderRadius: 18,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              backgroundColor: colors.dark,
+            },
+            gradient(gradients.sign),
+            shadows.button,
+          ]}
+        >
+          <Glyph name="compass" size={20} color={colors.white} />
+          <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: colors.white }}>
+            Explore more
+          </Text>
+        </Press>
         {!!skipped.length && (
           <Press
             accessibilityLabel="Revisit passed"
             onPress={() => setSkipped([])}
             style={{
-              backgroundColor: colors.dark,
-              minHeight: 46,
-              paddingHorizontal: 20,
-              borderRadius: 999,
-              justifyContent: 'center',
-              marginTop: 6,
+              minHeight: 48,
+              paddingHorizontal: 18,
+              borderRadius: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
             }}
           >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.white }}>
+            <Glyph name="refresh" size={18} color={colors.secondary} />
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.secondary }}>
               Revisit passed
             </Text>
           </Press>
         )}
-        <Press
-          accessibilityRole="link"
-          accessibilityLabel="Explore more petitions"
-          onPress={() => router.push('/(tabs)/explore')}
-          style={{
-            backgroundColor: colors.soft,
-            minHeight: 46,
-            paddingHorizontal: 20,
-            borderRadius: 999,
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.ink }}>
-            Explore more →
-          </Text>
-        </Press>
       </Animated.View>
     );
   const saved = snapshot.saved.includes(current.id);
   const community = petition && snapshot.communities.find((c) => c.id === petition.communityId);
-  const behind = remaining.slice(1, 3);
+  const next = remaining[1];
   const signWord = rule ? 'Comment' : 'Sign';
+  const chip = petition && eligibilityChip(petition, snapshot);
+  const backed = petition ? backerNames(petition, snapshot.communities) : [];
+  const reason = reasons?.get(current.id)?.[0];
   return (
-    <View>
-      <View style={{ height: 452 }}>
-        {behind
-          .map((d, i) => <Behind key={d.id} item={d} depth={(i + 1) as 1 | 2} dx={dx} dy={dy} />)
-          .reverse()}
+    <View style={{ flex: 1, minHeight: 440 }}>
+      <View style={{ flex: 1 }}>
+        {next && <Behind key={next.id} item={next} dx={dx} dy={dy} />}
         <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 5 }, top]}>
-          {/* No buttons under the card: screen readers get these as actions, and the web
-              keyboard gets the arrow keys from the hint below. */}
           <View
+            ref={cardRef}
             accessible
             accessibilityRole="button"
             accessibilityLabel={
@@ -354,6 +577,10 @@ export function SwipeDeck({
               ? ({
                   focusable: true,
                   onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+                    if (e.key === ' ' && petition) {
+                      e.preventDefault();
+                      setPage((n) => (n + 1) % PAGES);
+                    } else if ((e.key === 'z' || e.key === 'Z') && skipped.length) undo();
                     if (!keys[e.key]) return;
                     e.preventDefault();
                     act(keys[e.key]);
@@ -405,168 +632,273 @@ export function SwipeDeck({
                 act(intent);
               } else {
                 springBack();
-                if (Math.abs(x) < 6 && Math.abs(y) < 6) router.push(pageOf(current));
+                if (Math.abs(x) < 6 && Math.abs(y) < 6)
+                  tap(e.nativeEvent.pageX, e.nativeEvent.pageY);
               }
             }}
             onResponderTerminationRequest={() => false}
             onResponderTerminate={() => springBack()}
             style={[
-              {
-                flex: 1,
-                borderRadius: 30,
-                overflow: 'hidden',
-                backgroundColor: colors.dark,
-                boxShadow: '0px 24px 44px -24px rgba(32,38,26,0.6)',
-              },
+              { flex: 1, borderRadius: 28, overflow: 'hidden', backgroundColor: colors.dark },
+              shadows.deck,
               Platform.OS === 'web'
                 ? ({ cursor: 'grab', userSelect: 'none' } as unknown as ViewStyle)
                 : null,
             ]}
           >
-            <Image
+            <Animated.Image
               source={imageOf(current)}
               resizeMode="cover"
-              accessibilityLabel="Illustrative theme image, not petition evidence"
-              style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
+              accessibilityLabel="Illustrative image, not petition evidence"
+              style={[
+                StyleSheet.absoluteFill,
+                { width: '100%', height: '100%' },
+                // Deeper pages draw the photo in, as the design does.
+                { transform: [{ scale: 1 + page * 0.1 }, { translateY: -page * 12 }] },
+                transition(['transform'], 600),
+              ]}
             />
-            <Scrim stops="rgba(18,20,15,0.3) 0%, rgba(18,20,15,0) 24%, rgba(18,20,15,0.55) 50%, rgba(18,20,15,0.94) 100%" />
-            <View
-              style={{
-                position: 'absolute',
-                top: 14,
-                left: 14,
-                right: 14,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                gap: 8,
-              }}
-            >
-              <GlassPill
-                text={petition ? (community?.name ?? petition.city) : 'Open for comment'}
-              />
-              <GlassPill
-                text={`${petition ? daysLeft(petition, now) : ruleDaysLeft(rule!.closesOn, now)} days left`}
-              />
+            <Scrim
+              stops={
+                page
+                  ? 'rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 20%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.94) 72%, rgba(0,0,0,1) 100%'
+                  : 'rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 36%, rgba(0,0,0,0.6) 58%, rgba(0,0,0,0.9) 82%, rgba(0,0,0,0.96) 100%'
+              }
+            />
+            <View style={{ position: 'absolute', top: 14, left: 14, zIndex: 3 }}>
+              <KindBadge kind={petition ? 'petition' : 'federal'} />
             </View>
+            {petition && (
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={{
+                  position: 'absolute',
+                  zIndex: 3,
+                  top: 20,
+                  alignSelf: 'center',
+                  width: 96,
+                  flexDirection: 'row',
+                  gap: 4,
+                }}
+              >
+                {Array.from({ length: PAGES }, (_, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      flex: 1,
+                      height: 4,
+                      borderRadius: 4,
+                      backgroundColor: i === page ? colors.white : 'rgba(255,255,255,0.35)',
+                    }}
+                  />
+                ))}
+              </View>
+            )}
             <Stamp
               label={signWord}
-              color={colors.success}
-              rotate={-12}
-              place={{ left: 22 }}
+              color={colors.pale}
+              rotate={-16}
+              place={{ left: 24 }}
               dx={dx}
               dy={dy}
               weight={(x) => {
                 'worklet';
-                return x > 20 ? Math.min(1, x / 100) : 0;
+                return x > 20 ? Math.min(1, x / 110) : 0;
               }}
             />
             <Stamp
               label="Pass"
-              color={colors.heart}
-              rotate={12}
-              place={{ right: 22 }}
+              color={colors.heartLight}
+              rotate={16}
+              place={{ right: 24 }}
               dx={dx}
               dy={dy}
               weight={(x) => {
                 'worklet';
-                return x < -20 ? Math.min(1, -x / 100) : 0;
+                return x < -20 ? Math.min(1, -x / 110) : 0;
               }}
             />
             <Stamp
               label="Read"
-              color={colors.blue}
-              rotate={0}
-              place={{ left: '50%', marginLeft: -40, top: 110 }}
+              color={colors.blueLight}
+              rotate={-8}
+              place={{ top: '38%', alignSelf: 'center' }}
               dx={dx}
               dy={dy}
               weight={(x, y) => {
                 'worklet';
-                return y < -30 && Math.abs(x) < 60 ? Math.min(1, -y / 110) : 0;
+                return y < -30 && Math.abs(x) < 60 ? Math.min(1, -y / 120) : 0;
               }}
             />
-            <View style={{ position: 'absolute', left: 20, right: 20, bottom: 20, gap: 9 }}>
+            <View
+              ref={infoRef}
+              style={{
+                position: 'absolute',
+                zIndex: 2,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                paddingHorizontal: 18,
+                paddingBottom: 112,
+              }}
+            >
               {petition ? (
                 <>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                    <KindBadge kind="petition" />
-                    <TopicPill topic={petition.topic} />
-                  </View>
-                  <Text
-                    accessibilityRole="header"
-                    style={{
-                      fontFamily: fonts.heading,
-                      fontSize: 27,
-                      lineHeight: 30,
-                      letterSpacing: -0.9,
-                      color: colors.white,
-                    }}
-                  >
-                    {petition.title}
-                  </Text>
-                  <Text
-                    numberOfLines={3}
-                    style={{
-                      fontFamily: fonts.body,
-                      fontSize: 13,
-                      lineHeight: 19.5,
-                      color: colors.onImage,
-                    }}
-                  >
-                    {petition.action}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Glyph name="pin" size={12} weight={2} color={colors.pale} />
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        flexShrink: 1,
-                        fontFamily: fonts.body,
-                        fontSize: 12,
-                        color: colors.onImage,
-                      }}
-                    >
-                      {petition.city} · {requirementLabel(petition, snapshot.communities)}
-                    </Text>
-                  </View>
-                  <View style={{ marginTop: 2 }}>
-                    <Bar
-                      pct={(100 * petition.count) / petition.goal}
-                      tone="light"
-                      label="Signature goal progress"
+                  <View style={{ marginBottom: 6 }}>
+                    <Kicker
+                      light
+                      topic={petition.topic}
+                      text={`${community?.name ?? petition.city} · ${petition.topic}`}
                     />
                   </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-                    <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.white }}>
-                      {petition.count.toLocaleString()} of {petition.goal.toLocaleString()}
-                    </Text>
-                    <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
-                      {milestoneLabel(petition)}
-                    </Text>
-                  </View>
-                  {backerNames(petition, snapshot.communities).length > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
                     <Text
-                      numberOfLines={1}
-                      style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.white }}
+                      accessibilityRole="header"
+                      numberOfLines={page ? 2 : 3}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontFamily: fonts.bold,
+                        fontSize: 30,
+                        lineHeight: 34,
+                        letterSpacing: -0.7,
+                        color: colors.white,
+                        textShadowColor: 'rgba(0,0,0,0.35)',
+                        textShadowOffset: { width: 0, height: 2 },
+                        textShadowRadius: 18,
+                      }}
                     >
-                      ★ Backed by {backerNames(petition, snapshot.communities).join(', ')}
+                      {petition.title}
                     </Text>
-                  )}
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel="Open full petition"
+                      onPress={() => router.push(pageOf(current))}
+                      style={({ hovered }: { hovered?: boolean; pressed: boolean }) => ({
+                        width: 44,
+                        height: 44,
+                        borderRadius: 999,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: hovered ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.35)',
+                        borderWidth: 1.5,
+                        borderColor: 'rgba(255,255,255,0.75)',
+                      })}
+                    >
+                      <Glyph name="up" size={22} weight={2.4} color={colors.white} />
+                    </Pressable>
+                  </View>
+                  <Animated.View key={page} style={anim(kf.tickA, 300)}>
+                    {page === 0 && (
+                      <>
+                        <ProgressLine p={petition} now={now} />
+                        {chip && (
+                          <View
+                            style={{
+                              alignSelf: 'flex-start',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 8,
+                              height: 38,
+                              marginTop: 12,
+                              paddingHorizontal: 16,
+                              borderRadius: 999,
+                              backgroundColor: 'rgba(28,31,25,0.78)',
+                            }}
+                          >
+                            <Glyph name={chip.icon} size={18} weight={2} color={colors.white} />
+                            <Text
+                              style={{
+                                fontFamily: fonts.medium,
+                                fontSize: 15,
+                                color: colors.white,
+                              }}
+                            >
+                              {chip.text}
+                            </Text>
+                            {chip.ok && (
+                              <Glyph name="check" size={18} weight={3} color={colors.pale} />
+                            )}
+                          </View>
+                        )}
+                        {(!!backed.length || !!reason) && (
+                          <Text
+                            numberOfLines={2}
+                            style={{
+                              fontFamily: fonts.medium,
+                              fontSize: 13,
+                              lineHeight: 18,
+                              color: colors.onDark,
+                              marginTop: 10,
+                            }}
+                          >
+                            {backed.length ? `★ Backed by ${backed.join(', ')}` : `✦ ${reason}`}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                    {page === 1 && (
+                      <View style={{ marginTop: 12 }}>
+                        <Text style={pageLabel}>The problem</Text>
+                        <Text
+                          numberOfLines={5}
+                          style={{
+                            fontFamily: fonts.body,
+                            fontSize: 16,
+                            lineHeight: 24,
+                            color: 'rgba(255,255,255,0.9)',
+                          }}
+                        >
+                          {petition.problem}
+                        </Text>
+                        <View style={metaRow}>
+                          <Glyph name="pin" size={18} color={colors.onImage} />
+                          <Text numberOfLines={1} style={metaText}>
+                            {petition.city}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                    {page === 2 && (
+                      <View style={{ marginTop: 12 }}>
+                        <Text style={pageLabel}>The ask</Text>
+                        <Text
+                          numberOfLines={4}
+                          style={{
+                            fontFamily: fonts.semibold,
+                            fontSize: 20,
+                            lineHeight: 27,
+                            color: colors.white,
+                          }}
+                        >
+                          {petition.action}
+                        </Text>
+                        <View style={metaRow}>
+                          <Glyph name="landmark" size={18} color={colors.onImage} />
+                          <Text numberOfLines={1} style={metaText}>
+                            To {petition.recipient}
+                          </Text>
+                        </View>
+                        <ProgressLine p={petition} now={now} />
+                      </View>
+                    )}
+                  </Animated.View>
                 </>
               ) : (
                 rule && (
                   <>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      <KindBadge kind="federal" />
-                      <TopicPill topic={rule.topic} />
+                    <View style={{ marginBottom: 6 }}>
+                      <Kicker light topic={rule.topic} text={`${rule.agency} · ${rule.topic}`} />
                     </View>
                     <Text
                       accessibilityRole="header"
                       numberOfLines={4}
                       style={{
-                        fontFamily: fonts.heading,
-                        fontSize: 24,
-                        lineHeight: 28,
-                        letterSpacing: -0.8,
+                        fontFamily: fonts.bold,
+                        fontSize: 26,
+                        lineHeight: 32,
+                        letterSpacing: -0.5,
                         color: colors.white,
                       }}
                     >
@@ -577,31 +909,28 @@ export function SwipeDeck({
                         numberOfLines={3}
                         style={{
                           fontFamily: fonts.body,
-                          fontSize: 13,
-                          lineHeight: 19.5,
+                          fontSize: 15,
+                          lineHeight: 22,
                           color: colors.onImage,
+                          marginTop: 8,
                         }}
                       >
                         {rule.summary}
                       </Text>
                     )}
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        fontFamily: fonts.body,
-                        fontSize: 12,
-                        lineHeight: 17,
-                        color: colors.onImage,
-                      }}
-                    >
-                      {rule.agency} · applies nationwide
-                    </Text>
+                    <View style={metaRow}>
+                      <Glyph name="clock" size={18} color={colors.onImage} />
+                      <Text numberOfLines={1} style={metaText}>
+                        {ruleDaysLeft(rule.closesOn, now)} days left · applies nationwide
+                      </Text>
+                    </View>
                     <Text
                       style={{
-                        fontFamily: fonts.body,
-                        fontSize: 12,
-                        lineHeight: 16,
+                        fontFamily: fonts.medium,
+                        fontSize: 13,
+                        lineHeight: 18,
                         color: colors.onDark,
+                        marginTop: 10,
                       }}
                     >
                       ✦ A real federal proposal. You comment on the official site, not here.
@@ -609,58 +938,84 @@ export function SwipeDeck({
                   </>
                 )
               )}
-              {!!reasons?.get(current.id)?.[0] && (
-                <Text
-                  numberOfLines={2}
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: 12,
-                    lineHeight: 16,
-                    color: colors.onDark,
-                    paddingTop: 2,
-                  }}
-                >
-                  ✦ {reasons.get(current.id)?.[0]}
-                </Text>
-              )}
             </View>
           </View>
         </Animated.View>
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            zIndex: 9,
+            left: 0,
+            right: 0,
+            bottom: 20,
+            flexDirection: 'row',
+            justifyContent: 'space-evenly',
+            alignItems: 'center',
+            paddingHorizontal: 8,
+          }}
+        >
+          <Action kind="undo" label="Undo last pass" disabled={!skipped.length} onPress={undo} />
+          <Action kind="pass" label="Pass" large onPress={() => act('pass')} />
+          {petition && (
+            <Action
+              kind="save"
+              label={saved ? 'Unsave' : 'Save'}
+              on={saved}
+              onPress={() => save(petition)}
+            />
+          )}
+          <Action kind="sign" label={signWord} large onPress={() => act('support')} />
+          {petition && (
+            <Action kind="share" label="Share" onPress={() => void share(petition, snapshot)} />
+          )}
+        </View>
       </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 14,
-          minHeight: 36,
-          // Clears the cards behind, which peek out up to 32pt below the top card.
-          paddingTop: 44,
-        }}
-      >
-        <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.outline }}>
-          ← pass · ↑ read · {signWord.toLowerCase()} →
-        </Text>
-        {!!skipped.length && (
-          <Animated.View style={anim(kf.pop, 300, { ease: 'ease' })}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Undo last pass"
-              onPress={() => setSkipped((ids) => ids.slice(0, -1))}
-              style={{
-                backgroundColor: colors.white,
-                borderRadius: 999,
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-              }}
-            >
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.accent }}>
-                ↺ Undo
+      {hints && (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: 16,
+            paddingTop: 16,
+          }}
+        >
+          {[
+            ['←', 'Pass'],
+            ['→', signWord],
+            ['↑', 'Read'],
+            ['Space', 'Next detail'],
+            ['Z', 'Undo'],
+          ].map(([k, l]) => (
+            <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text
+                style={{
+                  minWidth: 24,
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: colors.handle,
+                  backgroundColor: colors.white,
+                  textAlign: 'center',
+                  overflow: 'hidden',
+                  fontFamily: fonts.semibold,
+                  fontSize: 12,
+                  color: colors.ink,
+                }}
+              >
+                {k}
               </Text>
-            </Pressable>
-          </Animated.View>
-        )}
-      </View>
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.muted }}>
+                {l}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
