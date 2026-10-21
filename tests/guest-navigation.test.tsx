@@ -17,8 +17,10 @@ jest.mock('../src/data/provider', () => ({
   useSnapshot: () => ({ isPending: true }),
 }));
 
-test('guests enter discovery even while profile data is loading', async () => {
+test('guests continue from the intro into discovery while profile data is loading', async () => {
   await render(<Index />);
+  expect(screen.getByText('Small actions. Shared progress.')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Find your next cause' }));
   expect(screen.getByText('/(tabs)')).toBeTruthy();
 });
 

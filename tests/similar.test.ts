@@ -34,8 +34,8 @@ test('the safer-walk template finds the open lighting petition it duplicates', (
   ]);
 });
 
-test('distinct seed petitions do not flag each other', () => {
-  // Only the two Eastbridge pedestrian-safety asks to Public Works are related enough to show.
+test('seed similarities stay limited to related local safety and transit requests', () => {
+  // The two Eastbridge safety asks and the two Brookside bus-stop asks are related.
   const flagged = seeds.flatMap((p) =>
     similarPetitions(
       p,
@@ -45,6 +45,7 @@ test('distinct seed petitions do not flag each other', () => {
   );
   expect([...new Set(flagged)]).toEqual([
     'A brighter walk home starts here + Safer crossings for smaller footsteps',
+    'A cooler wait for the bus + Our bus stops need a seat',
   ]);
 });
 

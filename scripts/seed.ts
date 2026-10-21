@@ -112,5 +112,5 @@ for (const p of seedProfiles())
 rows.push('commit;');
 writeFileSync('supabase/seed.sql', rows.join('\n') + '\n');
 console.log(
-  'Generated repeatable SQL seed: 12 petitions, 5 topics, 4 communities. Local demo uses the same typed seed factory.',
+  `Generated repeatable SQL seed: ${seedPetitions().length} petitions, ${topics.length} topics, ${communities.length} communities. Local demo uses the same typed seed factory.`,
 );

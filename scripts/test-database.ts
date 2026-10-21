@@ -92,7 +92,7 @@ async function run() {
   };
   await auth('', 'anon');
   let s = await snapshot();
-  assert.equal(s.petitions.length, 12);
+  assert.equal(s.petitions.length, seedPetitions().length);
   assert.equal(s.profile, null);
   assert.equal((await db.query('select * from public.profiles')).rows.length, 0);
   await assert.rejects(() => command({ type: 'save', petitionId: petitionId(1) }));

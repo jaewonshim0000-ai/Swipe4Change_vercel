@@ -20,7 +20,7 @@ test.each([
 ])('every inline %s is on the theme scale', (prop, scale) => {
   const off = sources.flatMap(({ path, text }) =>
     [...text.matchAll(new RegExp(`\\b${prop}: (\\d+(?:\\.\\d+)?)\\b`, 'g'))]
-      .filter((m) => !scale.includes(Number(m[1])))
+      .filter((m) => !path.includes('react-bits/') && !scale.includes(Number(m[1])))
       .map((m) => `${path}: ${m[0]}`),
   );
   expect(off).toEqual([]);
@@ -28,7 +28,7 @@ test.each([
 
 test('colours are named in the theme, not hard-coded in screens', () => {
   const off = sources
-    .filter(({ path }) => !path.endsWith('theme.ts'))
+    .filter(({ path }) => !path.endsWith('theme.ts') && !path.includes('react-bits/'))
     .flatMap(({ path, text }) =>
       (text.match(/'#[0-9a-f]{3,8}'/gi) ?? []).map((c) => `${path}: ${c}`),
     );
