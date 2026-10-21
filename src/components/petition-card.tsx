@@ -5,7 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Petition, Snapshot } from '../domain/model';
 import { daysLeft, milestoneLabel } from '../domain/discovery';
-import { useCommand } from '../data/provider';
+import { isExample, useCommand } from '../data/provider';
 import { recordSignal } from '../data/signals';
 import { Bar, Cover, GlassPill, Kicker, SaveMark, Press, toast, petitionImage } from './kit';
 import { Glyph } from './glyph';
@@ -94,7 +94,11 @@ export function PetitionRow({
       >
         <Cover source={petitionImage(p)} style={{ width: 64, height: 64, borderRadius: 14 }} />
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-          <Kicker topic={p.topic} text={`${community?.name ?? p.city} · ${p.topic}`} small />
+          <Kicker
+            topic={p.topic}
+            text={`${isExample(p.id) ? 'Example · ' : ''}${community?.name ?? p.city} · ${p.topic}`}
+            small
+          />
           <Text style={{ fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, color: colors.ink }}>
             {p.title}
           </Text>
@@ -143,9 +147,11 @@ export function PetitionTile({
     ? 'signed'
     : s.profile && p.ownerId === s.profile.id
       ? 'Yours'
-      : left <= 30
-        ? `${left} days left`
-        : badge;
+      : isExample(p.id)
+        ? 'Example'
+        : left <= 30
+          ? `${left} days left`
+          : badge;
   return (
     <Animated.View style={[{ width }, stag(index)]}>
       <Press

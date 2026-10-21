@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { isDemo, useCommand, useSnapshot } from '../../src/data/provider';
+import { isDemo, isExample, useCommand, useSnapshot } from '../../src/data/provider';
 import { Topic, topics } from '../../src/domain/model';
 import { backers, communitySchema } from '../../src/domain/rules';
 import {
@@ -182,6 +182,7 @@ export default function Communities() {
                       color: colors.secondary,
                     }}
                   >
+                    {isExample(c.id) ? 'Example · ' : ''}
                     {c.description} · {c.members.toLocaleString()} members · {c.city}
                   </Text>
                 </Pressable>

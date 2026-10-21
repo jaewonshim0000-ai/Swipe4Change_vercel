@@ -18,6 +18,13 @@ import { LocalAdapter } from './local';
 import { demoAi } from './ai';
 import { createSupabaseAdapter } from './supabase';
 export const isDemo = process.env.EXPO_PUBLIC_BACKEND === 'demo';
+/**
+ * The fictional catalog keeps reserved ids (profiles 0…, communities 1…, petitions 2…, deliveries
+ * 3…). A live project carries it as labelled examples (migration 202610200001); the demo is
+ * fictional throughout and labels itself, so only the live app marks them.
+ */
+export const isExample = (id: string | undefined) =>
+  !isDemo && !!id && /^[0-3]0000000-0000-4000-8000-/.test(id);
 /** Location approval is only simulated in the demo; the real app has no residency check yet. */
 export const offeredVerifications = isDemo
   ? verificationModes

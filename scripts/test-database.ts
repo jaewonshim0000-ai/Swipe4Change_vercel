@@ -18,12 +18,14 @@ async function run() {
     .sort())
     await db.exec(readFileSync(`supabase/migrations/${file}`, 'utf8'));
   // A live project never gets the fictional seed, so migrations alone must provide the reference
-  // rows onboarding (topics) and the first-signature badge depend on.
-  const reference = await db.query<{ topics: number; firstVoice: number }>(
+  // rows onboarding (topics) and the first-signature badge depend on, plus the labelled examples
+  // without the seed's fictional badges.
+  const reference = await db.query<{ topics: number; badges: number; examples: number }>(
     `select (select count(*) from public.topics)::int topics,
-       (select count(*) from public.badges where name='First voice')::int "firstVoice"`,
+       (select count(*) from public.badges where description ilike '%fictional%')::int badges,
+       (select count(*) from public.petitions where id::text like '20000000-0000-4000-8000-%')::int examples`,
   );
-  assert.deepEqual(reference.rows[0], { topics: 5, firstVoice: 1 });
+  assert.deepEqual(reference.rows[0], { topics: 5, badges: 0, examples: seedPetitions().length });
   await db.exec(readFileSync('supabase/seed.sql', 'utf8'));
   // Seed is repeatable and does not reset real signatures or create duplicate entries.
   await db.exec(readFileSync('supabase/seed.sql', 'utf8'));

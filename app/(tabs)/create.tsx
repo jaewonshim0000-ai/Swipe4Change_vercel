@@ -25,6 +25,7 @@ import { suggestOffices } from '../../src/domain/recipients';
 import { writingSupport } from '../../src/domain/writing-assistant';
 import {
   isDemo,
+  isExample,
   offeredVerifications,
   useBackend,
   useCommand,
@@ -421,6 +422,8 @@ function Create({
         : []
   ).filter((x) => x.value && x.value !== draft[x.field]);
   const community = q.data.communities.find((c) => c.id === draft.communityId);
+  // Real petitions never go into the fictional example communities.
+  const choices = q.data.communities.filter((c) => !isExample(c.id));
   const live = published ? q.data.petitions.find((p) => p.id === published) : undefined;
   const held = live ? heldMessage(live) : null;
   const unverified = !q.data.profile.emailVerified;
@@ -616,9 +619,9 @@ function Create({
               <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
                 Community
               </Text>
-              {q.data.communities.length ? (
+              {choices.length ? (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {q.data.communities.map((c) => (
+                  {choices.map((c) => (
                     <PillChip
                       key={c.id}
                       label={c.name}

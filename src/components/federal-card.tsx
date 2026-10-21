@@ -9,7 +9,7 @@ export const closingLabel = (left: number) =>
   left === 0 ? 'Comments close today' : `${left} day${left === 1 ? '' : 's'} left to comment`;
 
 /** Says which kind of item a card is wherever petitions and federal rules appear together. */
-export function KindBadge({ kind }: { kind: 'petition' | 'federal' }) {
+export function KindBadge({ kind }: { kind: 'petition' | 'federal' | 'example' }) {
   const federal = kind === 'federal';
   return (
     <View
@@ -18,7 +18,7 @@ export function KindBadge({ kind }: { kind: 'petition' | 'federal' }) {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        backgroundColor: federal ? colors.blue : colors.accent,
+        backgroundColor: federal ? colors.blue : kind === 'example' ? colors.orange : colors.accent,
         borderRadius: 999,
         paddingHorizontal: 9,
         paddingVertical: 4,
@@ -34,7 +34,7 @@ export function KindBadge({ kind }: { kind: 'petition' | 'federal' }) {
           color: colors.white,
         }}
       >
-        {federal ? 'Federal rule' : 'Petition'}
+        {federal ? 'Federal rule' : kind === 'example' ? 'Example petition' : 'Petition'}
       </Text>
     </View>
   );

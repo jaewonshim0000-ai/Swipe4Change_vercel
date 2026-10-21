@@ -30,6 +30,7 @@ import {
   withFederalRules,
 } from '../domain/federal';
 import { recordSignal } from '../data/signals';
+import { isExample } from '../data/provider';
 import { share, useSave } from './petition-card';
 import { Bar, Kicker, Press, Scrim, toast, petitionImage, topicImage } from './kit';
 import { Glyph, GlyphName } from './glyph';
@@ -666,7 +667,9 @@ export function SwipeDeck({
               }
             />
             <View style={{ position: 'absolute', top: 14, left: 14, zIndex: 3 }}>
-              <KindBadge kind={petition ? 'petition' : 'federal'} />
+              <KindBadge
+                kind={petition ? (isExample(petition.id) ? 'example' : 'petition') : 'federal'}
+              />
             </View>
             {petition && (
               <View

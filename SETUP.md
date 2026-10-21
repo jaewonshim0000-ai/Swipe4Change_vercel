@@ -6,7 +6,10 @@ passwords or secret keys. Everything else is a command you can run, or ask Claud
 
 Never put a Supabase secret/service-role key, a Clerk secret key, `ANTHROPIC_API_KEY` or
 `OPENSTATES_API_KEY` in `.env` variables that start with `EXPO_PUBLIC_`, and never push
-`supabase/seed.sql` (fictional data) to a live project.
+`supabase/seed.sql` (fictional data) to a live project. The migrations do bring 22 fictional
+**example** petitions in four example communities, labelled as examples everywhere they appear, so a
+new site is not empty; `supabase/migrations/202610200001_example_petitions.sql` says how to archive
+them once real petitions arrive.
 
 ## 1. Clerk (you)
 

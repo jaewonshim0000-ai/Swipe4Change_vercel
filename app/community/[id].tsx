@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { isDemo, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
+import { isDemo, isExample, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import { demoIds } from '../../src/data/seed';
 import { backers } from '../../src/domain/rules';
 import {
@@ -308,7 +308,7 @@ export default function Community() {
             </View>
           )}
           <Text style={[styles.micro, { textAlign: 'center', paddingTop: 18 }]}>
-            {isDemo
+            {isDemo || isExample(c.id)
               ? 'Fictional demo community. Posts and events are sample data and carry no official weight.'
               : 'Posts are written by members and carry no official weight.'}
           </Text>

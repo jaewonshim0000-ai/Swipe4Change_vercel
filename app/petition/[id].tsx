@@ -9,7 +9,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router, useLocalSearchParams } from 'expo-router';
-import { isDemo, useCommand, useSnapshot } from '../../src/data/provider';
+import { isDemo, isExample, useCommand, useSnapshot } from '../../src/data/provider';
 import { recordSignal } from '../../src/data/signals';
 import {
   Entry,
@@ -390,6 +390,11 @@ function PetitionPage({
               {p.summary}
             </Animated.Text>
           )}
+          {isExample(p.id) && (
+            <View style={{ marginTop: 14 }}>
+              <Notice text="Example petition. Its town, organizer, recipient and sample supporters are fictional, made to show how Swipe4Change works. Signing it sends nothing to anyone." />
+            </View>
+          )}
           <Animated.View
             style={[
               { marginTop: 16, padding: 16, borderRadius: 16, backgroundColor: colors.field },
@@ -677,7 +682,7 @@ function PetitionPage({
                   ? 'Check the recipient directory to see which office controls this.'
                   : 'Named by the organizer as the office that can make this change.'}
             </Text>
-            <OfficialContact recipient={p.recipient} city={p.city} />
+            <OfficialContact recipient={p.recipient} city={isExample(p.id) ? '' : p.city} />
             {(office || isSampleCity(p.city)) && (
               <Pressable accessibilityRole="link" onPress={() => router.push('/recipients')}>
                 <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.pale }}>
@@ -1205,7 +1210,7 @@ function PetitionPage({
           <Text
             style={[styles.micro, { textAlign: 'center', paddingTop: 18, paddingHorizontal: 8 }]}
           >
-            {isDemo
+            {isDemo || isExample(p.id)
               ? 'Fictional demo data. Nothing on this page establishes legal validity.'
               : 'One person. One signature. Your public identity is your choice.'}
           </Text>
