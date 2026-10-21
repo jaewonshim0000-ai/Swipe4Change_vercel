@@ -24,7 +24,7 @@ export function OptionCard({
   onPress,
 }: {
   label: string;
-  note: string;
+  note?: string;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -32,7 +32,7 @@ export function OptionCard({
     <Press
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={`${label}. ${note}`}
+      accessibilityLabel={note ? `${label}. ${note}` : label}
       scale={0.98}
       onPress={onPress}
       style={{
@@ -51,17 +51,19 @@ export function OptionCard({
       <Radio on={selected} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>{label}</Text>
-        <Text
-          style={{
-            fontFamily: fonts.body,
-            fontSize: 12,
-            lineHeight: 17,
-            color: colors.muted,
-            marginTop: 2,
-          }}
-        >
-          {note}
-        </Text>
+        {!!note && (
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 12,
+              lineHeight: 17,
+              color: colors.muted,
+              marginTop: 2,
+            }}
+          >
+            {note}
+          </Text>
+        )}
       </View>
     </Press>
   );
