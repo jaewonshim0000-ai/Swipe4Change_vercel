@@ -257,7 +257,9 @@ export default function Communities() {
         })}
         {!shown.length && (
           <Text style={[styles.muted, { padding: 16 }]}>
-            No communities match “{search.trim()}”.
+            {search.trim()
+              ? `No communities match “${search.trim()}”.`
+              : 'No communities yet. Start the first one for your neighborhood.'}
           </Text>
         )}
         <Pressable

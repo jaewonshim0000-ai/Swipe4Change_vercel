@@ -10,7 +10,7 @@ signatures. This is the first of four projects (A go live, B trust & safety cons
 data layer, D launch polish); B and C must land before promoting it openly beyond the beta.
 
 Decisions the user made: website first; eventual audience anyone in the US; host on **Vercel**
-from the GitHub repo `Dankguy17/petitionv2`; use the free `*.vercel.app` address, no domain for
+from the public GitHub repo `jaewonshim0000-ai/Swipe4Change_vercel` (replacing `Dankguy17/petitionv2`); use the free `*.vercel.app` address, no domain for
 now; launch as a **public beta**; static single-page build.
 
 Consequence of no domain: Clerk cannot run a production instance on `vercel.app`, so sign-in

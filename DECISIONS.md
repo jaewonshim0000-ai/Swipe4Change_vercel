@@ -326,6 +326,10 @@ Spec: `docs/superpowers/specs/2026-10-12-vercel-beta-launch-design.md`.
 - **A public contact that is not a private repo.** The Terms page pointed at the GitHub issues of a private repository, which the public cannot open. It now shows `EXPO_PUBLIC_CONTACT_EMAIL` when set (a dedicated address, never a personal one) and otherwise points to Report a concern.
 - **An on-brand not-found page** replaces Expo Router's developer "Unmatched Route" screen, which would otherwise greet anyone with a mistyped or dead link.
 
+## Real sign-in on the Vercel site (October 16)
+
+- **The app reads the Supabase–Vercel integration's names.** With the demo settings removed, the live site built with the real Clerk key but no Supabase URL, because the integration names its values `NEXT_PUBLIC_SUPABASE_*` / `SUPABASE_*` and Expo builds in only `EXPO_PUBLIC_*`. `app.config.ts` copies exactly the URL and publishable key across before the build, so connecting the integration is enough and key rotations stay in sync. It names those four variables and nothing else, so the integration's secret, service-role, JWT and Postgres values can never reach the bundle. Explicit `EXPO_PUBLIC_*` values still win, and local `.env` files are unaffected.
+
 ## Swipe4Change v3 design (October 19)
 
 The owner supplied a v3 design (`design/swipe4change-v3/index.html`) and asked for it to be integrated fully, without changing any existing feature to match it. Where the two disagreed, the feature won and was restyled in the v3 language.
@@ -338,4 +342,5 @@ The owner supplied a v3 design (`design/swipe4change-v3/index.html`) and asked f
 - **Nothing was invented to fill v3's slots.** The profile's weekly-impact chart and streak would need data the app does not record, so they are left out; its overview tiles show real counts. The community feed's posts and messages, the profile QR code and the celebration's "say why you signed" box and emoji reactions are not features of this app and were not added. Communities gained only a client-side search, which v3 puts at the top of that tab.
 - **Create keeps its four steps.** v3's eight one-question screens would have dropped evidence, photos, templates, identity choices and the previews. The four steps take v3's header, progress line, large question titles, bordered question blocks, gradient "Draft it with AI" card and mini-card preview.
 - **The celebration is the server-confirmed moment only.** "It's signed!" appears full screen after the signature is recorded, as the in-sheet success did, and keeps the ripple prompt, first-badge notice and private-receipt line.
-- **Sample photos are per petition, labelled illustrative.** The twelve fictional seed petitions use v3's matching photos by seed id; organizer photos still win, and everything else falls back to its topic's photo. The old `assets/theme` set was replaced.
+- **Sample photos are per petition, labelled illustrative.** The first twelve fictional seed petitions use v3's matching photos by seed id; organizer photos still win, and everything else falls back to its topic's photo. The old `assets/theme` set was replaced.
+- **v3 replaces the short-lived teal and ivory palette.** A collaborator's intro landed on the deploy repo the same day with its own teal theme. The intro (React Bits on web, a plain version on native) is a feature and stays; its stylesheet and button now use the v3 colours and Plus Jakarta Sans, and `theme.ts` is v3's. The ten extra fictional petitions show their topic's photo.

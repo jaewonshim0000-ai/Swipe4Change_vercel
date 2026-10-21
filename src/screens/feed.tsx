@@ -992,6 +992,14 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
                 />
               ))}
             </TileGrid>
+          ) : browsing ? (
+            <View style={{ gap: 12 }}>
+              <Empty
+                title="No petitions yet"
+                body="Be the first: ask for one specific change where you live."
+              />
+              <Button title="Start a petition" onPress={() => router.push('/(tabs)/create')} />
+            </View>
           ) : (
             <View style={{ gap: 12 }}>
               <Empty
@@ -1010,46 +1018,53 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
           )}
         </>
       )}
-      <View style={{ paddingTop: 26 }}>
-        <Text accessibilityRole="header" style={[sectionTitle, { marginBottom: 12 }]}>
-          Find your people
-        </Text>
-        <Rail gap={10} style={{ paddingBottom: 8 }}>
-          {s.communities.map((c) => (
-            <Press
-              key={c.id}
-              accessibilityRole="link"
-              accessibilityLabel={`Open ${c.name}`}
-              onPress={() => router.push(`/community/${c.id}`)}
-              style={[
-                {
-                  width: 176,
-                  backgroundColor: colors.white,
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  borderColor: colors.line,
-                  padding: 14,
-                  gap: 8,
-                },
-                shadows.card,
-              ]}
-            >
-              <Cover
-                source={topicImage(c.topic)}
-                style={{ width: 48, height: 48, borderRadius: 999 }}
-              />
-              <Text
-                style={{ fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, color: colors.ink }}
+      {s.communities.length > 0 && (
+        <View style={{ paddingTop: 26 }}>
+          <Text accessibilityRole="header" style={[sectionTitle, { marginBottom: 12 }]}>
+            Find your people
+          </Text>
+          <Rail gap={10} style={{ paddingBottom: 8 }}>
+            {s.communities.map((c) => (
+              <Press
+                key={c.id}
+                accessibilityRole="link"
+                accessibilityLabel={`Open ${c.name}`}
+                onPress={() => router.push(`/community/${c.id}`)}
+                style={[
+                  {
+                    width: 176,
+                    backgroundColor: colors.white,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                    padding: 14,
+                    gap: 8,
+                  },
+                  shadows.card,
+                ]}
               >
-                {c.name} {topicColors[c.topic].emoji}
-              </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted }}>
-                {c.members.toLocaleString()} members · {c.city.split(',')[0]}
-              </Text>
-            </Press>
-          ))}
-        </Rail>
-      </View>
+                <Cover
+                  source={topicImage(c.topic)}
+                  style={{ width: 48, height: 48, borderRadius: 999 }}
+                />
+                <Text
+                  style={{
+                    fontFamily: fonts.bold,
+                    fontSize: 15,
+                    lineHeight: 20,
+                    color: colors.ink,
+                  }}
+                >
+                  {c.name} {topicColors[c.topic].emoji}
+                </Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted }}>
+                  {c.members.toLocaleString()} members · {c.city.split(',')[0]}
+                </Text>
+              </Press>
+            ))}
+          </Rail>
+        </View>
+      )}
       <KeepGoing snapshot={s} />
       <Sheet visible={!!draft} onClose={() => setDraft(null)}>
         <Text

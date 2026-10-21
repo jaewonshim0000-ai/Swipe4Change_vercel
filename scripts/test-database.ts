@@ -17,6 +17,13 @@ async function run() {
     .filter((f) => f.endsWith('.sql'))
     .sort())
     await db.exec(readFileSync(`supabase/migrations/${file}`, 'utf8'));
+  // A live project never gets the fictional seed, so migrations alone must provide the reference
+  // rows onboarding (topics) and the first-signature badge depend on.
+  const reference = await db.query<{ topics: number; firstVoice: number }>(
+    `select (select count(*) from public.topics)::int topics,
+       (select count(*) from public.badges where name='First voice')::int "firstVoice"`,
+  );
+  assert.deepEqual(reference.rows[0], { topics: 5, firstVoice: 1 });
   await db.exec(readFileSync('supabase/seed.sql', 'utf8'));
   // Seed is repeatable and does not reset real signatures or create duplicate entries.
   await db.exec(readFileSync('supabase/seed.sql', 'utf8'));
@@ -85,7 +92,7 @@ async function run() {
   };
   await auth('', 'anon');
   let s = await snapshot();
-  assert.equal(s.petitions.length, 12);
+  assert.equal(s.petitions.length, seedPetitions().length);
   assert.equal(s.profile, null);
   assert.equal((await db.query('select * from public.profiles')).rows.length, 0);
   await assert.rejects(() => command({ type: 'save', petitionId: petitionId(1) }));

@@ -21,7 +21,7 @@ const snapshot: Snapshot = {
 };
 
 test('every sample petition has a distinct local reason and an office in its own city', () => {
-  expect(petitions).toHaveLength(12);
+  expect(petitions).toHaveLength(22);
   expect(new Set(petitions.map((p) => p.problem)).size).toBe(petitions.length);
   for (const petition of petitions) {
     expect(petition.problem.length).toBeGreaterThan(100);
@@ -53,4 +53,19 @@ test('the signing review distinguishes missing information, manager review and r
   expect(
     signingStatus(petitions[0], { ...snapshot, signed: [petitions[0].id] }, 'anonymous').state,
   ).toBe('ineligible');
+});
+
+test('additional sample petitions have complete requests and no invented participation', () => {
+  const added = petitions.slice(12);
+  expect(new Set(petitions.map((p) => p.id)).size).toBe(22);
+  expect(new Set(added.map((p) => p.topic)).size).toBe(5);
+  for (const p of added) {
+    expect(p.problem).toContain('fictional');
+    expect(p.action.length).toBeGreaterThan(20);
+    expect(p.recipient).toContain('fictional');
+    expect(p.count).toBe(0);
+    expect(p.saves).toBe(0);
+    expect(p.responses).toEqual([]);
+    expect(p.endorsements).toEqual([]);
+  }
 });

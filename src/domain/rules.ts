@@ -61,7 +61,7 @@ const draftObject = z.object({
   recipient: z.string().trim().min(3).max(150),
   topic: z.enum(topics),
   city: z.string().trim().min(2).max(100),
-  communityId: z.string().min(1),
+  communityId: z.string().min(1, 'Choose the community this petition belongs to.'),
   goal: z.number().int().min(10).max(1000000),
   deadline: z
     .string()

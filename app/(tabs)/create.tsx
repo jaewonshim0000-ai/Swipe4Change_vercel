@@ -72,9 +72,11 @@ import {
 
 const DAY = 86400000;
 const isoIn = (days: number) => new Date(Date.now() + days * DAY).toISOString().slice(0, 10);
+// The demo starts in its fictional Riverton community; the live app starts empty and the person
+// chooses (a live project has no fictional communities, so that default would always be refused).
 const blank = (
-  communityId = '10000000-0000-4000-8000-000000000001',
-  city = 'Riverton, CA',
+  communityId = isDemo ? '10000000-0000-4000-8000-000000000001' : '',
+  city = isDemo ? 'Riverton, CA' : '',
 ): Draft => ({
   title: '',
   summary: '',
@@ -614,17 +616,37 @@ function Create({
               <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
                 Community
               </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {q.data.communities.map((c) => (
-                  <PillChip
-                    key={c.id}
-                    label={c.name}
-                    height={36}
-                    selected={draft.communityId === c.id}
-                    onPress={() => form.setValue('communityId', c.id)}
-                  />
-                ))}
-              </View>
+              {q.data.communities.length ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {q.data.communities.map((c) => (
+                    <PillChip
+                      key={c.id}
+                      label={c.name}
+                      height={36}
+                      selected={draft.communityId === c.id}
+                      onPress={() => form.setValue('communityId', c.id, { shouldValidate: true })}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <>
+                  <Notice text="There are no communities yet. Every petition belongs to one, so start a community for your town or cause, then come back here. What you have written stays on this device." />
+                  <View style={styles.row}>
+                    <Button
+                      title="Start a community"
+                      variant="secondary"
+                      onPress={() =>
+                        void AsyncStorage.setItem(draftKey, JSON.stringify(form.getValues()))
+                          .catch(() => undefined)
+                          .then(() => router.push('/(tabs)/communities'))
+                      }
+                    />
+                  </View>
+                </>
+              )}
+              {!!form.formState.errors.communityId && (
+                <Text style={styles.error}>{form.formState.errors.communityId.message}</Text>
+              )}
             </View>
             <View style={{ gap: 8 }}>
               <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>

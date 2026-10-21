@@ -210,6 +210,96 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
     76,
     200,
   ],
+  [
+    'A cooler wait for the bus',
+    'Assess shaded shelters at Brookside bus stops',
+    'Safer streets',
+    4,
+    'account',
+    0,
+    350,
+  ],
+  [
+    'Give broken things a second life',
+    'Pilot a monthly repair cafe at a Riverton recreation center',
+    'Environment',
+    2,
+    'account',
+    0,
+    200,
+  ],
+  [
+    'More ways to learn after the bell',
+    'Pilot free after-school homework sessions at Brookside library',
+    'Education',
+    4,
+    'email',
+    0,
+    300,
+  ],
+  [
+    'A clearer route for everyone',
+    'Audit step-free routes to Riverton recreation centers',
+    'Accessibility',
+    3,
+    'account',
+    0,
+    250,
+  ],
+  [
+    'A place to pause on Main Street',
+    'Assess public seating along Brookside Main Street',
+    'Public spaces',
+    4,
+    'account',
+    0,
+    300,
+  ],
+  [
+    'Be ready when the unexpected happens',
+    'Publish a family emergency-preparedness workshop schedule',
+    'Education',
+    1,
+    'email',
+    0,
+    400,
+  ],
+  [
+    'Rainwater has somewhere to go',
+    'Assess rain gardens at Riverton recreation centers',
+    'Environment',
+    2,
+    'account',
+    0,
+    250,
+  ],
+  [
+    'Borrow the tools to try something new',
+    'Pilot a tool and equipment lending shelf at Brookside library',
+    'Education',
+    4,
+    'account',
+    0,
+    200,
+  ],
+  [
+    'Playtime with a quieter corner',
+    'Assess a quiet play area at Willow Park',
+    'Accessibility',
+    3,
+    'email',
+    0,
+    350,
+  ],
+  [
+    'Know when the courts are open',
+    'Publish a maintenance and access calendar for Cedar Commons',
+    'Public spaces',
+    4,
+    'account',
+    0,
+    150,
+  ],
 ];
 /** Concrete sample cases, with the fictional office that can actually decide each request. */
 const storyCases: { summary: string; problem: string; recipientId: string }[] = [
@@ -287,6 +377,67 @@ const storyCases: { summary: string; problem: string; recipientId: string }[] = 
       'Campus dining produces food scraps that students would like to keep out of general waste. A limited collection pilot could measure participation and the work required before any campuswide rollout.',
     recipientId: 'campus-facilities',
   },
+  {
+    summary: 'Assess shaded shelters at Brookside bus stops and publish site options.',
+    problem:
+      'Riders waiting at exposed stops have asked for shade. This fictional proposal asks the city to review clear pedestrian space, shelter locations and maintenance before choosing a pilot.',
+    recipientId: 'brookside-public-works',
+  },
+  {
+    summary:
+      'Pilot a monthly repair cafe at a Riverton recreation center and share a public review.',
+    problem:
+      'Residents would like a place to learn basic repairs instead of discarding household items. This fictional proposal requests a supervised pilot with clear safety guidance and an equipment plan.',
+    recipientId: 'parks',
+  },
+  {
+    summary: 'Pilot free after-school homework sessions at Brookside library.',
+    problem:
+      'Families have suggested a structured space for homework support after school. This fictional request asks the library to assess staffing, safeguarding and available study space before starting a pilot.',
+    recipientId: 'brookside-library',
+  },
+  {
+    summary: 'Audit step-free routes to Riverton recreation centers and share a public review.',
+    problem:
+      'Visitors using mobility devices need clear information about entrances and pathways. This fictional proposal asks parks staff to inspect routes and publish an accessible improvement checklist.',
+    recipientId: 'parks',
+  },
+  {
+    summary: 'Assess public seating along Brookside Main Street and share a public review.',
+    problem:
+      'Neighbors have suggested more resting places along Main Street. This fictional request asks the city to identify seating locations that preserve sidewalk access and share maintenance responsibilities.',
+    recipientId: 'brookside-public-works',
+  },
+  {
+    summary: 'Publish a family emergency-preparedness workshop schedule.',
+    problem:
+      'Families want practical guidance for school emergency planning. This fictional request asks the district to consult caregivers, review accessible materials and offer preparedness workshops.',
+    recipientId: 'school-board',
+  },
+  {
+    summary: 'Assess rain gardens at Riverton recreation centers and share a public review.',
+    problem:
+      'Neighbors would like to understand whether planted drainage areas could suit public recreation sites. This fictional request asks parks staff for a site assessment, cost estimate and maintenance plan.',
+    recipientId: 'parks',
+  },
+  {
+    summary: 'Pilot a tool and equipment lending shelf at Brookside library.',
+    problem:
+      'Residents have suggested sharing basic equipment through the library. This fictional proposal asks the board to consult users and review storage, training and safe lending policies.',
+    recipientId: 'brookside-library',
+  },
+  {
+    summary: 'Assess a quiet play area at Willow Park and share a public review.',
+    problem:
+      'Families would like lower-stimulation options alongside active play spaces. This fictional request asks parks staff to consult disabled residents and assess a quiet area with clear access routes.',
+    recipientId: 'parks',
+  },
+  {
+    summary: 'Publish a maintenance and access calendar for Cedar Commons.',
+    problem:
+      'Neighbors want predictable information about court closures and maintenance. This fictional proposal asks parks staff to publish an accessible calendar and explain how residents can report problems.',
+    recipientId: 'brookside-parks',
+  },
 ];
 export function seedPetitions(): Petition[] {
   return stories.map((s, i) => {
@@ -342,7 +493,7 @@ export function seedPetitions(): Petition[] {
       count,
       sampleCount: count,
       viaShares: 0,
-      saves: 28 + i * 3,
+      saves: i < 12 ? 28 + i * 3 : 0,
       deliveries:
         i === 0
           ? [
@@ -359,10 +510,10 @@ export function seedPetitions(): Petition[] {
               },
             ]
           : [],
-      volunteerCount: 4 + (i % 5),
-      sampleVolunteers: 4 + (i % 5),
-      sampleVelocity: Math.max(2, 42 - i * 3),
-      recentSignatures: Math.max(2, 42 - i * 3),
+      volunteerCount: i < 12 ? 4 + (i % 5) : 0,
+      sampleVolunteers: i < 12 ? 4 + (i % 5) : 0,
+      sampleVelocity: i < 12 ? Math.max(2, 42 - i * 3) : 0,
+      recentSignatures: i < 12 ? Math.max(2, 42 - i * 3) : 0,
       createdAt: date,
       updates:
         i === 0
