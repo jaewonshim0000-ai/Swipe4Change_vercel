@@ -152,6 +152,7 @@ export type Tables = {
     ai_tags: string | null;
     screening: string;
     held_for: string | null;
+    announce_pending: boolean;
   }>;
   post_reports: Table<{
     id: string;
@@ -170,6 +171,8 @@ export type Tables = {
     created_at: string;
     bio: string;
     use_signing_history: boolean;
+    avatar: string | null;
+    role: string | null;
   }>;
   reports: Table<{
     id: string;

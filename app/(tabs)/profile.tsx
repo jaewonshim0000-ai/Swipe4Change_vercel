@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { isDemo, localAdapter, useBackend, useCommand, useSnapshot } from '../../src/data/provider';
 import { useReads } from '../../src/data/reads';
 import { badgeDefinitions, badgeProgress } from '../../src/domain/personalization';
+import { roleLabels } from '../../src/domain/model';
 import { rippleTotal } from '../../src/domain/ripple';
 import {
   Button,
@@ -240,13 +241,45 @@ export default function Profile() {
               color: colors.pale,
             }}
           >
-            {created.length ? 'ORGANIZER' : 'SUPPORTER'}
+            {(p.role
+              ? roleLabels[p.role].label
+              : created.length
+                ? 'Organizer'
+                : 'Supporter'
+            ).toUpperCase()}
           </Text>
         </View>
-        <View style={{ position: 'absolute', bottom: 20 }}>
+        <Press
+          accessibilityLabel={p.avatar ? 'Change your profile picture' : 'Add a profile picture'}
+          scale={0.97}
+          onPress={() => setPanel('profile')}
+          style={{ position: 'absolute', bottom: 20 }}
+        >
           <Ring ms={2800} inset={-10} color={colors.sage} />
-          <Initials text={initialsOf(p.name)} size={140} ring={colors.white} />
-        </View>
+          <Initials text={initialsOf(p.name)} uri={p.avatar} size={140} ring={colors.white} />
+          <View
+            style={{
+              position: 'absolute',
+              right: 4,
+              bottom: 4,
+              width: 40,
+              height: 40,
+              borderRadius: 999,
+              backgroundColor: colors.dark,
+              borderWidth: 3,
+              borderColor: colors.white,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Glyph
+              name={p.avatar ? 'write' : 'create'}
+              size={16}
+              weight={2.4}
+              color={colors.white}
+            />
+          </View>
+        </Press>
       </View>
       <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: wide ? 22 : 4 }}>
         <Text

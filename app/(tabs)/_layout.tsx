@@ -302,7 +302,7 @@ function Sidebar({ state, navigation }: TabBarProps) {
                   backgroundColor: hovered ? 'rgba(255,255,255,0.06)' : 'transparent',
                 }}
               >
-                <Initials text={initialsOf(profile.name)} size={40} />
+                <Initials text={initialsOf(profile.name)} uri={profile.avatar} size={40} />
                 {!rail && (
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text

@@ -258,6 +258,10 @@ Home and Explore show real U.S. federal proposals that are open for public comme
 
 ## Accounts in the live app
 
+A new account first answers **How do you want to take part?** (Organizer, Supporter or Community builder). The choice only picks the three-screen welcome tour shown after onboarding (`app/tutorial.tsx`): organizers see how to write, address and run a petition and land on Create; supporters see swiping, signing privacy and following and land on Home; community builders see groups, private backing votes and community spaces and land on Groups. Every role can do everything in the app. The role shows on the Profile ribbon, can be changed in Profile and privacy, and the tour can be replayed from there.
+
+**Profile pictures.** Tap the avatar on Profile (or open Profile and privacy) to add, change or remove a picture. It is resized to 320 px and its metadata stripped on the device, then stored as a small JPEG on the person's own profile row (migration `202610200002_profile_photo_role.sql`). Profiles are readable only by their owner, so only the person sees their picture: on Profile, in the Home header and in the desktop sidebar. Deleting the account clears it.
+
 Onboarding asks for a display name and a required "I'm 13 or older and agree to the Terms and Privacy Policy" checkbox linking the plain-language [Terms and Privacy page](app/legal.tsx). Profile → **Delete account** (live mode only; type `DELETE` to confirm) removes the person's petition photos, then their signatures, saves, memberships, interests, drafts, volunteering, reports, notifications, badges and Clerk mapping (`delete_account`), archives the petitions they own, keeps public updates and posts under "Deleted account", and finally deletes the Clerk user. The fictional sample cities, the fictional recipient directory and the simulated location rule appear only in the demo.
 
 ## Scope and limitations

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { Topic, topics } from '../../src/domain/model';
+import { ProfileRole, Topic, roleLabels, topics } from '../../src/domain/model';
 import { useCommand, useSnapshot } from '../../src/data/provider';
 import { Button, Field, Notice, colors, fonts, styles } from '../../src/components/ui';
 import { Press, Scrim, Screen, StepBars, toast, topicImage } from '../../src/components/kit';
@@ -10,6 +10,7 @@ import { Glyph } from '../../src/components/glyph';
 import { CitySheet } from '../../src/components/city-picker';
 import { stag, transition } from '../../src/components/motion';
 import { profileSchema } from '../../src/domain/personalization';
+import { RolePicker } from '../../src/components/profile-personalization';
 
 /** The name every new live account starts with until the person chooses their own. */
 const placeholderName = 'Community member';
@@ -24,6 +25,11 @@ export default function Onboarding() {
   const [name, setName] = useState(profile?.name === placeholderName ? '' : (profile?.name ?? ''));
   const [agreed, setAgreed] = useState(false);
   const first = profile?.name === placeholderName ? undefined : profile?.name.split(' ')[0];
+  // A new account first says how it wants to take part, which picks its welcome tour. Coming back
+  // later from Profile goes straight to interests and location.
+  const firstTime = !profile?.onboarded;
+  const [stage, setStage] = useState<'role' | 'details'>(firstTime ? 'role' : 'details');
+  const [role, setRole] = useState<ProfileRole | undefined>(profile?.role);
   async function complete(skip = false) {
     const chosen = profileSchema.shape.name.safeParse(name);
     if (!chosen.success) {
@@ -50,17 +56,67 @@ export default function Onboarding() {
           bio: profile.bio ?? '',
           useSigningHistory: profile.useSigningHistory ?? true,
         });
-      await command.mutateAsync({ type: 'onboard', city, interests: skip ? [] : selected });
-      router.replace('/(tabs)');
+      await command.mutateAsync({
+        type: 'onboard',
+        city,
+        interests: skip ? [] : selected,
+        ...(role ? { role } : {}),
+      });
+      router.replace(firstTime ? '/tutorial' : '/(tabs)');
     } catch {
       // command.error explains what went wrong below the buttons.
     }
   }
+  if (stage === 'role')
+    return (
+      <Screen tabs={false} enter="slide">
+        <View style={{ marginBottom: 22 }}>
+          <StepBars count={2} current={0} />
+        </View>
+        <Text style={styles.label}>{first ? `Welcome, ${first}` : 'Welcome'}</Text>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.title,
+            { fontSize: 34, lineHeight: 41, letterSpacing: -0.7, marginTop: 10, marginBottom: 8 },
+          ]}
+        >
+          How do you want to take part?
+        </Text>
+        <Text style={[styles.body, { color: colors.muted, marginBottom: 20 }]}>
+          We’ll show you a quick tour for it. Everyone can start, sign and share petitions and join
+          communities, whatever you pick.
+        </Text>
+        <RolePicker value={role} onChange={setRole} />
+        <Button
+          title={
+            role ? `Continue as ${roleLabels[role].label.toLowerCase()}` : 'Choose one to continue'
+          }
+          disabled={!role}
+          onPress={() => setStage('details')}
+          style={{ marginTop: 22 }}
+        />
+      </Screen>
+    );
   return (
     <Screen tabs={false} enter="slide">
-      <View style={{ marginBottom: 22 }}>
-        <StepBars count={2} current={0} />
-      </View>
+      {firstTime && (
+        <View style={{ marginBottom: 22, gap: 12 }}>
+          <StepBars count={2} current={1} />
+          {role && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Joining as ${roleLabels[role].label}. Change`}
+              onPress={() => setStage('role')}
+              style={{ minHeight: 44, justifyContent: 'center' }}
+            >
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.accent }}>
+                Joining as {roleLabels[role].label} · Change
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      )}
       <Text style={styles.label}>{first ? `Hi ${first}` : 'Make yourself at home'}</Text>
       <Text
         accessibilityRole="header"

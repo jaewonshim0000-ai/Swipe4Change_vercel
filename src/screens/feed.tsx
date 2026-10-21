@@ -438,7 +438,12 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
           style={{ borderRadius: 999 }}
         >
           {s.profile ? (
-            <Initials text={initialsOf(s.profile.name)} size={44} ring={colors.white} />
+            <Initials
+              text={initialsOf(s.profile.name)}
+              uri={s.profile.avatar}
+              size={44}
+              ring={colors.white}
+            />
           ) : (
             <View
               style={{

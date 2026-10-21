@@ -37,6 +37,9 @@ test('onboarding asks for a real name and the age and terms agreement before fin
       <Onboarding />
     </QueryClientProvider>,
   );
+  // A new account first says how it wants to take part; that only picks its welcome tour.
+  await fireEvent.press(await screen.findByLabelText(/^Organizer\./));
+  await fireEvent.press(screen.getByLabelText('Continue as organizer'));
   const name = await screen.findByLabelText('Your name');
   expect(name.props.value).toBe('');
   // The name is public wherever the person writes, so the hint must not promise otherwise.
@@ -54,8 +57,9 @@ test('onboarding asks for a real name and the age and terms agreement before fin
 
   await fireEvent.press(screen.getByLabelText(consent));
   await fireEvent.press(screen.getByLabelText('Find my community'));
-  await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)'));
+  await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/tutorial'));
   const profile = (await localAdapter.load()).profile!;
   expect(profile.name).toBe('Jordan Lee');
   expect(profile.interests).toEqual(expect.arrayContaining(topics));
+  expect(profile.role).toBe('organizer');
 });

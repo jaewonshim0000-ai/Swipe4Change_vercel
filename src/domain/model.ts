@@ -43,6 +43,15 @@ export interface Volunteer {
   note: string;
   date: string;
 }
+/** How someone said they want to take part. It only picks their welcome tutorial; everyone can
+ * do everything. */
+export const profileRoles = ['organizer', 'supporter', 'community'] as const;
+export type ProfileRole = (typeof profileRoles)[number];
+export const roleLabels: Record<ProfileRole, { label: string; note: string }> = {
+  organizer: { label: 'Organizer', note: 'Start petitions and rally people behind a change.' },
+  supporter: { label: 'Supporter', note: 'Find causes near you and add your voice.' },
+  community: { label: 'Community builder', note: 'Bring neighbors together in local groups.' },
+};
 export interface Profile {
   id: string;
   name: string;
@@ -55,6 +64,9 @@ export interface Profile {
   badges: string[];
   bio?: string;
   useSigningHistory?: boolean;
+  /** A small JPEG data URL only its owner ever receives. */
+  avatar?: string;
+  role?: ProfileRole;
 }
 export interface Community {
   id: string;
@@ -349,10 +361,17 @@ export const fieldLabels: Record<EditableField, string> = {
   customRule: 'Custom eligibility rule',
 };
 export type Command =
-  | { type: 'profile'; name: string; bio: string; useSigningHistory: boolean }
+  | {
+      type: 'profile';
+      name: string;
+      bio: string;
+      useSigningHistory: boolean;
+      role?: ProfileRole;
+    }
+  | { type: 'avatar'; avatar: string | null }
   | { type: 'saveDraft'; id: string; draft: Draft; step: number }
   | { type: 'deleteDraft'; id: string }
-  | { type: 'onboard'; interests: Topic[]; city: string }
+  | { type: 'onboard'; interests: Topic[]; city: string; role?: ProfileRole }
   | { type: 'save'; petitionId: string }
   | { type: 'volunteer'; petitionId: string; roles: VolunteerRole[]; note: string }
   | { type: 'join'; communityId: string }

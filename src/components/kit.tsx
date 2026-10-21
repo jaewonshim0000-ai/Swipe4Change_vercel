@@ -349,12 +349,14 @@ export function CircleButton({
   );
 }
 
+/** A round avatar: the person's own picture when they added one (`uri`), else their initials. */
 export function Initials({
   text,
   size = 36,
   bg = colors.pale,
   fg = colors.accent,
   ring,
+  uri,
   style,
 }: {
   text: string;
@@ -362,6 +364,7 @@ export function Initials({
   bg?: string;
   fg?: string;
   ring?: string;
+  uri?: string;
   style?: StyleProp<ViewStyle>;
 }) {
   return (
@@ -374,14 +377,24 @@ export function Initials({
           backgroundColor: bg,
           alignItems: 'center',
           justifyContent: 'center',
+          overflow: 'hidden',
         },
         ring ? { borderWidth: 2, borderColor: ring } : null,
         style,
       ]}
     >
-      <Text style={{ fontFamily: fonts.semibold, fontSize: Math.round(size / 3.1), color: fg }}>
-        {text}
-      </Text>
+      {uri ? (
+        <Image
+          source={{ uri }}
+          accessibilityIgnoresInvertColors
+          resizeMode="cover"
+          style={{ width: '100%', height: '100%' }}
+        />
+      ) : (
+        <Text style={{ fontFamily: fonts.semibold, fontSize: Math.round(size / 3.1), color: fg }}>
+          {text}
+        </Text>
+      )}
     </View>
   );
 }

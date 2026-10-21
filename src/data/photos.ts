@@ -10,11 +10,14 @@ export interface PickedPhoto {
 }
 
 /**
- * Takes or chooses a photo, then on the device shrinks it to 1200 px wide, re-saves it as a JPEG
+ * Takes or chooses a photo, then on the device shrinks it to `width` (1200 px by default), re-saves it as a JPEG
  * and strips every metadata segment, so the GPS position a phone records never leaves it.
  * Returns null when the person cancels.
  */
-export async function pickPhoto(source: 'camera' | 'library'): Promise<PickedPhoto | null> {
+export async function pickPhoto(
+  source: 'camera' | 'library',
+  width = 1200,
+): Promise<PickedPhoto | null> {
   const permission =
     source === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
@@ -31,7 +34,7 @@ export async function pickPhoto(source: 'camera' | 'library'): Promise<PickedPho
   const asset = result.canceled ? undefined : result.assets[0];
   if (!asset) return null;
   const context = ImageManipulator.manipulate(asset.uri);
-  if (!asset.width || asset.width > 1200) context.resize({ width: 1200 });
+  if (!asset.width || asset.width > width) context.resize({ width });
   const image = await context.renderAsync();
   const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.7, base64: true });
   if (!saved.base64) throw new Error('The photo could not be prepared. Try another one.');

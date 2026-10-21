@@ -39,7 +39,7 @@ import {
   volunteerSchema,
   backingReached,
 } from '../domain/rules';
-import { profileSchema } from '../domain/personalization';
+import { avatarSchema, profileSchema } from '../domain/personalization';
 import { countTrend } from '../domain/trend';
 import { screenLabels, screenPetition } from '../domain/content-screen';
 import {
@@ -490,6 +490,12 @@ export class LocalAdapter implements Adapter {
         Object.assign(user, profileSchema.parse(c));
         return;
       }
+      if (c.type === 'avatar') {
+        const avatar = avatarSchema.parse(c.avatar);
+        if (avatar) user.avatar = avatar;
+        else delete user.avatar;
+        return;
+      }
       if (c.type === 'saveDraft' || c.type === 'deleteDraft') {
         z.string().uuid().parse(c.id);
         const existing = (s.drafts ?? []).find((d) => d.id === c.id);
@@ -520,6 +526,7 @@ export class LocalAdapter implements Adapter {
           throw new Error('Enter a city and state.');
         user.interests = c.interests;
         user.city = c.city.trim();
+        if (c.role) user.role = profileSchema.shape.role.parse(c.role);
         user.onboarded = true;
         return;
       }

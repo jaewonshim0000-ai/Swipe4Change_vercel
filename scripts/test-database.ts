@@ -235,6 +235,28 @@ async function run() {
       useSigningHistory: false,
     }),
   );
+  // A profile picture and a role belong to their owner alone; the role only picks a tutorial.
+  const pic = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+  await command({ type: 'avatar', avatar: pic });
+  await command({
+    type: 'profile',
+    name: 'Maya C',
+    bio: 'Safer routes for everyone.',
+    useSigningHistory: false,
+    role: 'organizer',
+  });
+  assert.equal((await snapshot()).profile?.avatar, pic);
+  assert.equal((await snapshot()).profile?.role, 'organizer');
+  await assert.rejects(() => command({ type: 'avatar', avatar: 'https://example.org/me.jpg' }));
+  await assert.rejects(() =>
+    command({ type: 'profile', name: 'Maya C', bio: '', useSigningHistory: false, role: 'admin' }),
+  );
+  assert.equal((await snapshot()).profile?.bio, 'Safer routes for everyone.');
+  await auth('clerk_sam');
+  assert.equal((await snapshot()).profile?.avatar, undefined);
+  await auth('clerk_maya');
+  await command({ type: 'avatar', avatar: null });
+  assert.equal((await snapshot()).profile?.avatar, undefined);
   await auth('clerk_sam');
   const receipt = async (petitionId: string) =>
     (
@@ -1296,6 +1318,9 @@ async function run() {
     body: 'I walk this route every morning and it is dark.',
     kind: 'experience',
   });
+  await command({ type: 'onboard', city: 'Riverton, CA', interests: [], role: 'community' });
+  assert.equal((await snapshot()).profile?.role, 'community');
+  await command({ type: 'avatar', avatar: pic });
   await auth('clerk_maya');
   await sign(adaPetition);
   await auth('clerk_ada');
@@ -1312,7 +1337,8 @@ async function run() {
        (select count(*) from public.discussion_posts where author_id=$1)::int posts,
        (select count(*) from public.signatures where petition_id=$2)::int others,
        (select status from public.petitions where id=$2) status,
-       (select name from public.profiles where id=$1) name`,
+       (select name from public.profiles where id=$1) name,
+       (select avatar is null and role is null from public.profiles where id=$1) cleared`,
     [ada.id, adaPetition],
   );
   assert.deepEqual(owned.rows[0], {
@@ -1327,6 +1353,7 @@ async function run() {
     others: 1,
     status: 'archived',
     name: 'Deleted account',
+    cleared: true,
   });
   await auth('clerk_sam');
   assert(!(await snapshot()).petitions.some((p) => p.id === adaPetition));
@@ -1340,7 +1367,7 @@ async function run() {
 
   await db.close();
   console.log(
-    'PostgreSQL integration passed: migration, repeatable seed, 24 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, organizer-only petition photos on the public record, signed claims that refresh email verification and the starting name, account deletion that keeps public writing unattributed, and community backing by private member vote.',
+    'PostgreSQL integration passed: migration, repeatable seed, 24 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, organizer-only petition photos on the public record, signed claims that refresh email verification and the starting name, account deletion that keeps public writing unattributed, community backing by private member vote, and profile pictures and roles that only their owner sees.',
   );
 }
 void run().catch((error) => {
