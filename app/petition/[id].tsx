@@ -391,9 +391,9 @@ function PetitionPage({
             </Animated.Text>
           )}
           {isExample(p.id) && (
-            <View style={{ marginTop: 14 }}>
+            <Animated.View style={[{ marginTop: 14 }, anim(kf.in, 550, { delay: 210 })]}>
               <Notice text="Example petition. Its town, organizer, recipient and sample supporters are fictional, made to show how Swipe4Change works. Signing it sends nothing to anyone." />
-            </View>
+            </Animated.View>
           )}
           <Animated.View
             style={[

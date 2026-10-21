@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { isDemo, offeredVerifications, useCommand, useSnapshot } from '../data/provider';
+import { isDemo, isExample, offeredVerifications, useCommand, useSnapshot } from '../data/provider';
 import { useReads } from '../data/reads';
 import { useSignals } from '../data/signals';
 import { useFederalRules } from '../data/federal';
@@ -211,7 +211,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
   return (
     <Press
       accessibilityRole="link"
-      accessibilityLabel={`Local spotlight: ${p.title}`}
+      accessibilityLabel={`${isExample(p.id) ? 'Example spotlight' : 'Local spotlight'}: ${p.title}`}
       scale={0.985}
       onPress={() => router.push(`/petition/${p.id}`)}
       style={{
@@ -246,7 +246,7 @@ function Spotlight({ petition: p, snapshot: s }: { petition: Petition; snapshot:
             color: colors.white,
           }}
         >
-          Local spotlight
+          {isExample(p.id) ? 'Example spotlight' : 'Local spotlight'}
         </Text>
       </View>
       <Pressable

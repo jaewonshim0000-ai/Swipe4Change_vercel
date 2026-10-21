@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SimilarPetition } from '../domain/similar';
+import { isExample } from '../data/provider';
 import { Cover, petitionImage } from './kit';
 import { Glyph } from './glyph';
 import { Button, colors, fonts, styles } from './ui';
@@ -61,7 +62,7 @@ export function SimilarPetitions({
               {p.count.toLocaleString()} of {p.goal.toLocaleString()} · to {p.recipient}
             </Text>
             <Text style={[styles.micro, { fontSize: 11, lineHeight: 15 }]}>
-              {reasons.join(' · ')}
+              {(isExample(p.id) ? ['Example', ...reasons] : reasons).join(' · ')}
             </Text>
           </View>
           <Glyph name="next" size={18} color={colors.muted} />
