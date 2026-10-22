@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AccessibilityInfo } from 'react-native';
-import { SwipeDeck, swipeIntent } from '../src/components/swipe-deck';
+import { SwipeDeck, deskCardSize, swipeIntent } from '../src/components/swipe-deck';
 import { localAdapter } from '../src/data/provider';
 import { demoIds } from '../src/data/seed';
 
@@ -76,4 +76,14 @@ test('the deck ticks once per crossing, springs back from a slow drag and takes 
   await view.unmount();
   client.clear();
   motion.mockRestore();
+});
+
+test('the desktop card keeps its shape instead of stretching to a tall window', () => {
+  // A 1440p monitor: capped at 880pt tall, 0.64 as wide.
+  expect(deskCardSize({ width: 600, height: 1059 })).toEqual({ height: 880, width: 563 });
+  // A 1080p window fills the height at the same shape.
+  expect(deskCardSize({ width: 600, height: 912 })).toEqual({ height: 868, width: 556 });
+  // A short window stays wide enough for the five buttons, and never wider than the column.
+  expect(deskCardSize({ width: 600, height: 552 })).toEqual({ height: 508, width: 400 });
+  expect(deskCardSize({ width: 380, height: 552 })).toEqual({ height: 508, width: 380 });
 });

@@ -170,7 +170,7 @@ function Sidebar({ state, navigation }: TabBarProps) {
         >
           <Glyph name="cards" size={20} weight={2.4} color={colors.dark} />
         </View>
-        {!rail && <Wordmark size={18} color={colors.white} />}
+        {!rail && <Wordmark size={18} color={colors.white} stacked />}
       </View>
       {state.routes.map((route, i) => {
         const tab = tabs[route.name];

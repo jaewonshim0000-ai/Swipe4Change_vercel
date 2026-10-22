@@ -489,7 +489,9 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
                     }}
                   >
                     {s.profile.city
-                      ? `${local.length} causes near ${s.profile.city.split(',')[0]}`
+                      ? local.length
+                        ? `${local.length} cause${local.length === 1 ? '' : 's'} near ${s.profile.city.split(',')[0]}`
+                        : `No causes near ${s.profile.city.split(',')[0]} yet`
                       : 'Choose your city'}
                   </Text>
                   <Text
@@ -584,7 +586,8 @@ function Home({ snapshot: s }: { snapshot: Snapshot }) {
         style={{
           flex: 1,
           width: '100%',
-          maxWidth: wide ? 460 : 540,
+          // Desktop: room for the deck's own card shape (up to 563pt wide); phones: the column.
+          maxWidth: wide ? 600 : 540,
           alignSelf: 'center',
           paddingTop: 12,
         }}

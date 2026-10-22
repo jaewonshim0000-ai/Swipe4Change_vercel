@@ -10,12 +10,25 @@ export const betaNotice =
   'Public beta: open to the first 100 accounts. Accounts may need to sign up again when the full version launches.';
 
 /** "Swipe4Change", with a Beta pill in the live app (the demo is labelled fictional instead). */
-export function Wordmark({ size, color = colors.ink }: { size: number; color?: string }) {
+export function Wordmark({
+  size,
+  color = colors.ink,
+  stacked = false,
+}: {
+  size: number;
+  color?: string;
+  /** The Beta pill goes under the name where a row is too narrow (the desktop sidebar). */
+  stacked?: boolean;
+}) {
   return (
     <View
       accessibilityRole="header"
       accessibilityLabel={isDemo ? 'Swipe4Change' : 'Swipe4Change, public beta'}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+      style={
+        stacked
+          ? { alignItems: 'flex-start', gap: 4 }
+          : { flexDirection: 'row', alignItems: 'center', gap: 8 }
+      }
     >
       <Text style={{ fontFamily: fonts.display, fontSize: size, color }}>Swipe4Change</Text>
       {!isDemo && (
