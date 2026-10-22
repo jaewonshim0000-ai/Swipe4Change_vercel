@@ -64,7 +64,7 @@ export function seedProfiles(): Profile[] {
       onboarded: false,
       emailVerified: true,
       locationApproved: false,
-      badges: ['Community starter'],
+      badges: ['Community starter', 'Change starter'],
       bio: 'Student organizer working toward a brighter walk home from Eastbridge.',
     },
     {
@@ -76,7 +76,7 @@ export function seedProfiles(): Profile[] {
       onboarded: false,
       emailVerified: true,
       locationApproved: true,
-      badges: ['Local voice'],
+      badges: ['Local voice', 'Community builder', 'Change starter'],
     },
     {
       id: demoIds.jordan,
@@ -87,7 +87,7 @@ export function seedProfiles(): Profile[] {
       onboarded: false,
       emailVerified: false,
       locationApproved: false,
-      badges: [],
+      badges: ['Community builder'],
     },
   ];
 }

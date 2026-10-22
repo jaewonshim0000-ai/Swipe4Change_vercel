@@ -156,8 +156,8 @@ const questions: {
   {
     key: 'community',
     step: 1,
-    q: 'Which community is it for?',
-    hint: 'Every petition belongs to a community. Its members can back it.',
+    q: 'Is it for a community?',
+    hint: 'Optional. Pick one if a group is behind it: its members can back it.',
     fields: ['communityId'],
   },
   {
@@ -232,7 +232,7 @@ const flagLabels: Record<string, string> = {
   'A clear problem': 'Problem',
   'An approximate location': 'Location',
   'A future deadline': 'Deadline',
-  'At least one supplied source (not fact-checked)': 'Evidence',
+  'At least one supplied source (not fact-checked)': 'Evidence (optional)',
   'A measurable signature goal': 'Goal',
 };
 /** The design's question block: a white card with a hairline border. */
@@ -603,7 +603,7 @@ function Create({
               setConfirm(false);
               setPublished(typeof petitionId === 'string' ? petitionId : '');
               void AsyncStorage.removeItem(draftKey);
-              toast('Published. Your community can sign it now.');
+              toast('Published. People can sign it now.');
               if (!photo || typeof petitionId !== 'string') return;
               try {
                 await command.mutateAsync({
@@ -796,9 +796,14 @@ function Create({
       />
     </>
   );
-  const noCommunity = (
+  const pickCommunity = (id: string) => {
+    form.setValue('communityId', id, { shouldValidate: true });
+    // Community-only signing needs a community, so leaving one falls back to the default rule.
+    if (!id && draft.verification === 'community') form.setValue('verification', 'email');
+  };
+  const noCommunity = !choices.length && (
     <>
-      <Notice text="There are no communities yet. Every petition belongs to one, so start a community for your town or cause, then come back here. What you have written stays on this device." />
+      <Notice text="There are no communities yet. Your petition can stand on its own, or start a community for your town or cause first. What you have written stays on this device." />
       <View style={styles.row}>
         <Button
           title="Start a community"
@@ -808,13 +813,10 @@ function Create({
       </View>
     </>
   );
-  const communityError = !!form.formState.errors.communityId && (
-    <Text style={styles.error}>{form.formState.errors.communityId.message}</Text>
-  );
   const evidenceFields = (
     <View style={{ gap: 8 }}>
       <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
-        Evidence · labelled HTTPS link
+        Evidence (optional) · labelled HTTPS link
       </Text>
       {draft.evidence.map((e, i) => (
         <View
@@ -889,15 +891,20 @@ function Create({
   const photoField = <PhotoField value={photo} onChange={setPhoto} disabled={command.isPending} />;
   const verificationFields = (
     <>
-      {offeredVerifications.map((v) => (
-        <OptionCard
-          key={v}
-          label={verificationLabels[v]}
-          note={eligibilityNotes[v]}
-          selected={draft.verification === v}
-          onPress={() => form.setValue('verification', v)}
-        />
-      ))}
+      {offeredVerifications
+        .filter((v) => v !== 'community' || draft.communityId)
+        .map((v) => (
+          <OptionCard
+            key={v}
+            label={verificationLabels[v]}
+            note={eligibilityNotes[v]}
+            selected={draft.verification === v}
+            onPress={() => form.setValue('verification', v, { shouldValidate: true })}
+          />
+        ))}
+      {!!form.formState.errors.verification && (
+        <Text style={styles.error}>{form.formState.errors.verification.message}</Text>
+      )}
       {draft.verification === 'custom' &&
         input(
           'customRule',
@@ -1056,7 +1063,7 @@ function Create({
       ) : (
         <View style={[white, { gap: 10 }]}>
           <Text style={styles.label}>
-            {draft.topic} · {draft.city} · {community?.name}
+            {[draft.topic, draft.city, community?.name].filter(Boolean).join(' · ')}
           </Text>
           <Text style={[styles.title, { fontSize: 28, lineHeight: 34 }]}>
             {draft.title || 'Untitled petition'}
@@ -1107,7 +1114,11 @@ function Create({
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.white }}>
-          {held ? 'Saved · not public yet' : 'Published · Change starter earned'}
+          {held
+            ? 'Saved · not public yet'
+            : initialSnapshot?.profile?.badges.includes('Change starter')
+              ? 'Published'
+              : 'Published · Change starter earned'}
         </Text>
         <Text
           style={{
@@ -1118,7 +1129,7 @@ function Create({
           }}
         >
           {held ??
-            `Share it with ${community?.name ?? 'your community'}, then post updates from Manage.`}
+            `Share it${community ? ` with ${community.name}` : ''}, then post updates from Manage.`}
         </Text>
       </View>
     </Animated.View>
@@ -1378,7 +1389,7 @@ function Create({
         summary: draft.summary,
         city: draft.city,
         topic: draft.topic,
-        community: community?.name ?? '',
+        community: community?.name ?? 'No community (optional)',
         recipient: draft.recipient,
         backing:
           [
@@ -1563,18 +1574,22 @@ function Create({
             ))}
           {current.key === 'community' && (
             <>
-              {choices.length
-                ? choices.map((c) => (
-                    <OptionCard
-                      key={c.id}
-                      label={c.name}
-                      note={`${c.members.toLocaleString()} members · ${c.city}`}
-                      selected={draft.communityId === c.id}
-                      onPress={() => form.setValue('communityId', c.id, { shouldValidate: true })}
-                    />
-                  ))
-                : noCommunity}
-              {communityError}
+              <OptionCard
+                label="No community"
+                note="It stands on its own. Anyone can still find, share and sign it."
+                selected={!draft.communityId}
+                onPress={() => pickCommunity('')}
+              />
+              {choices.map((c) => (
+                <OptionCard
+                  key={c.id}
+                  label={c.name}
+                  note={`${c.members.toLocaleString()} members · ${c.city}`}
+                  selected={draft.communityId === c.id}
+                  onPress={() => pickCommunity(c.id)}
+                />
+              ))}
+              {noCommunity}
             </>
           )}
           {current.key === 'recipient' && recipientFields}
@@ -1723,24 +1738,26 @@ function Create({
             </View>
             <View style={{ gap: 8 }}>
               <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary }}>
-                Community
+                Community (optional)
               </Text>
-              {choices.length ? (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {choices.map((c) => (
-                    <PillChip
-                      key={c.id}
-                      label={c.name}
-                      height={36}
-                      selected={draft.communityId === c.id}
-                      onPress={() => form.setValue('communityId', c.id, { shouldValidate: true })}
-                    />
-                  ))}
-                </View>
-              ) : (
-                noCommunity
-              )}
-              {communityError}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                <PillChip
+                  label="No community"
+                  height={36}
+                  selected={!draft.communityId}
+                  onPress={() => pickCommunity('')}
+                />
+                {choices.map((c) => (
+                  <PillChip
+                    key={c.id}
+                    label={c.name}
+                    height={36}
+                    selected={draft.communityId === c.id}
+                    onPress={() => pickCommunity(c.id)}
+                  />
+                ))}
+              </View>
+              {noCommunity}
             </View>
             {evidenceFields}
           </View>

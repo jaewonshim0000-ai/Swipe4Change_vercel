@@ -891,6 +891,9 @@ async function run() {
   let rippled = await snapshot();
   assert.deepEqual(rippled.ripple!.petitions, [{ petitionId: spread, direct: 1, further: 1 }]);
   assert.equal(rippled.petitions.find((p) => p.id === spread)!.viaShares, 2);
+  // A badge earned through someone else's signature, announced to its owner.
+  assert(rippled.profile!.badges.includes('Ripple maker'));
+  assert(rippled.notifications.some((n) => n.kind === 'badge' && n.body.includes('Ripple maker')));
   // The organizer's trend: today's signatures by source, never who. Maya is a community member;
   // Sam and Jordan arrived through links.
   const trend = async (id: string) =>
@@ -1365,9 +1368,41 @@ async function run() {
   await auth('', 'anon');
   await assert.rejects(() => command({ type: 'delete_account' }));
 
+  // A petition can stand on its own, without a community, unless only members may sign it.
+  await claims({ sub: 'clerk_bea', email_verified: true, name: 'Bea Solo' });
+  await snapshot();
+  const solo = {
+    ...seedPetitions()[0],
+    communityId: '',
+    verification: 'account',
+    goal: 10,
+    title: 'A petition that stands on its own',
+  };
+  await assert.rejects(
+    () => command({ type: 'create', draft: { ...solo, verification: 'community' }, publish: true }),
+    /needs a community/,
+  );
+  const soloId = await command({ type: 'create', draft: solo, publish: true });
+  s = await snapshot();
+  assert.equal(s.petitions.find((p) => p.id === soloId)!.communityId, null);
+  assert.deepEqual(
+    s.notifications.filter((n) => n.kind === 'badge').map((n) => n.body),
+    ['You earned the Change starter badge. See all your badges in Profile.'],
+  );
+  // Reaching the goal earns its organizer Goal getter, from the counts, on someone else's signature.
+  await db.exec('reset role');
+  await db.query('update public.petitions set sample_count=9 where id=$1', [soloId]);
+  await auth('clerk_sam');
+  await sign(soloId);
+  await claims({ sub: 'clerk_bea', email_verified: true, name: 'Bea Solo' });
+  s = await snapshot();
+  assert(s.profile!.badges.includes('Goal getter'));
+  assert(s.notifications.some((n) => n.kind === 'badge' && n.body.includes('Goal getter')));
+  assert(s.notifications.some((n) => n.kind === 'milestone' && n.body.includes('100%')));
+
   await db.close();
   console.log(
-    'PostgreSQL integration passed: migration, repeatable seed, 24 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, organizer-only petition photos on the public record, signed claims that refresh email verification and the starting name, account deletion that keeps public writing unattributed, community backing by private member vote, and profile pictures and roles that only their owner sees.',
+    'PostgreSQL integration passed: migration, repeatable seed, 24 RLS tables, private drafts, direct-write denial, drawn signatures tied to the exact text, duplicate prevention, rule locking, permissions, custom review, public anonymity, private reports and receipts, notification fan-out, save-as-follow, full-field revisions, signature withdrawal, community creation and moderation, post tombstones, owner archival, organizer-only volunteer rosters, community spaces with a private organizer room and events, anonymous moderation reports, frozen delivery packets answered by recorded responses, ripple attribution that credits only signers and names nobody, AI report review through a service-role-only queue that hides only flagged petitions, a publication check that holds new and reworded petitions until they pass, a verified email to publish, hidden AI tags that clear on rewording, organizer-only donation links on the public record, signed-in, rate-limited AI helpers, organizer-only petition photos on the public record, signed claims that refresh email verification and the starting name, account deletion that keeps public writing unattributed, community backing by private member vote, profile pictures and roles that only their owner sees, petitions without a community, and badges earned from records (including through other people) with a notification for each.',
   );
 }
 void run().catch((error) => {

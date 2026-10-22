@@ -19,6 +19,7 @@ const kinds: Record<string, { title: string; glyph: GlyphName }> = {
   response: { title: 'Response recorded', glyph: 'capitol' },
   delivery: { title: 'Delivered', glyph: 'next' },
   milestone: { title: 'Milestone crossed', glyph: 'up' },
+  badge: { title: 'Badge earned', glyph: 'sparkle' },
   endorsement: { title: 'Community backing', glyph: 'star' },
   discussion: { title: 'New discussion contribution', glyph: 'chat' },
   eligibility: { title: 'Eligibility', glyph: 'profile' },

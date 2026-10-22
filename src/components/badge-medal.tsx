@@ -12,6 +12,12 @@ const looks: Record<string, Look> = {
   'Community builder': { icon: 'communities', tone: topicColors.Environment },
   'Change starter': { icon: 'flag', tone: topicColors['Public spaces'] },
   'Conversation starter': { icon: 'chat', tone: topicColors.Accessibility },
+  'Steady voice': { icon: 'trend', tone: topicColors.Education },
+  'Wide lens': { icon: 'compass', tone: topicColors['Safer streets'] },
+  'Keeping watch': { icon: 'bookmark', tone: topicColors.Environment },
+  'Helping hand': { icon: 'hand', tone: topicColors['Public spaces'] },
+  'Ripple maker': { icon: 'share', tone: topicColors.Accessibility },
+  'Goal getter': { icon: 'sparkle', tone: civic },
   'Local voice': { icon: 'pin', tone: civic },
   'Community starter': { icon: 'home', tone: civic },
 };

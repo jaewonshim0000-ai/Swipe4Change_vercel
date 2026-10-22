@@ -61,7 +61,8 @@ const draftObject = z.object({
   recipient: z.string().trim().min(3).max(150),
   topic: z.enum(topics),
   city: z.string().trim().min(2).max(100),
-  communityId: z.string().min(1, 'Choose the community this petition belongs to.'),
+  /** Optional: '' is a petition that belongs to no community. */
+  communityId: z.string(),
   goal: z.number().int().min(10).max(1000000),
   deadline: z
     .string()
@@ -76,10 +77,15 @@ const draftObject = z.object({
   identities: z.array(z.enum(identityModes)).min(1, 'Allow at least one public identity mode.'),
   customRule: z.string().max(1000),
 });
-export const draftSchema = draftObject.refine(
-  (v) => v.verification !== 'custom' || v.customRule.trim().length >= 15,
-  { path: ['customRule'], message: 'Describe your eligibility rule in at least 15 characters.' },
-);
+export const draftSchema = draftObject
+  .refine((v) => v.verification !== 'custom' || v.customRule.trim().length >= 15, {
+    path: ['customRule'],
+    message: 'Describe your eligibility rule in at least 15 characters.',
+  })
+  .refine((v) => v.verification !== 'community' || v.communityId !== '', {
+    path: ['verification'],
+    message: 'Community-only signing needs a community. Pick one, or choose who else may sign.',
+  });
 /**
  * A published petition is revised field by field. Each supplied field is validated with the same
  * rule the creation form uses; the merged result is then checked against `draftSchema` so a patch

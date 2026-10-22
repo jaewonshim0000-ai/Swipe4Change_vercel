@@ -39,7 +39,7 @@ import {
   volunteerSchema,
   backingReached,
 } from '../domain/rules';
-import { avatarSchema, profileSchema } from '../domain/personalization';
+import { avatarSchema, profileSchema, qualifiedBadges } from '../domain/personalization';
 import { countTrend } from '../domain/trend';
 import { screenLabels, screenPetition } from '../domain/content-screen';
 import {
@@ -169,6 +169,50 @@ export class LocalAdapter implements Adapter {
     });
     this.queue = operation.catch(() => undefined);
     return operation;
+  }
+  /**
+   * Runs a command, then awards every badge its records now earn, to everyone: some badges are
+   * earned through other people (a signature through your link, your petition reaching its goal).
+   * Each award is announced with a notification. Badges are never taken back.
+   */
+  private awarding<T>(fn: (s: LocalState) => T) {
+    return (s: LocalState) => {
+      const result = fn(s);
+      const referrals = this.referrals(s);
+      for (const u of s.profiles) {
+        const signed = s.signatures.filter((x) => x.userId === u.id);
+        const started = s.petitions.filter(
+          (p) => p.ownerId === u.id && ['active', 'closed', 'successful'].includes(p.status),
+        );
+        const earned = qualifiedBadges({
+          signed: signed.length,
+          topics: new Set(
+            signed.flatMap((x) => s.petitions.find((p) => p.id === x.petitionId)?.topic ?? []),
+          ).size,
+          joined: u.joined.length,
+          created: started.length,
+          posts: s.petitions.some((p) => p.discussion.some((e) => e.authorId === u.id)) ? 1 : 0,
+          ripple: referrals.filter((r) => r.referrerId === u.id).length,
+          saved: (s.saves[u.id] ?? []).length,
+          volunteered: (s.volunteers ?? []).filter((v) => v.userId === u.id).length,
+          goals: started.filter((p) => p.goal > 0 && p.count >= p.goal).length,
+        }).filter((b) => !u.badges.includes(b));
+        for (const name of earned) {
+          u.badges.push(name);
+          s.notifications[u.id] = [
+            {
+              id: this.uuid(),
+              body: `You earned the ${name} badge. See all your badges in Profile.`,
+              author: 'Swipe4Change',
+              date: new Date().toISOString(),
+              kind: 'badge',
+            },
+            ...(s.notifications[u.id] ?? []),
+          ].slice(0, 100);
+        }
+      }
+      return result;
+    };
   }
   /** Referrals joined to the signatures they credit. Withdrawn signatures drop out here. */
   private referrals(s: LocalState): Referral[] {
@@ -425,7 +469,7 @@ export class LocalAdapter implements Adapter {
   }
   async execute(c: Command) {
     const ai = await this.consult(c);
-    return this.transaction((s) => {
+    const run = (s: LocalState) => {
       const user = s.profiles.find((p) => p.id === s.session);
       if (!user) throw new Error('Sign in to continue.');
       const communities = (s.communities ??= seedCommunities());
@@ -536,8 +580,6 @@ export class LocalAdapter implements Adapter {
         user.joined = user.joined.includes(c.communityId)
           ? user.joined.filter((id) => id !== c.communityId)
           : [...user.joined, c.communityId];
-        if (user.joined.length >= 2 && !user.badges.includes('Community builder'))
-          user.badges.push('Community builder');
         return;
       }
       if (c.type === 'createCommunity') {
@@ -554,8 +596,6 @@ export class LocalAdapter implements Adapter {
           moderators: [],
         });
         if (!user.joined.includes(id)) user.joined.push(id);
-        if (user.joined.length >= 2 && !user.badges.includes('Community builder'))
-          user.badges.push('Community builder');
         return id;
       }
       if (c.type === 'moderator') {
@@ -734,8 +774,8 @@ export class LocalAdapter implements Adapter {
       if (c.type === 'create') {
         if (c.publish) verifiedToPublish();
         const d = draftSchema.parse(c.draft);
-        if (!communities.some((x) => x.id === d.communityId))
-          throw new Error('Choose a community.');
+        if (d.communityId && !communities.some((x) => x.id === d.communityId))
+          throw new Error('That community no longer exists. Choose another, or none.');
         const id = this.uuid();
         s.petitions.unshift({
           ...d,
@@ -769,8 +809,6 @@ export class LocalAdapter implements Adapter {
         }
         if (c.draftId)
           s.drafts = (s.drafts ?? []).filter((d) => d.id !== c.draftId || d.userId !== user.id);
-        if (c.publish && !user.badges.includes('Change starter'))
-          user.badges.push('Change starter');
         return id;
       }
       const p = s.petitions.find((p) => p.id === c.petitionId);
@@ -860,14 +898,8 @@ export class LocalAdapter implements Adapter {
             'ripple',
           );
         }
-        if (
-          s.signatures.filter((x) => x.userId === user.id).length >= 5 &&
-          !user.badges.includes('Showing up')
-        )
-          user.badges.push('Showing up');
         const before = p.count;
         p.count++;
-        if (!user.badges.includes('First voice')) user.badges.push('First voice');
         notify(
           [user.id],
           `Your signature on “${p.title}” is confirmed. Your public identity is ${shownAs}.`,
@@ -906,7 +938,6 @@ export class LocalAdapter implements Adapter {
       if (c.type === 'discussion') {
         if (p.status !== 'active') throw new Error('Discussion is closed.');
         p.discussion.push(entry(c.body, c.kind, true));
-        if (!user.badges.includes('Conversation starter')) user.badges.push('Conversation starter');
         notify(managers(p), `${user.name} posted a ${c.kind} on “${p.title}”.`, 'discussion');
         return;
       }
@@ -1044,7 +1075,6 @@ export class LocalAdapter implements Adapter {
         screened(p);
         (s.toAnnounce ??= []).push(p.id);
         announce(p);
-        if (!user.badges.includes('Change starter')) user.badges.push('Change starter');
         return;
       }
       if (c.type === 'edit') {
@@ -1171,6 +1201,7 @@ export class LocalAdapter implements Adapter {
         );
         return;
       }
-    });
+    };
+    return this.transaction(this.awarding(run));
   }
 }

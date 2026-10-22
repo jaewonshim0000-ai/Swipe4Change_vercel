@@ -31,11 +31,18 @@ test('passes the live Clerk token callback without persisting a second auth sess
   expect(await options?.accessToken?.()).toBe('first');
   expect(await options?.accessToken?.()).toBe('refreshed');
 });
-test('uses the snapshot RPC and normalizes legacy notification authors', async () => {
-  rpc.mockResolvedValue({ data: { notifications: [{ author: 'LookAware' }] }, error: null });
+test('uses the snapshot RPC and normalizes legacy notification authors and missing communities', async () => {
+  rpc.mockResolvedValue({
+    data: {
+      petitions: [{ id: 'solo', communityId: null }],
+      notifications: [{ author: 'LookAware' }],
+    },
+    error: null,
+  });
   const result = await createSupabaseAdapter(async () => null).load();
   expect(rpc).toHaveBeenCalledWith('lookaware_snapshot', {});
   expect(result.notifications[0].author).toBe('Swipe4Change');
+  expect(result.petitions[0].communityId).toBe('');
 });
 test('propagates rejected writes for optimistic rollback and never retries them', async () => {
   rpc.mockResolvedValue({ data: null, error: { message: 'Already signed.' } });

@@ -8,9 +8,34 @@ import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/70
 import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
 import { PlusJakartaSans_400Regular_Italic } from '@expo-google-fonts/plus-jakarta-sans/400Regular_Italic';
 import { PlusJakartaSans_800ExtraBold_Italic } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold_Italic';
-import { Providers } from '../src/data/provider';
+import { useEffect, useRef } from 'react';
+import { Providers, useSnapshot } from '../src/data/provider';
 import { colors } from '../src/components/theme';
-import { ToastHost } from '../src/components/kit';
+import { ToastHost, toast } from '../src/components/kit';
+
+/**
+ * Good news (a badge, a signature milestone) also pops up the moment it lands, not only in
+ * Notifications. Whatever was already there when the account loaded stays in the inbox.
+ */
+function NewsToasts() {
+  const q = useSnapshot();
+  const seen = useRef<{ profile: string; ids: Set<string> } | null>(null);
+  useEffect(() => {
+    const profile = q.data?.profile?.id;
+    const list = q.data?.notifications ?? [];
+    if (!profile) return;
+    const known = seen.current;
+    if (known?.profile !== profile) {
+      seen.current = { profile, ids: new Set(list.map((n) => n.id)) };
+      return;
+    }
+    const fresh = list.filter((n) => !known.ids.has(n.id));
+    fresh.forEach((n) => known.ids.add(n.id));
+    const news = fresh.find((n) => n.kind === 'badge' || n.kind === 'milestone');
+    if (news) toast(news.body);
+  }, [q.data]);
+  return null;
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -54,6 +79,7 @@ export default function RootLayout() {
             }}
           />
           <ToastHost />
+          <NewsToasts />
         </View>
       </View>
     </Providers>

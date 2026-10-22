@@ -1,5 +1,5 @@
 import { prepareSubmission, fixtureSubmission } from './signature-fixture';
-import { LocalAdapter, Storage } from '../src/data/local';
+import { LocalAdapter, Storage, localRippleCode } from '../src/data/local';
 import { demoIds, petitionId, seedPetitions } from '../src/data/seed';
 function setup() {
   const values = new Map<string, string>();
@@ -199,9 +199,10 @@ test('profile edits are validated and do not mutate prior public signatures', as
 
 test('participation awards are earned by saved actions', async () => {
   const { adapter: a } = setup();
-  await a.signIn(demoIds.jordan);
-  const communities = (await a.load()).communities;
-  for (const c of communities.slice(0, 2)) await a.execute({ type: 'join', communityId: c.id });
+  // Maya starts in one community; a second earns Community builder.
+  await a.signIn(demoIds.maya);
+  expect((await a.load()).profile?.badges).not.toContain('Community builder');
+  await a.execute({ type: 'join', communityId: (await a.load()).communities[1].id });
   expect((await a.load()).profile?.badges).toContain('Community builder');
   // Publishing needs a verified email, which Jordan's sample account lacks; Sam publishes.
   await a.signIn(demoIds.sam);
@@ -215,6 +216,42 @@ test('participation awards are earned by saved actions', async () => {
     kind: 'idea',
   });
   expect((await a.load()).profile?.badges).toContain('Conversation starter');
+});
+
+test('each badge is announced once, and some are earned through other people', async () => {
+  const { adapter: a } = setup();
+  await a.signIn(demoIds.maya);
+  // Maya already follows one petition; two more saves earn Keeping watch.
+  for (const n of [3, 4]) await a.execute({ type: 'save', petitionId: petitionId(n) });
+  await a.execute({ type: 'save', petitionId: petitionId(5) });
+  const badgeNews = async () =>
+    (await a.load()).notifications.filter((n) => n.kind === 'badge').map((n) => n.body);
+  expect(await badgeNews()).toEqual([
+    'You earned the Keeping watch badge. See all your badges in Profile.',
+  ]);
+  const shade = (await a.load()).petitions.find((p) => p.id === petitionId(2))!;
+  await a.execute({
+    type: 'sign',
+    petitionId: shade.id,
+    identity: 'anonymous',
+    submission: fixtureSubmission(shade),
+  });
+  expect(await badgeNews()).toHaveLength(2);
+  expect((await a.load()).profile?.badges).toContain('First voice');
+  // Sam signing through Maya's link earns Maya Ripple maker, though Maya did nothing.
+  await a.signIn(demoIds.sam);
+  await a.execute({
+    type: 'sign',
+    petitionId: shade.id,
+    identity: 'anonymous',
+    submission: fixtureSubmission(shade),
+    via: localRippleCode(demoIds.maya),
+  });
+  await a.signIn(demoIds.maya);
+  expect((await a.load()).profile?.badges).toContain('Ripple maker');
+  expect((await badgeNews())[0]).toBe(
+    'You earned the Ripple maker badge. See all your badges in Profile.',
+  );
 });
 
 test('a signature needs a drawing and consent, matches the text read, and stays private', async () => {

@@ -10,6 +10,12 @@ import {
 } from '../src/domain/rules';
 import { Draft, Petition, Snapshot } from '../src/domain/model';
 import { forYou } from '../src/domain/for-you';
+import {
+  BadgeCounts,
+  badgeDefinitions,
+  badgeProgress,
+  qualifiedBadges,
+} from '../src/domain/personalization';
 import { seedPetitions, seedProfiles } from '../src/data/seed';
 const petitions = seedPetitions();
 const profile = seedProfiles()[0];
@@ -94,8 +100,35 @@ describe('forms and privacy', () => {
       { verification: 'custom', customRule: '' },
       { evidence: [{ label: 'A source', url: 'javascript:alert(1)' }] },
       { goal: 1.5 },
+      { communityId: '', verification: 'community' },
     ])
       expect(draftSchema.safeParse({ ...p, ...patch }).success).toBe(false);
+  });
+  test('community and evidence are optional', () =>
+    expect(
+      draftSchema.safeParse({ ...p, communityId: '', verification: 'account', evidence: [] })
+        .success,
+    ).toBe(true));
+  test('badges come from counts, and progress reads them from the snapshot', () => {
+    const none = Object.fromEntries(badgeDefinitions.map((b) => [b.kind, 0])) as BadgeCounts;
+    expect(qualifiedBadges(none)).toEqual([]);
+    expect(qualifiedBadges({ ...none, signed: 10, topics: 3, goals: 1 })).toEqual([
+      'First voice',
+      'Showing up',
+      'Steady voice',
+      'Wide lens',
+      'Goal getter',
+    ]);
+    const signedTwo = petitions.filter((x) => x.topic !== p.topic).slice(0, 2);
+    const progress = badgeProgress({
+      ...snapshot,
+      signed: [p.id, ...signedTwo.map((x) => x.id)],
+      saved: [p.id],
+    });
+    const of = (name: string) => progress.find((b) => b.name === name)?.progress;
+    expect(of('Showing up')).toBe(3);
+    expect(of('Keeping watch')).toBe(1);
+    expect(of('Wide lens')).toBe(new Set([p, ...signedTwo].map((x) => x.topic)).size);
   });
   test('email-verified users can sign anonymously', () =>
     expect(signingError(p, snapshot, 'anonymous')).toBeNull());
