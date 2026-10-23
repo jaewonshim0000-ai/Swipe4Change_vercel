@@ -70,7 +70,7 @@ test('the reorganized builder validates each step, previews both surfaces, and p
   await fireEvent.press(screen.getByLabelText('Publish petition'));
   expect((await localAdapter.load()).petitions).toHaveLength(seedPetitions().length);
   await fireEvent.press(screen.getByLabelText('Publish'));
-  await waitFor(() => expect(screen.getByText('Published · Change starter earned')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Published')).toBeTruthy());
   await fireEvent.press(screen.getByLabelText('View your petition'));
   expect(router.push).toHaveBeenCalledWith(expect.stringContaining('/petition/'));
   const created = (await localAdapter.load()).petitions.find(
@@ -119,11 +119,15 @@ test('on phones the builder asks one question per screen, reviews every answer a
     'The exact change you’re asking for',
     'Assess the school-to-library path and publish a lighting plan.',
   );
-  // Place, topic and community keep the demo's defaults.
-  for (const n of [4, 5, 6]) {
+  // Place and topic keep the demo's defaults.
+  for (const n of [4, 5]) {
     await waitFor(() => expect(screen.getByText(`Question ${n} of 12`)).toBeTruthy());
     await fireEvent.press(screen.getByLabelText('Next'));
   }
+  // A community is optional: this petition stands on its own.
+  await waitFor(() => expect(screen.getByText('Question 6 of 12')).toBeTruthy());
+  await fireEvent.press(screen.getByLabelText(/^No community\./));
+  await fireEvent.press(screen.getByLabelText('Next'));
   await waitFor(() => expect(screen.getByLabelText('Who can make this change?')).toBeTruthy());
   await answer('Who can make this change?', 'Riverton Public Works (fictional)');
   // With a recipient known, the summary question offers a suggestion built from the answers.
@@ -135,11 +139,15 @@ test('on phones the builder asks one question per screen, reviews every answer a
   );
   for (const n of [9, 10, 11]) {
     await waitFor(() => expect(screen.getByText(`Question ${n} of 12`)).toBeTruthy());
+    // Evidence is optional, and community-only signing needs a community.
+    if (n === 10) expect(screen.queryByLabelText(/^Community members/)).toBeNull();
     await fireEvent.press(screen.getByLabelText('Next'));
   }
   await waitFor(() => expect(screen.getByText('Question 12 of 12')).toBeTruthy());
   await fireEvent.press(screen.getByLabelText('Review'));
   await waitFor(() => expect(screen.getByLabelText('Card preview')).toBeTruthy());
+  expect(screen.getByText('No community (optional)')).toBeTruthy();
+  expect(screen.getByText('Nothing added (optional)')).toBeTruthy();
   expect(screen.getByText('Writing check · local rules')).toBeTruthy();
   // Editing one answer comes straight back to the review.
   await fireEvent.press(screen.getByLabelText('Edit: What should we call your petition?'));
@@ -150,11 +158,13 @@ test('on phones the builder asks one question per screen, reviews every answer a
   expect(screen.getByText('Why it matters')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Publish petition'));
   await fireEvent.press(screen.getByLabelText('Publish'));
-  await waitFor(() => expect(screen.getByText('Published · Change starter earned')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Published')).toBeTruthy());
   const created = (await localAdapter.load()).petitions.find(
     (p) => p.title === 'Light the walk from school to the library',
   );
   expect(created?.status).toBe('active');
+  expect(created?.communityId).toBe('');
+  expect(created?.evidence).toEqual([]);
   await view.unmount();
   client.clear();
 });

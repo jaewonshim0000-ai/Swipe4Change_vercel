@@ -171,7 +171,7 @@ Current as of October 12, 2026. Every account, community, office, signature and 
 
 - Initials avatar, name, city and bio.
 - **Stats:** Started, Signed, Ripple, Communities.
-- **Badges** earned from real activity: First voice, Showing up, Community builder, Change starter, Conversation starter — with visible progress toward each.
+- **Badges** earned from real activity: First voice, Showing up (5 signatures), Steady voice (10), Wide lens (3 topics), Community builder, Keeping watch (3 saves), Helping hand (volunteering), Change starter, Conversation starter, Ripple maker (someone signs through your link) and Goal getter (your petition reaches its goal) — with visible progress toward each, a notification for every award, and a pop-up when a badge or signature milestone lands.
 - **Your ripple** summary.
 - Participation filters: Created, Signed, Saved, Volunteering.
 - Your communities, your private drafts, and profile editing (name, bio, signing-history personalization toggle).

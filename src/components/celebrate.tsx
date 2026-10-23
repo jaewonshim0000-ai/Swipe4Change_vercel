@@ -40,13 +40,13 @@ const lowerFirst = (s: string) => {
 /**
  * The full-screen "It's signed!" moment, shown only after the server confirms the signature:
  * nested hearts, your initials beside the petition's photo, the new count, then the ripple
- * invitation, any first badge, and the private-receipt note.
+ * invitation, any badges the signature earned, and the private-receipt note.
  */
 export function Celebrate({
   petition: p,
   name,
   shownAs,
-  firstBadge,
+  badges,
   onClose,
   onShare,
 }: {
@@ -54,14 +54,16 @@ export function Celebrate({
   name: string;
   /** The public name the signature appears under. */
   shownAs: string;
-  firstBadge: boolean;
+  /** Badges this signature earned, as the server recorded them. */
+  badges: string[];
   onClose: () => void;
   onShare: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [now] = useState(Date.now);
-  const art = Math.max(width * 1.5, 560);
+  // Capped so the pale hearts stay behind the photos: on a wide screen they would cover the copy.
+  const art = Math.min(Math.max(width * 1.5, 560), 660);
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Animated.View
@@ -123,7 +125,7 @@ export function Celebrate({
           }}
         >
           <Animated.View
-            style={[{ flexDirection: 'row', marginTop: 40 }, anim(kf.in, 600, { delay: 150 })]}
+            style={[{ flexDirection: 'row', marginTop: 24 }, anim(kf.in, 600, { delay: 150 })]}
           >
             <Initials
               text={
@@ -135,14 +137,14 @@ export function Celebrate({
                       .slice(0, 2)
                   : '✓'
               }
-              size={150}
+              size={128}
               ring={colors.pale}
               style={{ borderWidth: 5 }}
             />
             <View
               style={{
-                width: 150,
-                height: 150,
+                width: 128,
+                height: 128,
                 marginLeft: -20,
                 borderRadius: 999,
                 borderWidth: 5,
@@ -162,7 +164,8 @@ export function Celebrate({
             accessible
             accessibilityRole="header"
             accessibilityLabel="It’s signed!"
-            style={[{ marginTop: -36 }, anim(kf.pop, 550, { delay: 300, ease: 'ease' })]}
+            // Below the photos, never over them: white on the pale circle and hearts is unreadable.
+            style={[{ marginTop: 16 }, anim(kf.pop, 550, { delay: 300, ease: 'ease' })]}
           >
             <Text style={[titleStyle, { fontSize: 30, lineHeight: 34, marginLeft: 6 }]}>IT’S</Text>
             <Text style={[titleStyle, { fontSize: 64, lineHeight: 70, letterSpacing: -1 }]}>
@@ -192,7 +195,7 @@ export function Celebrate({
                 fontFamily: fonts.medium,
                 fontSize: 15,
                 lineHeight: 22,
-                color: colors.onImage,
+                color: colors.white,
               },
               anim(kf.in, 500, { delay: 480 }),
             ]}
@@ -242,25 +245,24 @@ export function Celebrate({
               </Text>
             </View>
           </Animated.View>
-          {firstBadge && (
+          {badges.map((b, i) => (
             <Animated.View
+              key={b}
               style={[
                 glass,
                 { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-                anim(kf.in, 500, { delay: 600 }),
+                anim(kf.in, 500, { delay: 600 + i * 80 }),
               ]}
             >
               <Animated.View style={anim(kf.float, 2400, { loop: true, ease: 'ease-in-out' })}>
-                <Medal name="First voice" earned size={40} />
+                <Medal name={b} earned size={40} />
               </Animated.View>
               <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.white }}>
                 Badge earned ·{' '}
-                <Text style={{ fontFamily: fonts.bold, color: badgeLook('First voice').tone.soft }}>
-                  First voice
-                </Text>
+                <Text style={{ fontFamily: fonts.bold, color: badgeLook(b).tone.soft }}>{b}</Text>
               </Text>
             </Animated.View>
-          )}
+          ))}
           <View style={{ marginTop: 'auto', paddingTop: 24, width: '100%', gap: 8 }}>
             <Press
               accessibilityLabel="Share my link"
@@ -335,7 +337,7 @@ const titleStyle = {
   textShadowOffset: { width: 4, height: 5 },
   textShadowRadius: 0,
 };
-const meterText = { fontFamily: fonts.semibold, fontSize: 13, color: colors.onImage };
+const meterText = { fontFamily: fonts.semibold, fontSize: 13, color: colors.white };
 const glass = {
   width: '100%' as const,
   padding: 16,

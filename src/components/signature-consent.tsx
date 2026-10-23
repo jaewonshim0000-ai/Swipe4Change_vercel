@@ -87,7 +87,8 @@ export function SignatureConsent({
   const command = useCommand();
   // Keep the text that was opened, even when background queries refresh the petition.
   const [disclosure] = useState(() => petitionDisclosure(petition));
-  const [firstBadge] = useState(() => !snapshot.profile?.badges.includes('First voice'));
+  // Badges held when the sheet opened; whatever the refreshed snapshot adds, this signature earned.
+  const [hadBadges] = useState(() => snapshot.profile?.badges ?? []);
   const [identity, setIdentity] = useState<Identity>(
     petition.identities.includes('anonymous') ? 'anonymous' : petition.identities[0],
   );
@@ -152,7 +153,7 @@ export function SignatureConsent({
         petition={petition}
         name={name}
         shownAs={publicName(name, identity)}
-        firstBadge={firstBadge}
+        badges={(snapshot.profile?.badges ?? []).filter((b) => !hadBadges.includes(b))}
         onClose={onClose}
         onShare={() => {
           onClose();

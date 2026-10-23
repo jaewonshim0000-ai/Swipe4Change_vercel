@@ -52,7 +52,7 @@ const EXPLORE_EVERY = 5;
 const features = (p: Petition) => [
   ...petitionTags(p),
   `topic:${p.topic}`,
-  `community:${p.communityId}`,
+  ...(p.communityId ? [`community:${p.communityId}`] : []),
 ];
 
 interface Event {

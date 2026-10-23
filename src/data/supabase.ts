@@ -30,6 +30,8 @@ export function createSupabaseAdapter(getToken: () => Promise<string | null>): A
       if (!data) throw new Error('No data returned.');
       return {
         ...data,
+        // A petition with no community has a null community_id; the app uses '' for "none".
+        petitions: data.petitions.map((p) => ({ ...p, communityId: p.communityId ?? '' })),
         notifications: data.notifications.map((entry) => ({
           ...entry,
           // Existing deployments still return the original system author name.
