@@ -7,13 +7,13 @@ import {
 } from '../src/domain/location';
 
 test('cities match regardless of case, spacing, punctuation or a spelled-out state', () => {
-  expect(sameCity('Riverton, CA', 'riverton,ca')).toBe(true);
-  expect(sameCity('Riverton, California', 'Riverton CA')).toBe(true);
+  expect(sameCity('Irvine, CA', 'irvine,ca')).toBe(true);
+  expect(sameCity('Irvine, California', 'Irvine CA')).toBe(true);
   expect(sameCity(' New York,  New York ', 'New York, NY')).toBe(true);
   expect(sameCity('Washington, District of Columbia', 'washington dc')).toBe(true);
-  expect(sameCity('Riverton, CA', 'Riverton, WY')).toBe(false);
-  expect(sameCity('Riverton, CA', 'Brookside, CA')).toBe(false);
-  expect(sameCity('Riverton, CA', undefined)).toBe(false);
+  expect(sameCity('Irvine, CA', 'Irvine, WY')).toBe(false);
+  expect(sameCity('Irvine, CA', 'Costa Mesa, CA')).toBe(false);
+  expect(sameCity('Irvine, CA', undefined)).toBe(false);
   expect(sameCity('', '')).toBe(false);
   expect(normalizeCity(' St. Louis , Missouri ')).toBe('st louis mo');
 });
@@ -45,5 +45,5 @@ test('a reverse lookup keeps only the city and state', () => {
 });
 
 test('sample cities are the fictional demo towns', () => {
-  expect(sampleCities.map((c) => c.city)).toEqual(['Riverton, CA', 'Brookside, CA']);
+  expect(sampleCities.map((c) => c.city)).toEqual(['Irvine, CA', 'Costa Mesa, CA']);
 });

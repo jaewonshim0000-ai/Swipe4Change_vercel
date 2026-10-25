@@ -37,7 +37,7 @@ export interface RecipientOffice {
 export const recipientDirectory: RecipientOffice[] = [
   {
     id: 'public-works',
-    name: 'Riverton Public Works (fictional)',
+    name: 'Irvine Public Works (fictional)',
     level: 'city',
     controls: [
       'Street lighting on city-owned roads and paths',
@@ -52,7 +52,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'transportation-safety',
-    name: 'Riverton Transportation Safety Board (fictional)',
+    name: 'Irvine Transportation Safety Board (fictional)',
     level: 'city',
     controls: [
       'Speed limit reviews',
@@ -66,7 +66,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'parks',
-    name: 'Riverton Parks and Recreation (fictional)',
+    name: 'Irvine Parks and Recreation (fictional)',
     level: 'city',
     controls: [
       'Park hours, benches, lighting and play equipment',
@@ -80,7 +80,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'environmental-services',
-    name: 'Riverton Environmental Services (fictional)',
+    name: 'Irvine Environmental Services (fictional)',
     level: 'city',
     controls: [
       'Recycling and waste collection',
@@ -94,7 +94,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'county-health',
-    name: 'Brookside County Environmental Health (fictional)',
+    name: 'Costa Mesa County Environmental Health (fictional)',
     level: 'county',
     controls: [
       'Water testing and public health inspections',
@@ -108,7 +108,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'school-board',
-    name: 'Riverton Unified School Board (fictional)',
+    name: 'Irvine Unified School Board (fictional)',
     level: 'school',
     controls: [
       'School facilities, grounds and lighting',
@@ -123,7 +123,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'library-board',
-    name: 'Riverton Library Board (fictional)',
+    name: 'Irvine Library Board (fictional)',
     level: 'city',
     controls: [
       'Public library opening hours and staffing',
@@ -136,16 +136,16 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'brookside-library',
-    name: 'Brookside Library Board (fictional)',
+    name: 'Costa Mesa Library Board (fictional)',
     level: 'city',
-    controls: ['Public library hours and staffing', 'Study space in Brookside library branches'],
+    controls: ['Public library hours and staffing', 'Study space in Costa Mesa library branches'],
     notResponsibleFor: 'School libraries, which are managed by the school district.',
     topics: ['Education', 'Public spaces'],
     responseDays: 28,
   },
   {
     id: 'brookside-parks',
-    name: 'Brookside Parks and Recreation (fictional)',
+    name: 'Costa Mesa Parks and Recreation (fictional)',
     level: 'city',
     controls: ['City park facilities and courts', 'Community garden feasibility on city land'],
     notResponsibleFor: 'Privately owned land and public streets. Ownership must be checked first.',
@@ -154,7 +154,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'brookside-public-works',
-    name: 'Brookside Public Works (fictional)',
+    name: 'Costa Mesa Public Works (fictional)',
     level: 'city',
     controls: ['Public bus stop fixtures', 'Accessible sidewalks and street furniture'],
     notResponsibleFor: 'Bus schedules and vehicles, which are managed by the transit agency.',
@@ -163,7 +163,7 @@ export const recipientDirectory: RecipientOffice[] = [
   },
   {
     id: 'ada-coordinator',
-    name: 'Riverton ADA Coordinator (fictional)',
+    name: 'Irvine ADA Coordinator (fictional)',
     level: 'city',
     controls: [
       'Accessibility of city services, buildings and meetings',

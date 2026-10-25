@@ -1,6 +1,7 @@
 import { Community, Petition, Profile, Topic, Verification } from '../domain/model';
 import { recipientDirectory } from '../domain/recipients';
 export const demoIds = {
+  anish: '00000000-0000-4000-8000-000000000004',
   maya: '00000000-0000-4000-8000-000000000001',
   sam: '00000000-0000-4000-8000-000000000002',
   jordan: '00000000-0000-4000-8000-000000000003',
@@ -10,9 +11,10 @@ export const petitionId = (i: number) => `20000000-0000-4000-8000-${String(i).pa
 const seedCommunityList: Omit<Community, 'moderators' | 'sampleMembers'>[] = [
   {
     id: communityId(1),
-    name: 'Riverton students',
-    description: 'Small changes. Safer journeys. A space for students shaping our fictional town.',
-    city: 'Riverton, CA',
+    name: 'Irvine students',
+    description:
+      'Small changes. Safer journeys. A space for students shaping Irvine and Orange County. Sample community.',
+    city: 'Irvine, CA',
     topic: 'Safer streets',
     members: 248,
     ownerId: demoIds.maya,
@@ -21,7 +23,7 @@ const seedCommunityList: Omit<Community, 'moderators' | 'sampleMembers'>[] = [
     id: communityId(2),
     name: 'Greener together',
     description: 'Neighbors making room for trees, cleaner air, and a more resilient community.',
-    city: 'Riverton, CA',
+    city: 'Irvine, CA',
     topic: 'Environment',
     members: 186,
     ownerId: demoIds.sam,
@@ -30,16 +32,16 @@ const seedCommunityList: Omit<Community, 'moderators' | 'sampleMembers'>[] = [
     id: communityId(3),
     name: 'Open doors collective',
     description: 'Better access to learning and public places, for everyone.',
-    city: 'Riverton, CA',
+    city: 'Irvine, CA',
     topic: 'Accessibility',
     members: 124,
     ownerId: demoIds.jordan,
   },
   {
     id: communityId(4),
-    name: 'Brookside neighbors',
+    name: 'Costa Mesa neighbors',
     description: 'Libraries, parks, and the places that bring us together.',
-    city: 'Brookside, CA',
+    city: 'Costa Mesa, CA',
     topic: 'Public spaces',
     members: 312,
     ownerId: demoIds.sam,
@@ -58,7 +60,7 @@ export function seedProfiles(): Profile[] {
     {
       id: demoIds.maya,
       name: 'Maya Chen',
-      city: 'Riverton, CA',
+      city: 'Irvine, CA',
       interests: ['Safer streets', 'Environment', 'Education'],
       joined: [communityId(1)],
       onboarded: false,
@@ -70,7 +72,7 @@ export function seedProfiles(): Profile[] {
     {
       id: demoIds.sam,
       name: 'Sam Rivera',
-      city: 'Riverton, CA',
+      city: 'Irvine, CA',
       interests: ['Environment', 'Public spaces', 'Accessibility'],
       joined: [communityId(1), communityId(2), communityId(4)],
       onboarded: false,
@@ -81,7 +83,7 @@ export function seedProfiles(): Profile[] {
     {
       id: demoIds.jordan,
       name: 'Jordan Lee',
-      city: 'Brookside, CA',
+      city: 'Costa Mesa, CA',
       interests: ['Education', 'Accessibility', 'Safer streets'],
       joined: [communityId(1), communityId(3)],
       onboarded: false,
@@ -89,10 +91,23 @@ export function seedProfiles(): Profile[] {
       locationApproved: false,
       badges: ['Community builder'],
     },
+    {
+      id: demoIds.anish,
+      name: 'Anish Madishetty',
+      city: 'Irvine, CA',
+      interests: ['Safer streets', 'Environment', 'Education'],
+      joined: [],
+      onboarded: true,
+      emailVerified: true,
+      locationApproved: false,
+      badges: [],
+      bio: '',
+      useSigningHistory: true,
+    },
   ];
 }
 /**
- * Fictional backing votes: two Riverton students members already said yes to the raised
+ * Fictional backing votes: two Irvine students members already said yes to the raised
  * crosswalk, so one more yes from a member backs it in the demo.
  */
 export const seedVotes = [demoIds.sam, demoIds.jordan].map((userId) => ({
@@ -113,7 +128,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'More shade. Cooler school days.',
-    'Plant shade trees around the Riverton school courtyard',
+    'Plant shade trees around the Irvine school courtyard',
     'Environment',
     2,
     'account',
@@ -122,7 +137,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'Keep the library open after class',
-    'Extend the Brookside library study hours to 7 pm',
+    'Extend the Costa Mesa library study hours to 7 pm',
     'Education',
     4,
     'account',
@@ -158,7 +173,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'Refill, reuse, repeat',
-    'Install water refill stations at Riverton recreation centers',
+    'Install water refill stations at Irvine recreation centers',
     'Environment',
     2,
     'account',
@@ -176,7 +191,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'Our bus stops need a seat',
-    'Add accessible benches at Brookside bus stops',
+    'Add accessible benches at Costa Mesa bus stops',
     'Accessibility',
     4,
     'account',
@@ -212,7 +227,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'A cooler wait for the bus',
-    'Assess shaded shelters at Brookside bus stops',
+    'Assess shaded shelters at Costa Mesa bus stops',
     'Safer streets',
     4,
     'account',
@@ -221,7 +236,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'Give broken things a second life',
-    'Pilot a monthly repair cafe at a Riverton recreation center',
+    'Pilot a monthly repair cafe at a Irvine recreation center',
     'Environment',
     2,
     'account',
@@ -230,7 +245,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'More ways to learn after the bell',
-    'Pilot free after-school homework sessions at Brookside library',
+    'Pilot free after-school homework sessions at Costa Mesa library',
     'Education',
     4,
     'email',
@@ -239,7 +254,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'A clearer route for everyone',
-    'Audit step-free routes to Riverton recreation centers',
+    'Audit step-free routes to Irvine recreation centers',
     'Accessibility',
     3,
     'account',
@@ -248,7 +263,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'A place to pause on Main Street',
-    'Assess public seating along Brookside Main Street',
+    'Assess public seating along Costa Mesa Main Street',
     'Public spaces',
     4,
     'account',
@@ -266,7 +281,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'Rainwater has somewhere to go',
-    'Assess rain gardens at Riverton recreation centers',
+    'Assess rain gardens at Irvine recreation centers',
     'Environment',
     2,
     'account',
@@ -275,7 +290,7 @@ const stories: [string, string, Topic, number, Verification, number, number][] =
   ],
   [
     'Borrow the tools to try something new',
-    'Pilot a tool and equipment lending shelf at Brookside library',
+    'Pilot a tool and equipment lending shelf at Costa Mesa library',
     'Education',
     4,
     'account',
@@ -311,16 +326,15 @@ const storyCases: { summary: string; problem: string; recipientId: string }[] = 
     recipientId: 'public-works',
   },
   {
-    summary:
-      'Plant shade trees around the Riverton school courtyard and publish a maintenance plan.',
+    summary: 'Plant shade trees around the Irvine school courtyard and publish a maintenance plan.',
     problem:
       'Students use the school courtyard for breaks and outdoor activities, but the seating area has little shade. The request asks the district to assess suitable planting sites and explain how new trees would be cared for.',
     recipientId: 'school-board',
   },
   {
-    summary: 'Keep the Brookside public library open until 7 pm on school nights.',
+    summary: 'Keep the Costa Mesa public library open until 7 pm on school nights.',
     problem:
-      'Students who need a quiet place after class cannot use the Brookside library once it closes for the day. An evening-hours pilot would give them a predictable place to study; staffing and costs need a public review.',
+      'Students who need a quiet place after class cannot use the Costa Mesa library once it closes for the day. An evening-hours pilot would give them a predictable place to study; staffing and costs need a public review.',
     recipientId: 'brookside-library',
   },
   {
@@ -342,27 +356,27 @@ const storyCases: { summary: string; problem: string; recipientId: string }[] = 
     recipientId: 'public-works',
   },
   {
-    summary: 'Install water refill stations at Riverton recreation centers.',
+    summary: 'Install water refill stations at Irvine recreation centers.',
     problem:
       'Visitors to recreation centers need a dependable way to refill water bottles during activities. The request asks the parks department to identify suitable sites, costs and a maintenance schedule.',
     recipientId: 'parks',
   },
   {
-    summary: 'Make a sensory-friendly study room available at the Riverton public library.',
+    summary: 'Make a sensory-friendly study room available at the Irvine public library.',
     problem:
       'A shared library room can be noisy for residents who need a lower-stimulation place to read or study. The library board can assess an existing room and publish hours and access guidelines.',
     recipientId: 'library-board',
   },
   {
-    summary: 'Add accessible benches at Brookside bus stops with long waits.',
+    summary: 'Add accessible benches at Costa Mesa bus stops with long waits.',
     problem:
-      'Some Brookside stops lack a place to sit while waiting for a bus. Riders with limited stamina need the city to assess clear sidewalk space and choose bench sites that preserve accessible travel paths.',
+      'Some Costa Mesa stops lack a place to sit while waiting for a bus. Riders with limited stamina need the city to assess clear sidewalk space and choose bench sites that preserve accessible travel paths.',
     recipientId: 'brookside-public-works',
   },
   {
     summary: 'Repair the Cedar Commons basketball courts and share a reopening plan.',
     problem:
-      'Neighbors want to use the Cedar Commons courts, but worn playing surfaces need a maintenance assessment. Brookside Parks can inspect the site and publish a repair schedule and reopening criteria.',
+      'Neighbors want to use the Cedar Commons courts, but worn playing surfaces need a maintenance assessment. Costa Mesa Parks can inspect the site and publish a repair schedule and reopening criteria.',
     recipientId: 'brookside-parks',
   },
   {
@@ -378,32 +392,31 @@ const storyCases: { summary: string; problem: string; recipientId: string }[] = 
     recipientId: 'campus-facilities',
   },
   {
-    summary: 'Assess shaded shelters at Brookside bus stops and publish site options.',
+    summary: 'Assess shaded shelters at Costa Mesa bus stops and publish site options.',
     problem:
       'Riders waiting at exposed stops have asked for shade. This fictional proposal asks the city to review clear pedestrian space, shelter locations and maintenance before choosing a pilot.',
     recipientId: 'brookside-public-works',
   },
   {
-    summary:
-      'Pilot a monthly repair cafe at a Riverton recreation center and share a public review.',
+    summary: 'Pilot a monthly repair cafe at a Irvine recreation center and share a public review.',
     problem:
       'Residents would like a place to learn basic repairs instead of discarding household items. This fictional proposal requests a supervised pilot with clear safety guidance and an equipment plan.',
     recipientId: 'parks',
   },
   {
-    summary: 'Pilot free after-school homework sessions at Brookside library.',
+    summary: 'Pilot free after-school homework sessions at Costa Mesa library.',
     problem:
       'Families have suggested a structured space for homework support after school. This fictional request asks the library to assess staffing, safeguarding and available study space before starting a pilot.',
     recipientId: 'brookside-library',
   },
   {
-    summary: 'Audit step-free routes to Riverton recreation centers and share a public review.',
+    summary: 'Audit step-free routes to Irvine recreation centers and share a public review.',
     problem:
       'Visitors using mobility devices need clear information about entrances and pathways. This fictional proposal asks parks staff to inspect routes and publish an accessible improvement checklist.',
     recipientId: 'parks',
   },
   {
-    summary: 'Assess public seating along Brookside Main Street and share a public review.',
+    summary: 'Assess public seating along Costa Mesa Main Street and share a public review.',
     problem:
       'Neighbors have suggested more resting places along Main Street. This fictional request asks the city to identify seating locations that preserve sidewalk access and share maintenance responsibilities.',
     recipientId: 'brookside-public-works',
@@ -415,13 +428,13 @@ const storyCases: { summary: string; problem: string; recipientId: string }[] = 
     recipientId: 'school-board',
   },
   {
-    summary: 'Assess rain gardens at Riverton recreation centers and share a public review.',
+    summary: 'Assess rain gardens at Irvine recreation centers and share a public review.',
     problem:
       'Neighbors would like to understand whether planted drainage areas could suit public recreation sites. This fictional request asks parks staff for a site assessment, cost estimate and maintenance plan.',
     recipientId: 'parks',
   },
   {
-    summary: 'Pilot a tool and equipment lending shelf at Brookside library.',
+    summary: 'Pilot a tool and equipment lending shelf at Costa Mesa library.',
     problem:
       'Residents have suggested sharing basic equipment through the library. This fictional proposal asks the board to consult users and review storage, training and safe lending policies.',
     recipientId: 'brookside-library',
@@ -461,7 +474,7 @@ export function seedPetitions(): Petition[] {
           : action,
       recipient: office.name,
       topic,
-      city: c === 4 ? 'Brookside, CA' : 'Riverton, CA',
+      city: c === 4 ? 'Costa Mesa, CA' : 'Irvine, CA',
       communityId: communityId(c),
       goal,
       // One shared deadline made every card read the same countdown and left Explore's "Ending
@@ -500,7 +513,7 @@ export function seedPetitions(): Petition[] {
               {
                 id: '30000000-0000-4000-8000-000000000001',
                 petitionId: petitionId(1),
-                recipient: 'Riverton Public Works (fictional)',
+                recipient: 'Irvine Public Works (fictional)',
                 method: 'in_person',
                 deliveredBy: 'Maya Chen',
                 deliveredAt: date,
@@ -544,8 +557,8 @@ export function seedPetitions(): Petition[] {
           ? [
               {
                 id: 'en1',
-                body: 'Riverton students supports this proposal. Sample community endorsement.',
-                author: 'Riverton students',
+                body: 'Irvine students supports this proposal. Sample community endorsement.',
+                author: 'Irvine students',
                 date,
                 kind: 'endorsement',
               },
@@ -578,7 +591,7 @@ export function seedPetitions(): Petition[] {
                 deliveryId: '30000000-0000-4000-8000-000000000001',
                 body: 'We will include the campus path in our next lighting review and invite student input. This is a fictional response for demonstration only.',
                 author: 'Avery Park (fictional)',
-                organization: 'Riverton Public Works (fictional)',
+                organization: 'Irvine Public Works (fictional)',
                 date,
                 kind: 'response',
                 verification: 'verified',

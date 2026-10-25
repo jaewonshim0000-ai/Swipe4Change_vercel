@@ -9,24 +9,36 @@ export function Intro({ onContinue }: { onContinue: () => void }) {
       contentContainerStyle={{ flexGrow: 1, padding: 24, paddingTop: 64, gap: 32 }}
     >
       <Wordmark size={27} />
-      <View style={{ flex: 1, justifyContent: 'center', gap: 24 }}>
-        <Text style={styles.label}>Small actions. Shared progress.</Text>
-        <Text accessibilityRole="header" style={styles.hero}>
-          A little swipe.{'\n'}A bigger change.
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 24,
+          width: '100%',
+          maxWidth: 640,
+          alignSelf: 'center',
+        }}
+      >
+        <Text style={[styles.label, { textAlign: 'center' }]}>Small actions. Shared progress.</Text>
+        <Text accessibilityRole="header" style={[styles.hero, { textAlign: 'center' }]}>
+          What would you change{'\n'}about your community?
         </Text>
-        <Text style={styles.body}>
-          Discover petitions that matter to you, find your people, and help move your community
-          forward.
+        <Text style={[styles.body, { textAlign: 'center' }]}>
+          Find a petition you care about, or start one of your own. A safer crossing, a park worth
+          looking after, or something your neighborhood needs.
         </Text>
         {['Find what moves you.', 'Make your voice count.', 'Follow the next step.'].map(
           (text, index) => (
-            <Text key={text} style={styles.h3}>
+            <Text key={text} style={[styles.h3, { textAlign: 'center' }]}>
               {index + 1}. {text}
             </Text>
           ),
         )}
         <Button title="Find your next cause" onPress={onContinue} />
-        <Text style={styles.small}>Start with curiosity. Browse freely.</Text>
+        <Text style={[styles.small, { textAlign: 'center' }]}>
+          You can look around before signing up.
+        </Text>
       </View>
     </ScrollView>
   );

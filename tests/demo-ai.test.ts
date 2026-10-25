@@ -12,7 +12,7 @@ test('a published demo explains that AI helpers are off, without sending a reque
   global.fetch = fetchSpy as unknown as typeof fetch;
   try {
     await expect(
-      demoAi.lookup!({ task: 'draft', description: 'The path is dark.', city: 'Riverton, CA' }),
+      demoAi.lookup!({ task: 'draft', description: 'The path is dark.', city: 'Irvine, CA' }),
     ).rejects.toThrow(/not available on this demo website/);
     await expect(
       demoAi.screen({ title: 't', summary: 's', problem: 'p', action: 'a', recipient: 'r' }),

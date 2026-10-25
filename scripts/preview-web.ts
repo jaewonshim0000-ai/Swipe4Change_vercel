@@ -1,15 +1,20 @@
 // Builds the web app exactly as Vercel does (single-page output, VERCEL=1) and serves dist/ the
 // way vercel.json does: real files first, every other path falls back to index.html.
-// Usage: npm run preview:web  (then open http://localhost:4173)
+// Usage: npm run preview:web (live backend) or npm run preview:demo (local sample data).
+// Then open http://localhost:4173.
 import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize, sep } from 'node:path';
 
-const build = spawnSync('npx expo export --platform web', {
+const build = spawnSync('npx expo export --platform web --clear', {
   stdio: 'inherit',
   shell: true,
-  env: { ...process.env, VERCEL: '1' },
+  env: {
+    ...process.env,
+    VERCEL: '1',
+    ...(process.argv.includes('--demo') ? { EXPO_PUBLIC_BACKEND: 'demo' } : {}),
+  },
 });
 if (build.status !== 0) process.exit(build.status ?? 1);
 

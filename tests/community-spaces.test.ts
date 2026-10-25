@@ -20,9 +20,9 @@ async function community(a: LocalAdapter) {
   await a.signIn(demoIds.jordan);
   const id = await a.execute({
     type: 'createCommunity',
-    name: 'Riverton working group',
+    name: 'Irvine working group',
     description: 'A fictional community used to exercise the collaboration spaces.',
-    city: 'Riverton, CA',
+    city: 'Irvine, CA',
     topic: 'Safer streets',
   });
   if (typeof id !== 'string') throw new Error('Missing id');
@@ -94,10 +94,10 @@ test('events need a date', async () => {
       body: 'A fictional community walk.',
       kind: 'event',
       eventAt: '2026-10-04T18:30',
-      location: 'Riverton library',
+      location: 'Irvine library',
     }),
   );
-  expect((await a.communityPosts(id))[0].location).toBe('Riverton library');
+  expect((await a.communityPosts(id))[0].location).toBe('Irvine library');
 });
 
 test('a report reaches moderators without naming the reporter', async () => {
@@ -182,14 +182,14 @@ test('members hear the owner’s announcements and events, never members’ even
     }),
   );
   expect(await heard(a, demoIds.sam)).toEqual([
-    'Riverton working group announcement: Lighting audit results are in. Thank you all.',
+    'Irvine working group announcement: Lighting audit results are in. Thank you all.',
   ]);
   await a.execute(
     post(id, {
       body: 'A member-run study meetup after class.',
       kind: 'event',
       eventAt: '2026-10-05T18:30',
-      location: 'Riverton library',
+      location: 'Irvine library',
     }),
   );
   expect(await heard(a, demoIds.jordan)).toEqual([]);
@@ -198,7 +198,7 @@ test('members hear the owner’s announcements and events, never members’ even
 test('a new campaign is announced to its community once, when it is first public', async () => {
   const a = setup();
   const draft = seedPetitions()[0];
-  // Sam is a seeded Riverton students member.
+  // Sam is a seeded Irvine students member.
   await a.signIn(demoIds.maya);
   // Drafts stay quiet; publishing announces.
   const quiet = (await a.execute({ type: 'create', draft, publish: false })) as string;
@@ -210,7 +210,7 @@ test('a new campaign is announced to its community once, when it is first public
     publish: true,
   })) as string;
   expect(await heard(a, demoIds.sam)).toEqual([
-    'New campaign in Riverton students: “A brighter walk home starts here”.',
+    'New campaign in Irvine students: “A brighter walk home starts here”.',
   ]);
   await a.signIn(demoIds.maya);
   await a.execute({
@@ -226,8 +226,8 @@ test('a new campaign is announced to its community once, when it is first public
     reason: 'Clearer title.',
   });
   expect(await heard(a, demoIds.sam)).toEqual([
-    'New campaign in Riverton students: “Fix the path lights now”.',
-    'New campaign in Riverton students: “A brighter walk home starts here”.',
+    'New campaign in Irvine students: “Fix the path lights now”.',
+    'New campaign in Irvine students: “A brighter walk home starts here”.',
   ]);
   // The organizer is never told about their own campaign.
   expect(await heard(a, demoIds.maya)).toEqual([]);

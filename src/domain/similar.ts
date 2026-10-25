@@ -34,7 +34,7 @@ const words = (text: string) =>
       ?.filter((w) => w.length >= 3 && !common.has(w)) ?? [],
   );
 
-/** "Riverton Public Works" and "Riverton Department of Public Works" name the same office. */
+/** "Irvine Public Works" and "Irvine Department of Public Works" name the same office. */
 export function sameRecipient(a: string, b: string) {
   const x = words(a);
   const y = words(b);

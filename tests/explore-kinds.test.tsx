@@ -34,6 +34,9 @@ test('Explore keeps federal rules in their own category, apart from petitions', 
     </QueryClientProvider>,
   );
   expect(await screen.findByText('All petitions')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('Algorithm preferences'));
+  expect(screen.getByText('Save preferences')).toBeTruthy();
+  await fireEvent.press(screen.getByText('Cancel'));
   expect(screen.queryByText('Bicycle Use in Park Areas')).toBeNull();
 
   await fireEvent.press(screen.getByText('Federal rules'));

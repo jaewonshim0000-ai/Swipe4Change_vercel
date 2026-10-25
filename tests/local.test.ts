@@ -1,5 +1,5 @@
 import { prepareSubmission, fixtureSubmission } from './signature-fixture';
-import { LocalAdapter, Storage, localRippleCode } from '../src/data/local';
+import { LocalAdapter, STORAGE_KEY, Storage, localRippleCode } from '../src/data/local';
 import { demoIds, petitionId, seedPetitions } from '../src/data/seed';
 function setup() {
   const values = new Map<string, string>();
@@ -17,7 +17,7 @@ test('create, publish, sign anonymously, persist, manage and discuss end to end'
   await a.signIn(demoIds.maya);
   await a.execute({
     type: 'onboard',
-    city: 'Riverton, CA',
+    city: 'Irvine, CA',
     interests: ['Education', 'Environment', 'Safer streets'],
   });
   const id = await a.execute({ type: 'create', draft: seedPetitions()[0], publish: false });
@@ -296,4 +296,56 @@ test('a signature needs a drawing and consent, matches the text read, and stays 
   expect(await a.receipt(id)).toBeNull();
   await a.signOut();
   await expect(a.receipt(id)).rejects.toThrow(/Sign in/);
+});
+
+test('older demo locations migrate to Orange County without resetting user work', async () => {
+  const { adapter, storage } = setup();
+  await adapter.signIn(demoIds.maya);
+  const created = await adapter.execute({
+    type: 'create',
+    draft: seedPetitions()[0],
+    publish: false,
+  });
+  const raw = await storage.getItem(STORAGE_KEY);
+  if (!raw) throw new Error('Missing saved demo');
+  const old = JSON.parse(
+    raw.replaceAll('Irvine', 'Riverton').replaceAll('Costa Mesa', 'Brookside'),
+  );
+  delete old.locationRevision;
+  await storage.setItem(STORAGE_KEY, JSON.stringify(old));
+  const restored = await new LocalAdapter(storage, () => 'new').load();
+  expect(restored.profile?.city).toBe('Irvine, CA');
+  expect(restored.communities[0].name).toBe('Irvine students');
+  expect(restored.petitions.find((p) => p.id === petitionId(1))?.city).toBe('Irvine, CA');
+  // User-created content is not overwritten by a sample catalog migration.
+  expect(restored.petitions.find((p) => p.id === created)?.city).toBe('Riverton, CA');
+  expect(restored.saved).toContain(petitionId(2));
+  expect(restored.profile?.id).toBe(demoIds.maya);
+});
+
+test('Anish demo account is added to existing saves and keeps profile edits after reopening', async () => {
+  const { adapter, storage } = setup();
+  await adapter.signIn(demoIds.maya);
+  const raw = await storage.getItem(STORAGE_KEY);
+  if (!raw) throw new Error('Missing saved demo');
+  const old = JSON.parse(raw) as { profiles: { id: string }[] };
+  old.profiles = old.profiles.filter((p) => p.id !== demoIds.anish);
+  await storage.setItem(STORAGE_KEY, JSON.stringify(old));
+  const reopened = new LocalAdapter(storage, () => 'new');
+  await reopened.signIn(demoIds.anish);
+  expect((await reopened.load()).profile).toMatchObject({
+    id: demoIds.anish,
+    name: 'Anish Madishetty',
+    city: 'Irvine, CA',
+    onboarded: true,
+  });
+  await reopened.execute({
+    type: 'profile',
+    name: 'Anish Madishetty',
+    bio: 'My demo profile',
+    useSigningHistory: false,
+  });
+  expect((await new LocalAdapter(storage, () => 'new').load()).profile?.bio).toBe(
+    'My demo profile',
+  );
 });

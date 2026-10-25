@@ -116,8 +116,8 @@ export function cityFromReverse(json: {
   return name && st ? `${name}, ${st}` : null;
 }
 
-/** The demo's fictional towns, offered in the picker so the sample data stays reachable. */
+/** Orange County defaults; petitions and organizations in the demo remain sample data. */
 export const sampleCities: Place[] = [
-  { city: 'Riverton, CA', detail: 'Fictional sample city' },
-  { city: 'Brookside, CA', detail: 'Fictional sample city' },
+  { city: 'Irvine, CA', detail: 'Orange County · Sample petitions' },
+  { city: 'Costa Mesa, CA', detail: 'Orange County · Sample petitions' },
 ];

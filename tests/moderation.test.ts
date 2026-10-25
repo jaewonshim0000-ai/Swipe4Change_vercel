@@ -27,7 +27,7 @@ test('a member can create a community, owns it, and its headcount is not fiction
     type: 'createCommunity',
     name: 'Cedar Commons friends',
     description: 'Neighbors keeping the courts and green space usable all year round.',
-    city: 'Brookside, CA',
+    city: 'Costa Mesa, CA',
     topic: 'Public spaces',
   });
   if (typeof id !== 'string') throw new Error('Missing id');
@@ -42,7 +42,7 @@ test('a member can create a community, owns it, and its headcount is not fiction
       type: 'createCommunity',
       name: 'cedar commons friends',
       description: 'A duplicate name differing only by letter case should be refused.',
-      city: 'Brookside, CA',
+      city: 'Costa Mesa, CA',
       topic: 'Public spaces',
     }),
   ).rejects.toThrow(/already exists/);
@@ -51,7 +51,7 @@ test('a member can create a community, owns it, and its headcount is not fiction
       type: 'createCommunity',
       name: 'No',
       description: 'Too short a name.',
-      city: 'Brookside, CA',
+      city: 'Costa Mesa, CA',
       topic: 'Public spaces',
     }),
   ).rejects.toThrow();

@@ -31,7 +31,7 @@ test('every editable field of a published petition can be revised, with public h
     patch: {
       summary: 'A revised summary that explains the ask in one clear sentence.',
       problem: 'A revised problem statement with enough detail to explain why this matters here.',
-      recipient: 'Riverton Transportation Office (fictional)',
+      recipient: 'Irvine Transportation Office (fictional)',
       goal: 1500,
       deadline: '2027-12-31',
       evidence: [{ label: 'A second illustrative source', url: 'https://example.org/second' }],
@@ -39,13 +39,13 @@ test('every editable field of a published petition can be revised, with public h
     reason: 'Adding a source and correcting the responsible department',
   });
   const p = await find(a, id);
-  expect(p.recipient).toBe('Riverton Transportation Office (fictional)');
+  expect(p.recipient).toBe('Irvine Transportation Office (fictional)');
   expect(p.goal).toBe(1500);
   expect(p.deadline).toBe('2027-12-31');
   expect(p.evidence).toHaveLength(1);
   expect(p.evidence[0].label).toBe('A second illustrative source');
   // The prior wording survives in public history.
-  expect(p.edits[0].body).toContain('Riverton Public Works (fictional)');
+  expect(p.edits[0].body).toContain('Irvine Public Works (fictional)');
   expect(p.edits[0].body).toContain('Recipient:');
   expect(p.edits[0].body).toContain('Adding a source');
 });

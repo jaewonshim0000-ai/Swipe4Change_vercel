@@ -75,7 +75,8 @@
     "supabase:push": "supabase db push",
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
-    "preview:web": "tsx scripts/preview-web.ts"
+    "preview:web": "tsx scripts/preview-web.ts",
+    "preview:demo": "tsx scripts/preview-web.ts --demo"
   },
   "private": true
 }

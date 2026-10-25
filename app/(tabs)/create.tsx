@@ -74,11 +74,11 @@ import {
 
 const DAY = 86400000;
 const isoIn = (days: number) => new Date(Date.now() + days * DAY).toISOString().slice(0, 10);
-// The demo starts in its fictional Riverton community; the live app starts empty and the person
+// The demo starts in its fictional Irvine community; the live app starts empty and the person
 // chooses (a live project has no fictional communities, so that default would always be refused).
 const blank = (
   communityId = isDemo ? '10000000-0000-4000-8000-000000000001' : '',
-  city = isDemo ? 'Riverton, CA' : '',
+  city = isDemo ? 'Irvine, CA' : '',
 ): Draft => ({
   title: '',
   summary: '',
@@ -209,13 +209,13 @@ const templates = [
     label: 'Safer walk home',
     topic: 'Safer streets',
     action: 'Install pedestrian lighting along the route by March 2027',
-    recipient: isDemo ? 'Riverton Public Works (fictional)' : '',
+    recipient: isDemo ? 'Irvine Public Works (fictional)' : '',
   },
   {
     label: 'Welcoming place',
     topic: 'Accessibility',
     action: 'Add an accessible entrance to the park',
-    recipient: isDemo ? 'Riverton ADA Coordinator (fictional)' : '',
+    recipient: isDemo ? 'Irvine ADA Coordinator (fictional)' : '',
   },
   { label: 'Blank page', topic: 'Safer streets', action: '', recipient: '' },
 ] as const;
@@ -909,7 +909,7 @@ function Create({
         input(
           'customRule',
           'Describe the custom eligibility rule',
-          'Current Riverton students or staff',
+          'Current Irvine students or staff',
           true,
         )}
       {draft.verification === 'location' && (

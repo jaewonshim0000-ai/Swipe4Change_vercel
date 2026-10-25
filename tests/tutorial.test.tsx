@@ -10,7 +10,7 @@ import type { ProfileRole } from '../src/domain/model';
 const show = async (role: ProfileRole) => {
   await localAdapter.reset();
   await localAdapter.signIn(demoIds.maya);
-  await localAdapter.execute({ type: 'onboard', city: 'Riverton, CA', interests: [], role });
+  await localAdapter.execute({ type: 'onboard', city: 'Irvine, CA', interests: [], role });
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: Infinity } },
   });
