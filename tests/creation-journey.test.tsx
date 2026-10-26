@@ -46,10 +46,10 @@ test('the reorganized builder validates each step, previews both surfaces, and p
   );
   await fireEvent.changeText(
     screen.getByLabelText('Who can make this change?'),
-    'Riverton Public Works (fictional)',
+    'Irvine Public Works (fictional)',
   );
   // A new draft starts in the creator's own city, chosen through the city picker.
-  expect(screen.getByLabelText('Where is it happening?: Riverton, CA. Change')).toBeTruthy();
+  expect(screen.getByLabelText('Where is it happening?: Irvine, CA. Change')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Continue'));
   await waitFor(() => expect(screen.getByLabelText('The problem')).toBeTruthy());
   await fireEvent.changeText(
@@ -129,7 +129,7 @@ test('on phones the builder asks one question per screen, reviews every answer a
   await fireEvent.press(screen.getByLabelText(/^No community\./));
   await fireEvent.press(screen.getByLabelText('Next'));
   await waitFor(() => expect(screen.getByLabelText('Who can make this change?')).toBeTruthy());
-  await answer('Who can make this change?', 'Riverton Public Works (fictional)');
+  await answer('Who can make this change?', 'Irvine Public Works (fictional)');
   // With a recipient known, the summary question offers a suggestion built from the answers.
   await waitFor(() => expect(screen.getByLabelText('One-sentence summary')).toBeTruthy());
   expect(screen.getByText('Suggested summary, built from your own fields')).toBeTruthy();

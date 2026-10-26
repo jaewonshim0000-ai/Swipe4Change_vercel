@@ -19,3 +19,6 @@ dist-refinement/
 supabase/.temp/
 supabase/.branches/
 supabase/.env*
+
+# Local Claude Code settings and worktrees
+.claude/

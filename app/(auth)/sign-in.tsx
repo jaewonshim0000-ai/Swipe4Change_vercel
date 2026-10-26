@@ -117,6 +117,7 @@ export default function Welcome() {
             {isDemo ? (
               <View style={{ gap: 12 }}>
                 {[
+                  { id: demoIds.anish, name: 'Anish Madishetty' },
                   { id: demoIds.maya, name: 'Maya Chen' },
                   { id: demoIds.sam, name: 'Sam Rivera' },
                   { id: demoIds.jordan, name: 'Jordan Lee' },

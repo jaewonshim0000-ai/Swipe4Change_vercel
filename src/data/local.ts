@@ -80,6 +80,8 @@ interface LocalState {
   toAnnounce?: string[];
   drafts?: (SavedDraft & { userId: string })[];
   version: 1;
+  /** Migrates the old sample towns without clearing browser data. */
+  locationRevision?: 1;
   session: string | null;
   profiles: Profile[];
   /** Optional so demo data saved before member-created communities falls back to the seed set. */
@@ -112,6 +114,7 @@ export function localRippleCode(profileId: string) {
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const initial = (): LocalState => ({
   version: 1,
+  locationRevision: 1,
   session: null,
   profiles: seedProfiles(),
   communities: seedCommunities(),
@@ -150,6 +153,34 @@ export class LocalAdapter implements Adapter {
         const parsed: LocalState = JSON.parse(raw);
         if (parsed.version !== 1)
           throw new Error('Saved demo uses an unsupported version. Reset the demo.');
+        if (parsed.locationRevision !== 1) {
+          // Change only seeded records; keep user-created petitions, drafts and signed receipts.
+          const relocate = <T>(value: T): T =>
+            JSON.parse(
+              JSON.stringify(value)
+                .replaceAll('Riverton', 'Irvine')
+                .replaceAll('Brookside', 'Costa Mesa'),
+            ) as T;
+          parsed.petitions = parsed.petitions.map((p) =>
+            p.id.startsWith('20000000-0000-4000-8000-') ? relocate(p) : p,
+          );
+          parsed.communities = parsed.communities?.map((c) =>
+            c.id.startsWith('10000000-0000-4000-8000-') ? relocate(c) : c,
+          );
+          for (const profile of parsed.profiles) {
+            if (profile.city === 'Riverton, CA') profile.city = 'Irvine, CA';
+            if (profile.city === 'Brookside, CA') profile.city = 'Costa Mesa, CA';
+          }
+          parsed.locationRevision = 1;
+          await this.storage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        }
+        const missingProfiles = seedProfiles().filter(
+          (profile) => !parsed.profiles.some((saved) => saved.id === profile.id),
+        );
+        if (missingProfiles.length) {
+          parsed.profiles.push(...missingProfiles);
+          await this.storage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        }
         this.state = parsed;
       } else this.state = initial();
     }

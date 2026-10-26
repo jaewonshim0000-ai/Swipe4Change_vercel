@@ -46,6 +46,7 @@ import {
 } from '../components/kit';
 import { Glyph } from '../components/glyph';
 import { CitySheet } from '../components/city-picker';
+import { AlgorithmPreferences } from '../components/algorithm-preferences';
 import { anim, kf } from '../components/motion';
 import { Button, Empty, Loading, Notice, Page, colors, fonts, styles } from '../components/ui';
 import { frost, shadows, topicColors } from '../components/theme';
@@ -796,7 +797,17 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
   ];
   return (
     <Screen wide>
-      <Text style={styles.label}>Explore</Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <Text style={styles.label}>Explore</Text>
+        <AlgorithmPreferences profile={s.profile} />
+      </View>
       <Text accessibilityRole="header" style={[styles.title, { marginTop: 8, marginBottom: 14 }]}>
         Find your next cause.
       </Text>
@@ -1012,7 +1023,7 @@ function Explore({ snapshot: s }: { snapshot: Snapshot }) {
             <View style={{ gap: 12 }}>
               <Empty
                 title={q ? `No petitions match “${q}”` : 'Nothing matches yet'}
-                body="Try a place, a topic or an office, like “library” or “Brookside”."
+                body="Try a place, a topic or an office, like “library” or “Costa Mesa”."
               />
               <Button
                 title="Clear search and filters"

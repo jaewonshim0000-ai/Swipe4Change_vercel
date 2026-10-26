@@ -17,9 +17,9 @@ test('live mode treats the fictional sample cities as ordinary unknown places', 
   const real = live(
     () => require('../src/data/civic-lookup') as typeof import('../src/data/civic-lookup'),
   );
-  expect(real.isSampleCity('Riverton, CA')).toBe(false);
+  expect(real.isSampleCity('Irvine, CA')).toBe(false);
   const demo = require('../src/data/civic-lookup') as typeof import('../src/data/civic-lookup');
-  expect(demo.isSampleCity('Riverton, CA')).toBe(true);
+  expect(demo.isSampleCity('Irvine, CA')).toBe(true);
 });
 
 test('live mode does not offer location verification, which only the demo simulates', () => {

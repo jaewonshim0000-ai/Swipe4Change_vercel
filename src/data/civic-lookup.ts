@@ -5,7 +5,7 @@ import { normalizeCity, sameCity, sampleCities } from '../domain/location';
 import { cityCentre } from './places';
 import { isDemo, useBackend } from './provider';
 
-/** The demo's fictional towns. The real app treats those names like any other place. */
+/** The demo's sample locations. The real app treats those names like any other place. */
 export const isSampleCity = (city: string) =>
   isDemo && sampleCities.some((c) => sameCity(c.city, city));
 

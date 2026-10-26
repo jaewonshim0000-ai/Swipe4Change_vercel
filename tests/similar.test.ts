@@ -4,7 +4,7 @@ import { sameRecipient, similarPetitions } from '../src/domain/similar';
 
 const now = Date.now();
 const seeds = seedPetitions();
-const draft = (title: string, action: string, recipient = '', city = 'Riverton, CA') => ({
+const draft = (title: string, action: string, recipient = '', city = 'Irvine, CA') => ({
   title,
   summary: '',
   problem: '',
@@ -20,7 +20,7 @@ test('the safer-walk template finds the open lighting petition it duplicates', (
     draft(
       '',
       'Install pedestrian lighting along the route by March 2027',
-      'Riverton Public Works (fictional)',
+      'Irvine Public Works (fictional)',
     ),
     seeds,
     now,
@@ -29,13 +29,13 @@ test('the safer-walk template finds the open lighting petition it duplicates', (
   expect(matches[0].reasons).toEqual([
     'Similar request',
     'Same recipient',
-    'Also in Riverton, CA',
+    'Also in Irvine, CA',
     'Same topic: Safer streets',
   ]);
 });
 
 test('seed similarities stay limited to related local safety and transit requests', () => {
-  // The two Eastbridge safety asks and the two Brookside bus-stop asks are related.
+  // The two Eastbridge safety asks and the two Costa Mesa bus-stop asks are related.
   const flagged = seeds.flatMap((p) =>
     similarPetitions(
       p,
@@ -63,7 +63,7 @@ test('a duplicate needs the same issue in the same place', () => {
     similarPetitions(draft('Oak Avenue is too dark', 'Add lights on Oak Avenue'), [elm], now),
   ).toEqual([]);
   // Same street, different city.
-  expect(similarPetitions({ ...dark, city: 'Brookside, CA' }, [elm], now)).toEqual([]);
+  expect(similarPetitions({ ...dark, city: 'Costa Mesa, CA' }, [elm], now)).toEqual([]);
   // Same setting only ("students", "campus") is not the same request.
   expect(
     similarPetitions(
@@ -78,7 +78,7 @@ test('closed, hidden and expired petitions are never suggested', () => {
   const template = draft(
     '',
     'Install pedestrian lighting along the route by March 2027',
-    'Riverton Public Works (fictional)',
+    'Irvine Public Works (fictional)',
   );
   for (const change of [
     { status: 'closed' as const },
@@ -89,8 +89,8 @@ test('closed, hidden and expired petitions are never suggested', () => {
 });
 
 test('sameRecipient matches longer names for the same office, not neighbours', () => {
-  expect(sameRecipient('Riverton Public Works', 'Riverton Department of Public Works')).toBe(true);
-  expect(sameRecipient('Riverton Public Works (fictional)', 'riverton public works')).toBe(true);
-  expect(sameRecipient('Riverton Public Works', 'Riverton City Council')).toBe(false);
-  expect(sameRecipient('Riverton Public Works', 'Brookside Public Works')).toBe(false);
+  expect(sameRecipient('Irvine Public Works', 'Irvine Department of Public Works')).toBe(true);
+  expect(sameRecipient('Irvine Public Works (fictional)', 'irvine public works')).toBe(true);
+  expect(sameRecipient('Irvine Public Works', 'Irvine City Council')).toBe(false);
+  expect(sameRecipient('Irvine Public Works', 'Costa Mesa Public Works')).toBe(false);
 });

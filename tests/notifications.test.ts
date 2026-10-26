@@ -39,7 +39,7 @@ test('organizers are told about signatures, discussion, community backing and el
     body: 'Where does the route start?',
     kind: 'question',
   });
-  // Three Riverton students members vote yes, so the community backs it.
+  // Three Irvine students members vote yes, so the community backs it.
   for (const voter of [demoIds.maya, demoIds.sam, demoIds.jordan]) {
     await a.signIn(voter);
     await a.execute({
@@ -53,7 +53,7 @@ test('organizers are told about signatures, discussion, community backing and el
   const maya = await bodies(a);
   expect(maya.some((b) => b.includes('Anonymous supporter signed'))).toBe(true);
   expect(maya.some((b) => b.includes('posted a question'))).toBe(true);
-  expect(maya.some((b) => b.includes('Riverton students voted to back'))).toBe(true);
+  expect(maya.some((b) => b.includes('Irvine students voted to back'))).toBe(true);
   // An anonymous signer's real name never reaches the organizer.
   expect(maya.some((b) => b.includes('Sam Rivera') && b.includes('signed'))).toBe(false);
 });
@@ -82,7 +82,7 @@ test('signers and savers are told about updates, edits, responses and closure', 
     type: 'response',
     petitionId: id,
     body: 'We have received the request and will review it.',
-    organization: 'Riverton Public Works (fictional)',
+    organization: 'Irvine Public Works (fictional)',
   });
   await a.execute({ type: 'close', petitionId: id, status: 'successful' });
   for (const who of [demoIds.sam, demoIds.jordan]) {

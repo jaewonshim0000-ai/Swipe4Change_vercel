@@ -2,7 +2,7 @@ const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
-  { ignores: ['dist/**', 'dist-*/**', 'coverage/**', 'supabase/**', 'design/**'] },
+  { ignores: ['dist/**', 'dist-*/**', 'coverage/**', 'supabase/**'] },
   // Preserve vendored React Bits source; upstream predates these compiler lint rules.
   {
     files: ['src/components/react-bits/**/*.tsx'],

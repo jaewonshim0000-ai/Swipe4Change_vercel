@@ -41,7 +41,7 @@ test('a delivery records who sent what, to whom, and when', async () => {
     type: 'deliver',
     petitionId: id,
     method: 'email',
-    note: 'publicworks@riverton.example, reference PW-2026-114',
+    note: 'publicworks@irvine.example, reference PW-2026-114',
   });
   const p = (await a.load()).petitions.find((x) => x.id === id)!;
   expect(p.deliveries).toHaveLength(1);
@@ -136,7 +136,7 @@ test('a response can answer a specific delivery', async () => {
     type: 'response',
     petitionId: id,
     body: 'We have logged this request for review.',
-    organization: 'Riverton Public Works (fictional)',
+    organization: 'Irvine Public Works (fictional)',
     deliveryId: delivery.id,
   });
   const p = (await a.load()).petitions.find((x) => x.id === id)!;
@@ -204,7 +204,7 @@ test('the directory routes a topic to offices and says what they cannot decide',
   expect(offices.length).toBeGreaterThan(1);
   expect(offices[0].topics).toContain('Safer streets');
   // The school board handles school grounds but explicitly not the public road outside.
-  const board = findOffice('Riverton Unified School Board (fictional)')!;
+  const board = findOffice('Irvine Unified School Board (fictional)')!;
   expect(board.level).toBe('school');
   expect(board.notResponsibleFor).toMatch(/Public Works/);
   expect(findOffice('An office nobody added')).toBeUndefined();

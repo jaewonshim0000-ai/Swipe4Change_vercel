@@ -17,6 +17,8 @@ import {
 } from '../../src/components/ui';
 import { Cover, PillChip, Press, Screen, Sheet, toast, topicImage } from '../../src/components/kit';
 import { Glyph } from '../../src/components/glyph';
+import { AlgorithmPreferences } from '../../src/components/algorithm-preferences';
+import { sameCity } from '../../src/domain/location';
 import { stag } from '../../src/components/motion';
 import { shadows, topicColors } from '../../src/components/theme';
 
@@ -60,21 +62,37 @@ export default function Communities() {
     );
   }
   const term = search.trim().toLowerCase();
-  const shown = s.communities.filter(
-    (c) => !term || [c.name, c.description, c.city, c.topic].join(' ').toLowerCase().includes(term),
-  );
+  const communityScore = (c: (typeof s.communities)[number]) =>
+    (s.profile?.interests.includes(c.topic) ? 35 : 0) +
+    (sameCity(c.city, s.profile?.city ?? '') ? 30 : 0);
+  const shown = s.communities
+    .filter(
+      (c) =>
+        !term || [c.name, c.description, c.city, c.topic].join(' ').toLowerCase().includes(term),
+    )
+    .sort((a, b) => communityScore(b) - communityScore(a) || a.name.localeCompare(b.name));
   const live = s.petitions.filter((p) => p.status === 'active');
   const open = (id: string) => router.push(`/community/${id}`);
   return (
     <Screen gutter={12}>
       <View style={{ paddingHorizontal: 6, gap: 6, marginBottom: 14 }}>
-        <Text style={styles.label}>Communities</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <Text style={styles.label}>Communities</Text>
+          <AlgorithmPreferences profile={s.profile} />
+        </View>
         <Text accessibilityRole="header" style={styles.title}>
           Your people, nearby.
         </Text>
         <Text style={styles.muted}>
-          {isDemo ? 'Local groups in a fictional town.' : 'Local groups near you.'} Members vote on
-          which petitions their community backs, and some petitions only members can sign.
+          {isDemo ? 'Sample groups in Irvine and Orange County.' : 'Local groups near you.'} Members
+          vote on which petitions their community backs, and some petitions only members can sign.
         </Text>
       </View>
       <View

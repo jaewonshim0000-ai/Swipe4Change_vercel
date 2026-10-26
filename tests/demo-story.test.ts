@@ -28,7 +28,7 @@ test('every sample petition has a distinct local reason and an office in its own
     expect(petition.summary.length).toBeGreaterThan(50);
     const office = findOffice(petition.recipient);
     expect(office).toBeDefined();
-    if (petition.city.startsWith('Brookside')) expect(office?.name).toContain('Brookside');
+    if (petition.city.startsWith('Costa Mesa')) expect(office?.name).toContain('Costa Mesa');
   }
   expect(petitions[0].problem).toContain('campus gate');
   expect(petitions[0].deliveries[0].recipient).toBe(petitions[0].recipient);

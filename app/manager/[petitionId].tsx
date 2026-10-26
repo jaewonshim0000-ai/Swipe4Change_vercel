@@ -261,7 +261,7 @@ export default function Manager() {
               multiline
               value={deliveryNote}
               onChangeText={setDeliveryNote}
-              placeholder="publicworks@riverton.example, reference PW-2026-114"
+              placeholder="publicworks@irvine.example, reference PW-2026-114"
             />
             <Button
               title="Record this delivery"

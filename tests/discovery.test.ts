@@ -25,16 +25,16 @@ test('search combines community text, location, eligibility, recipient level and
   const p = s.petitions[0];
   const f = {
     ...emptyFilters,
-    location: ' RIVERTON ',
+    location: ' IRVINE ',
     requirement: 'email' as const,
     level: 'city' as const,
     endingSoon: true,
     updated: true,
   };
-  expect(matchesDiscovery(p, s, 'riverton students', f, Date.now())).toBe(true);
+  expect(matchesDiscovery(p, s, 'irvine students', f, Date.now())).toBe(true);
   expect(matchesDiscovery(p, s, 'bus shelter', f, Date.now())).toBe(true);
   expect(matchesDiscovery(p, s, '', { ...f, requirement: 'community' }, Date.now())).toBe(false);
-  expect(matchesDiscovery(p, s, '', { ...f, location: 'Brookside' }, Date.now())).toBe(false);
+  expect(matchesDiscovery(p, s, '', { ...f, location: 'Costa Mesa' }, Date.now())).toBe(false);
   expect(matchesDiscovery({ ...p, status: 'draft' }, s, '', emptyFilters, Date.now())).toBe(false);
   expect(matchesDiscovery({ ...p, deadline: '2000-01-01' }, s, '', f, Date.now())).toBe(false);
   expect(
@@ -46,7 +46,7 @@ test('search combines community text, location, eligibility, recipient level and
       Date.now(),
     ),
   ).toBe(false);
-  expect(matchReason(p, s)).toContain('Near Riverton, CA');
+  expect(matchReason(p, s)).toContain('Near Irvine, CA');
   expect(matchReason(p, s)).toContain('From your community');
 });
 
