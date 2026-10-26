@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, ViewStyle } from 'react-native';
 
-// Tokens from the Swipe4Change v3 design (design/swipe4change-v3/index.html): one visual system
+// Tokens from the Swipe4Change v3 design: one visual system
 // in the original palette. Light sage canvas, near-black olive for primary buttons, the tab bar and
 // the sidebar, one olive-sage accent, and muted semantic colours (terracotta = pass and alerts,
 // slate blue = saved and read). White on sage fails contrast, so dark olive carries text.
